@@ -1,23 +1,35 @@
 [
   {
     "firstName": "Casandra",
-    "pickUpSchedule": [
-      { "monday": "11:30" }
-    ],
-    "schoolId": 1
+    "pickUpSchedule": {
+      "monday": "11:30",
+      "tuesday": "12:00",
+      "wednesday": "11:45",
+      "thursday": "12:15",
+      "friday": "11:00"
+    },
+    "schoolId": "1"
   },
   {
     "firstName": "Lea",
-    "pickUpSchedule": [
-      { "monday": "12:00" }
-    ],
-    "schoolId": 2
+    "pickUpSchedule": {
+      "monday": "12:00",
+      "tuesday": "12:30",
+      "wednesday": "12:15",
+      "thursday": "12:45",
+      "friday": "11:30"
+    },
+    "schoolId": "2"
   },
   {
     "firstName": "Alex",
-    "pickUpSchedule": [
-      { "monday": "11:45" }
-    ],
-    "schoolId": 3
+    "pickUpSchedule": {
+      "monday": "11:45",
+      "tuesday": "12:15",
+      "wednesday": "12:30",
+      "thursday": "12:00",
+      "friday": "11:15"
+    },
+    "schoolId": "3"
   }
 ]

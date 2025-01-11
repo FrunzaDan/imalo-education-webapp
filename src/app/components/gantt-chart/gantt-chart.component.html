@@ -1,4 +1,5 @@
-<div class="gantt-container">
+<div class="gantt-container" *ngFor="let day of weekDays">
+  <h2>{{ formatDayTitle(day) }}</h2>
   <div class="gantt-chart">
     <!-- Header -->
     <div class="gantt-header">
@@ -8,15 +9,15 @@
       </div>
     </div>
     <!-- Rows -->
-    <div *ngFor="let scholar of scholars; let i = index" class="gantt-row">
+    <div *ngFor="let scholar of scholars" class="gantt-row">
       <div class="name-cell">{{ scholar.firstName }}</div>
       <div
         *ngFor="let slot of timeSlots"
         class="time-slot"
-        [ngStyle]="getSlotStyle(scholar, slot)"
+        [ngStyle]="getSlotStyle(scholar, slot, day)"
       >
-        <span *ngIf="isTimeOccupied(scholar, slot)">
-          {{ getTimeRange(scholar, slot) }}
+        <span *ngIf="isTimeOccupied(scholar, slot, day)">
+          {{ getTimeRange(scholar, slot, day) }}
         </span>
       </div>
     </div>

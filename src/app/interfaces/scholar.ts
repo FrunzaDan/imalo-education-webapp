@@ -1,8 +1,8 @@
-import { PickUpSchedule } from './schedule';
+import { PickUpSchedule } from './pick-up-schedule';
 
 export interface Scholar {
   firstName: string;
   lastName: string;
-  pickUpSchedule: PickUpSchedule[];
+  pickUpSchedule: PickUpSchedule;
   schoolId: string;
 }
