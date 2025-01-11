@@ -31,5 +31,82 @@
       "friday": "11:15"
     },
     "schoolId": "3"
+  },
+  {
+    "firstName": "Martha",
+    "pickUpSchedule": {
+      "monday": "11:15",
+      "tuesday": "11:45",
+      "wednesday": "12:00",
+      "thursday": "12:30",
+      "friday": "11:45"
+    },
+    "schoolId": "4"
+  },
+  {
+    "firstName": "Ethan",
+    "pickUpSchedule": {
+      "monday": "12:15",
+      "tuesday": "12:45",
+      "wednesday": "12:30",
+      "thursday": "12:00",
+      "friday": "12:15"
+    },
+    "schoolId": "1"
+  },
+  {
+    "firstName": "Olivia",
+    "pickUpSchedule": {
+      "monday": "11:00",
+      "tuesday": "12:30",
+      "wednesday": "11:15",
+      "thursday": "13:00",
+      "friday": "13:15"
+    },
+    "schoolId": "2"
+  },
+  {
+    "firstName": "Liam",
+    "pickUpSchedule": {
+      "monday": "12:45",
+      "tuesday": "13:15",
+      "wednesday": "13:00",
+      "thursday": "12:15",
+      "friday": "12:00"
+    },
+    "schoolId": "3"
+  },
+  {
+    "firstName": "Isabella",
+    "pickUpSchedule": {
+      "monday": "13:00",
+      "tuesday": "12:15",
+      "wednesday": "12:45",
+      "thursday": "11:45",
+      "friday": "12:30"
+    },
+    "schoolId": "4"
+  },
+  {
+    "firstName": "Noah",
+    "pickUpSchedule": {
+      "monday": "13:15",
+      "tuesday": "11:00",
+      "wednesday": "11:30",
+      "thursday": "13:15",
+      "friday": "11:15"
+    },
+    "schoolId": "1"
+  },
+  {
+    "firstName": "Maria",
+    "pickUpSchedule": {
+      "monday": "11:45",
+      "tuesday": "13:00",
+      "wednesday": "12:00",
+      "thursday": "12:30",
+      "friday": "13:30"
+    },
+    "schoolId": "2"
   }
 ]

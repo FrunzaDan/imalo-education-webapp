@@ -20,7 +20,6 @@ export class GanttChartComponent implements OnInit {
   schools: Map<string, School> = new Map();
   timeSlots = this.generateTimeSlots();
   weekDays = Object.values(WeekDays);
-
   private readonly SLOT_DURATION = 30; // in minutes
 
   constructor(
@@ -38,7 +37,10 @@ export class GanttChartComponent implements OnInit {
       schools: this.schoolService.getSchools(),
     }).subscribe(({ scholars, schools }) => {
       this.scholars = scholars;
-      this.schools = new Map(schools.map((school) => [school.id, school]));
+      // Ensure we're using string IDs consistently
+      this.schools = new Map(
+        schools.map((school) => [school.id.toString(), school])
+      );
     });
   }
 
@@ -64,7 +66,7 @@ export class GanttChartComponent implements OnInit {
   ): boolean {
     const pickupTime = person.pickUpSchedule[day];
     return (
-      !!pickupTime && // Ensure this is a boolean
+      !!pickupTime &&
       this.timeToMinutes(pickupTime) === this.timeToMinutes(slot.start)
     );
   }
@@ -72,7 +74,19 @@ export class GanttChartComponent implements OnInit {
   getSlotStyle(person: Scholar, slot: TimeSlot, day: WeekDays): any {
     const hasSchedule = this.findSchedule(person, slot, day);
     if (hasSchedule) {
-      const school = this.schools.get(person.schoolId);
+      const schoolId = person.schoolId.toString(); // Ensure string comparison
+      const school = this.schools.get(schoolId);
+
+      // Add console.log for debugging
+      console.log(
+        'SchoolId:',
+        schoolId,
+        'School:',
+        school,
+        'Color:',
+        school?.color
+      );
+
       return {
         backgroundColor: school?.color || '#gray',
         gridColumn: 'span 2',
