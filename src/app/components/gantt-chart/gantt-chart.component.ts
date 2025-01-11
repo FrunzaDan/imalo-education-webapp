@@ -18,23 +18,30 @@ import { WeekDays } from '../../constants/week-days';
 export class GanttChartComponent implements OnInit {
   scholars: Scholar[] = [];
   schools: Map<string, School> = new Map();
-  timeSlots = this.generateTimeSlots();
+  timeSlots: TimeSlot[] = [];
   weekDays = Object.values(WeekDays);
   private readonly SLOT_DURATION = 30; // in minutes
 
   constructor(
     private scholarsService: ScholarsService,
-    private schoolService: SchoolsService
+    private schoolsService: SchoolsService
   ) {}
 
-  ngOnInit() {
+  ngOnInit(): void {
+    this.initializeTimeSlots();
     this.loadData();
   }
 
-  private loadData() {
+  // Initialize time slots
+  private initializeTimeSlots(): void {
+    this.timeSlots = this.generateTimeSlots(11, 15, 15);
+  }
+
+  // Fetch data from services
+  private loadData(): void {
     forkJoin({
       scholars: this.scholarsService.getScholars(),
-      schools: this.schoolService.getSchools(),
+      schools: this.schoolsService.getSchools(),
     }).subscribe(({ scholars, schools }) => {
       this.scholars = scholars;
       this.schools = new Map(
@@ -43,38 +50,66 @@ export class GanttChartComponent implements OnInit {
     });
   }
 
+  // Generate time slots dynamically
+  private generateTimeSlots(
+    startHour: number,
+    endHour: number,
+    interval: number
+  ): TimeSlot[] {
+    const slots: TimeSlot[] = [];
+    for (let hour = startHour; hour < endHour; hour++) {
+      for (let minutes = 0; minutes < 60; minutes += interval) {
+        const time = this.formatTime(hour, minutes);
+        slots.push({ start: time, displayLabel: time });
+      }
+    }
+    return slots;
+  }
+
+  // Format time in HH:mm format
+  private formatTime(hours: number, minutes: number): string {
+    return `${hours}:${minutes.toString().padStart(2, '0')}`;
+  }
+
+  // Convert time string to total minutes
   private timeToMinutes(time: string): number {
     const [hours, minutes] = time.split(':').map(Number);
     return hours * 60 + minutes;
   }
 
+  // Convert total minutes to time string
   private minutesToTime(minutes: number): string {
     const hours = Math.floor(minutes / 60);
     const mins = minutes % 60;
     return `${hours}:${mins.toString().padStart(2, '0')}`;
   }
 
+  // Calculate end time of a slot
   private calculateEndTime(start: string): string {
     return this.minutesToTime(this.timeToMinutes(start) + this.SLOT_DURATION);
   }
 
-  private findSchedule(
-    person: Scholar,
+  // Find if a time slot matches a scholar's schedule for a specific day
+  private isSlotScheduled(
+    scholar: Scholar,
     slot: TimeSlot,
     day: WeekDays
   ): boolean {
-    const pickupTime = person.pickUpSchedule[day];
+    const pickupTime = scholar.pickUpSchedule[day];
     return (
       !!pickupTime &&
       this.timeToMinutes(pickupTime) === this.timeToMinutes(slot.start)
     );
   }
 
-  getSlotStyle(person: Scholar, slot: TimeSlot, day: WeekDays): any {
-    const hasSchedule = this.findSchedule(person, slot, day);
-    if (hasSchedule) {
-      const schoolId = person.schoolId.toString();
-      const school = this.schools.get(schoolId);
+  // Get styling for a time slot
+  getSlotStyle(
+    scholar: Scholar,
+    slot: TimeSlot,
+    day: WeekDays
+  ): Record<string, string> {
+    if (this.isSlotScheduled(scholar, slot, day)) {
+      const school = this.schools.get(scholar.schoolId.toString());
       return {
         backgroundColor: school?.color || '#gray',
         gridColumn: 'span 2',
@@ -83,11 +118,11 @@ export class GanttChartComponent implements OnInit {
     return {};
   }
 
-  getTimeRange(person: Scholar, slot: TimeSlot, day: WeekDays): string {
-    const pickupTime = person.pickUpSchedule[day];
-    if (this.findSchedule(person, slot, day)) {
-      const schoolId = person.schoolId.toString();
-      const school = this.schools.get(schoolId);
+  // Get time range and school info for a scheduled slot
+  getTimeRange(scholar: Scholar, slot: TimeSlot, day: WeekDays): string {
+    const pickupTime = scholar.pickUpSchedule[day];
+    if (this.isSlotScheduled(scholar, slot, day)) {
+      const school = this.schools.get(scholar.schoolId.toString());
       return `${pickupTime} - ${this.calculateEndTime(pickupTime)}\n${
         school?.name || 'Unknown School'
       }`;
@@ -95,22 +130,12 @@ export class GanttChartComponent implements OnInit {
     return '';
   }
 
-  isTimeOccupied(person: Scholar, slot: TimeSlot, day: WeekDays): boolean {
-    return this.findSchedule(person, slot, day);
+  // Check if a time slot is occupied
+  isTimeOccupied(scholar: Scholar, slot: TimeSlot, day: WeekDays): boolean {
+    return this.isSlotScheduled(scholar, slot, day);
   }
 
-  private generateTimeSlots(): TimeSlot[] {
-    const slots: TimeSlot[] = [];
-    for (let hour = 11; hour < 15; hour++) {
-      for (let quarter = 0; quarter < 4; quarter++) {
-        const minutes = quarter * 15;
-        const time = `${hour}:${minutes.toString().padStart(2, '0')}`;
-        slots.push({ start: time, displayLabel: time });
-      }
-    }
-    return slots;
-  }
-
+  // Format day titles
   formatDayTitle(day: string): string {
     return day.charAt(0).toUpperCase() + day.slice(1);
   }

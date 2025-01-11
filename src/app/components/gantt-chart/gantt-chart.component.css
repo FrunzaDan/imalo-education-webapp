@@ -1,8 +1,12 @@
 .gantt-container {
-  padding: 2rem;
   background-color: #f9f9fb;
   border-radius: 12px;
+  border: 2px solid #04abb9;
   overflow-x: auto;
+  margin-top: 1rem;
+  margin-bottom: 1rem;
+  margin-left: 0.4rem;
+  margin-right: 0.4rem;
 }
 
 .gantt-chart {
@@ -15,7 +19,7 @@
   display: grid;
   grid-template-columns: 150px repeat(16, minmax(60px, 1fr));
   background-color: #fafafa;
-  border-bottom: 2px solid #eaeaea;
+  border-bottom: 2px solid #165b59;
   font-weight: 600;
   color: #333;
 }
@@ -29,10 +33,10 @@
 .name-cell {
   padding: 0.5rem;
   text-align: left;
-  background-color: #f0f0f5;
-  border-right: 2px solid #eaeaea;
+  background-color: #f9f9fb;
+  border-right: 2px solid #165b59;
   font-weight: bold;
-  color: #555;
+  color: #165b59;
   display: flex;
   align-items: center;
 }
@@ -47,6 +51,8 @@
   align-items: center;
   justify-content: center;
   border-right: 1px solid #eaeaea;
+  border-bottom: 1px solid #eaeaea;
+  white-space: pre-line;
 }
 
 .schedule-tooltip {
@@ -69,4 +75,11 @@
 
 .time-slot:hover .schedule-tooltip {
   opacity: 1;
+}
+
+.gantt-day-title {
+  text-align: center;
+  padding: 0.2rem;
+  font-family: "Roboto", sans-serif;
+  color: #165b59;
 }

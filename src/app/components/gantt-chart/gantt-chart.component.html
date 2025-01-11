@@ -1,5 +1,5 @@
 <div class="gantt-container" *ngFor="let day of weekDays">
-  <h2>{{ formatDayTitle(day) }}</h2>
+  <h2 class="gantt-day-title">{{ formatDayTitle(day) }}</h2>
   <div class="gantt-chart">
     <!-- Header -->
     <div class="gantt-header">
@@ -19,6 +19,12 @@
         <span *ngIf="isTimeOccupied(scholar, slot, day)">
           {{ getTimeRange(scholar, slot, day) }}
         </span>
+        <div
+          *ngIf="isTimeOccupied(scholar, slot, day)"
+          class="schedule-tooltip"
+        >
+          {{ getTimeRange(scholar, slot, day) }}
+        </div>
       </div>
     </div>
   </div>
