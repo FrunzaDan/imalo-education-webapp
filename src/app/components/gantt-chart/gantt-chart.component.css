@@ -13,7 +13,7 @@
 
 .gantt-header {
   display: grid;
-  grid-template-columns: 150px repeat(20, minmax(60px, 1fr));
+  grid-template-columns: 150px repeat(16, minmax(60px, 1fr));
   background-color: #fafafa;
   border-bottom: 2px solid #eaeaea;
   font-weight: 600;
@@ -22,7 +22,7 @@
 
 .gantt-row {
   display: grid;
-  grid-template-columns: 150px repeat(20, minmax(60px, 1fr));
+  grid-template-columns: 150px repeat(16, minmax(60px, 1fr));
   transition: background-color 0.2s;
 }
 

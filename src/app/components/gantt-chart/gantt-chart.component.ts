@@ -2,7 +2,10 @@ import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
 import { TimeSlot } from '../../interfaces/time-slot';
 import { Scholar } from '../../interfaces/scholar';
+import { School } from '../../interfaces/school';
 import { ScholarsService } from '../../services/scholars.service';
+import { SchoolsService } from '../../services/schools.service';
+import { forkJoin } from 'rxjs';
 
 @Component({
   selector: 'app-gantt-chart',
@@ -13,21 +16,29 @@ import { ScholarsService } from '../../services/scholars.service';
 })
 export class GanttChartComponent implements OnInit {
   scholars: Scholar[] = [];
+  schools: Map<string, School> = new Map();
+  timeSlots = this.generateTimeSlots();
 
-  constructor(private scholarsService: ScholarsService) {}
+  private readonly SLOT_DURATION = 30; // in minutes
+
+  constructor(
+    private scholarsService: ScholarsService,
+    private schoolService: SchoolsService
+  ) {}
 
   ngOnInit() {
     this.loadData();
   }
 
-  timeSlots = this.generateTimeSlots();
-  colors = ['#4CAF50', '#2196F3', '#FFC107'];
-
-  private readonly SLOT_DURATION = 30; // in minutes
-
   private loadData() {
-    this.scholarsService.getScholars().subscribe((data) => {
-      this.scholars = data;
+    // Load both scholars and schools data
+    forkJoin({
+      scholars: this.scholarsService.getScholars(),
+      schools: this.schoolService.getSchools(),
+    }).subscribe(({ scholars, schools }) => {
+      this.scholars = scholars;
+      // Create a map of schools for easy lookup
+      this.schools = new Map(schools.map((school) => [school.id, school]));
     });
   }
 
@@ -61,8 +72,9 @@ export class GanttChartComponent implements OnInit {
   getSlotStyle(person: Scholar, slot: TimeSlot): any {
     const schedule = this.findSchedule(person, slot);
     if (schedule) {
+      const school = this.schools.get(person.schoolId);
       return {
-        backgroundColor: schedule.color,
+        backgroundColor: school?.color || '#gray', // Fallback color if school not found
         gridColumn: 'span 2', // Make the slot span 2 columns (30 minutes)
       };
     }
@@ -85,7 +97,7 @@ export class GanttChartComponent implements OnInit {
   // Generate the time slots for the Gantt chart
   private generateTimeSlots(): TimeSlot[] {
     const slots: TimeSlot[] = [];
-    for (let hour = 10; hour < 15; hour++) {
+    for (let hour = 11; hour < 15; hour++) {
       for (let quarter = 0; quarter < 4; quarter++) {
         const minutes = quarter * 15;
         const time = `${hour}:${minutes.toString().padStart(2, '0')}`;
