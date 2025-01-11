@@ -1,0 +1,23 @@
+[
+  {
+    "firstName": "Casandra",
+    "pickUpSchedule": [
+      { "pickUpTime": "11:30", "color": "#4CAF50" }
+    ],
+    "schoolId": 1
+  },
+  {
+    "firstName": "Lea",
+    "pickUpSchedule": [
+      { "pickUpTime": "12:00", "color": "#2196F3" }
+    ],
+    "schoolId": 2
+  },
+  {
+    "firstName": "Alex",
+    "pickUpSchedule": [
+      { "pickUpTime": "11:45", "color": "#FFC107" }
+    ],
+    "schoolId": 3
+  }
+]

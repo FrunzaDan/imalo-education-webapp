@@ -9,7 +9,7 @@
     </div>
     <!-- Rows -->
     <div *ngFor="let scholar of scholars; let i = index" class="gantt-row">
-      <div class="name-cell">{{ scholar.name }}</div>
+      <div class="name-cell">{{ scholar.firstName }}</div>
       <div
         *ngFor="let slot of timeSlots"
         class="time-slot"

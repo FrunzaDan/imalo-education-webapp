@@ -1,4 +1,4 @@
 export interface PickUpSchedule {
-  start: string;
+  pickUpTime: string;
   color?: string;
 }
