@@ -37,7 +37,6 @@ export class GanttChartComponent implements OnInit {
       schools: this.schoolService.getSchools(),
     }).subscribe(({ scholars, schools }) => {
       this.scholars = scholars;
-      // Ensure we're using string IDs consistently
       this.schools = new Map(
         schools.map((school) => [school.id.toString(), school])
       );
@@ -74,19 +73,8 @@ export class GanttChartComponent implements OnInit {
   getSlotStyle(person: Scholar, slot: TimeSlot, day: WeekDays): any {
     const hasSchedule = this.findSchedule(person, slot, day);
     if (hasSchedule) {
-      const schoolId = person.schoolId.toString(); // Ensure string comparison
+      const schoolId = person.schoolId.toString();
       const school = this.schools.get(schoolId);
-
-      // Add console.log for debugging
-      console.log(
-        'SchoolId:',
-        schoolId,
-        'School:',
-        school,
-        'Color:',
-        school?.color
-      );
-
       return {
         backgroundColor: school?.color || '#gray',
         gridColumn: 'span 2',
@@ -97,9 +85,14 @@ export class GanttChartComponent implements OnInit {
 
   getTimeRange(person: Scholar, slot: TimeSlot, day: WeekDays): string {
     const pickupTime = person.pickUpSchedule[day];
-    return this.findSchedule(person, slot, day)
-      ? `${pickupTime} - ${this.calculateEndTime(pickupTime)}`
-      : '';
+    if (this.findSchedule(person, slot, day)) {
+      const schoolId = person.schoolId.toString();
+      const school = this.schools.get(schoolId);
+      return `${pickupTime} - ${this.calculateEndTime(pickupTime)}\n${
+        school?.name || 'Unknown School'
+      }`;
+    }
+    return '';
   }
 
   isTimeOccupied(person: Scholar, slot: TimeSlot, day: WeekDays): boolean {
