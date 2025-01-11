@@ -1,0 +1,29 @@
+<div class="gantt-container">
+  <div class="gantt-chart">
+    <!-- Header -->
+    <div class="gantt-header">
+      <div class="name-cell">Name</div>
+      <div *ngFor="let slot of timeSlots" class="time-slot">
+        {{ slot.displayLabel }}
+      </div>
+    </div>
+
+    <!-- Rows -->
+    <div
+      *ngFor="let scholar of scholars; let i = index"
+      class="gantt-row"
+      [class.odd-row]="i % 2 !== 0"
+    >
+      <div class="name-cell">{{ scholar.name }}</div>
+      <div
+        *ngFor="let slot of timeSlots"
+        class="time-slot"
+        [ngStyle]="getSlotStyle(scholar, slot)"
+      >
+        <span *ngIf="isTimeOccupied(scholar, slot)">
+          {{ getTimeRange(scholar, slot) }}
+        </span>
+      </div>
+    </div>
+  </div>
+</div>

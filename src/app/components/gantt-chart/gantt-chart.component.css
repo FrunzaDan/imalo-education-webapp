@@ -1,0 +1,72 @@
+.gantt-container {
+  padding: 2rem;
+  background-color: #f9f9fb;
+  border-radius: 12px;
+  overflow-x: auto;
+}
+
+.gantt-chart {
+  display: flex;
+  flex-direction: column;
+  font-family: "Roboto", sans-serif;
+}
+
+.gantt-header {
+  display: grid;
+  grid-template-columns: 150px repeat(20, minmax(30px, 1fr));
+  background-color: #fafafa;
+  border-bottom: 2px solid #eaeaea;
+  font-weight: 600;
+  color: #333;
+}
+
+.gantt-row {
+  display: grid;
+  grid-template-columns: 150px repeat(20, minmax(30px, 1fr));
+  transition: background-color 0.2s;
+}
+
+.name-cell {
+  padding: 0.5rem;
+  text-align: left;
+  background-color: #f0f0f5;
+  border-right: 2px solid #eaeaea;
+  font-weight: bold;
+  color: #555;
+  display: flex;
+  align-items: center;
+}
+
+.time-slot {
+  padding: 0.5rem;
+  text-align: center;
+  font-size: 0.7rem;
+  color: #666;
+  position: relative;
+  background-color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.schedule-tooltip {
+  position: absolute;
+  top: -30px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #333;
+  color: #fff;
+  padding: 0.5rem;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  z-index: 10;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+}
+
+.time-slot:hover .schedule-tooltip {
+  opacity: 1;
+}
