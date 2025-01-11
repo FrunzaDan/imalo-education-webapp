@@ -63,7 +63,7 @@ export class GanttChartComponent implements OnInit {
   // Find matching schedule for a scholar at a specific time slot
   private findSchedule(person: Scholar, slot: TimeSlot) {
     return person.pickUpSchedule.find(
-      ({ pickUpTime: start }) =>
+      ({ monday: start }) =>
         this.timeToMinutes(start) === this.timeToMinutes(slot.start)
     );
   }
@@ -85,7 +85,7 @@ export class GanttChartComponent implements OnInit {
   getTimeRange(person: Scholar, slot: TimeSlot): string {
     const schedule = this.findSchedule(person, slot);
     return schedule
-      ? `${schedule.pickUpTime} - ${this.calculateEndTime(schedule.pickUpTime)}`
+      ? `${schedule.monday} - ${this.calculateEndTime(schedule.monday)}`
       : '';
   }
 

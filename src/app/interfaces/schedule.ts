@@ -1,3 +1,7 @@
 export interface PickUpSchedule {
-  pickUpTime: string;
+  monday: string;
+  tuesday: string;
+  wednesday: string;
+  thursday: string;
+  friday: string;
 }

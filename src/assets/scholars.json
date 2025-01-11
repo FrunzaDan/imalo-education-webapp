@@ -2,21 +2,21 @@
   {
     "firstName": "Casandra",
     "pickUpSchedule": [
-      { "pickUpTime": "11:30", "color": "#4CAF50" }
+      { "monday": "11:30" }
     ],
     "schoolId": 1
   },
   {
     "firstName": "Lea",
     "pickUpSchedule": [
-      { "pickUpTime": "12:00", "color": "#2196F3" }
+      { "monday": "12:00" }
     ],
     "schoolId": 2
   },
   {
     "firstName": "Alex",
     "pickUpSchedule": [
-      { "pickUpTime": "11:45", "color": "#FFC107" }
+      { "monday": "11:45" }
     ],
     "schoolId": 3
   }
