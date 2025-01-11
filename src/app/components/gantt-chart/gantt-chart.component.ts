@@ -8,7 +8,7 @@ import { Scholar } from '../../interfaces/scholar';
   standalone: true,
   imports: [CommonModule],
   templateUrl: './gantt-chart.component.html',
-  styleUrls: ['./gantt-chart.component.css'], // Note: 'styleUrls' should be plural
+  styleUrls: ['./gantt-chart.component.css'],
 })
 export class GanttChartComponent {
   timeSlots = this.generateTimeSlots();
@@ -49,20 +49,22 @@ export class GanttChartComponent {
   private findSchedule(person: Scholar, slot: TimeSlot) {
     return person.pickUpSchedule.find(({ start }) => {
       const scheduleStartMinutes = this.timeToMinutes(start);
-      const scheduleEndMinutes = scheduleStartMinutes + this.SLOT_DURATION;
       const slotStartMinutes = this.timeToMinutes(slot.start);
-      const slotEndMinutes = slotStartMinutes + this.SLOT_DURATION;
 
-      return (
-        slotStartMinutes < scheduleEndMinutes &&
-        slotEndMinutes > scheduleStartMinutes
-      );
+      // Only return true if this is the exact starting slot
+      return scheduleStartMinutes === slotStartMinutes;
     });
   }
 
   getSlotStyle(person: Scholar, slot: TimeSlot): any {
     const schedule = this.findSchedule(person, slot);
-    return schedule ? { backgroundColor: schedule.color } : {};
+    if (schedule) {
+      return {
+        backgroundColor: schedule.color,
+        gridColumn: `span 2`, // Make the slot span 2 columns (30 minutes)
+      };
+    }
+    return {};
   }
 
   getTimeRange(person: Scholar, slot: TimeSlot): string {
