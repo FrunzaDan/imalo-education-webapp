@@ -5,8 +5,8 @@ import { Scholar } from '../../interfaces/scholar';
 import { School } from '../../interfaces/school';
 import { ScholarsService } from '../../services/scholars.service';
 import { SchoolsService } from '../../services/schools.service';
-import { forkJoin } from 'rxjs';
 import { WeekDays } from '../../constants/week-days';
+import { forkJoin } from 'rxjs/internal/observable/forkJoin';
 
 @Component({
   selector: 'app-gantt-chart',
@@ -20,7 +20,7 @@ export class GanttChartComponent implements OnInit {
   schools: Map<string, School> = new Map();
   timeSlots: TimeSlot[] = [];
   weekDays = Object.values(WeekDays);
-  private readonly SLOT_DURATION = 30; // in minutes
+  private readonly SLOT_DURATION = 30;
 
   constructor(
     private scholarsService: ScholarsService,
@@ -32,12 +32,10 @@ export class GanttChartComponent implements OnInit {
     this.loadData();
   }
 
-  // Initialize time slots
   private initializeTimeSlots(): void {
     this.timeSlots = this.generateTimeSlots(11, 15, 15);
   }
 
-  // Fetch data from services
   private loadData(): void {
     forkJoin({
       scholars: this.scholarsService.getScholars(),
@@ -50,7 +48,6 @@ export class GanttChartComponent implements OnInit {
     });
   }
 
-  // Generate time slots dynamically
   private generateTimeSlots(
     startHour: number,
     endHour: number,
@@ -66,7 +63,6 @@ export class GanttChartComponent implements OnInit {
     return slots;
   }
 
-  // Format time in HH:mm format
   private formatTime(hours: number, minutes: number): string {
     return `${hours}:${minutes.toString().padStart(2, '0')}`;
   }
@@ -84,12 +80,10 @@ export class GanttChartComponent implements OnInit {
     return `${hours}:${mins.toString().padStart(2, '0')}`;
   }
 
-  // Calculate end time of a slot
   private calculateEndTime(start: string): string {
     return this.minutesToTime(this.timeToMinutes(start) + this.SLOT_DURATION);
   }
 
-  // Find if a time slot matches a scholar's schedule for a specific day
   private isSlotScheduled(
     scholar: Scholar,
     slot: TimeSlot,
@@ -102,7 +96,6 @@ export class GanttChartComponent implements OnInit {
     );
   }
 
-  // Get styling for a time slot
   getSlotStyle(
     scholar: Scholar,
     slot: TimeSlot,
@@ -118,7 +111,6 @@ export class GanttChartComponent implements OnInit {
     return {};
   }
 
-  // Get time range and school info for a scheduled slot
   getTimeRange(scholar: Scholar, slot: TimeSlot, day: WeekDays): string {
     const pickupTime = scholar.pickUpSchedule[day];
     if (this.isSlotScheduled(scholar, slot, day)) {
@@ -130,12 +122,10 @@ export class GanttChartComponent implements OnInit {
     return '';
   }
 
-  // Check if a time slot is occupied
   isTimeOccupied(scholar: Scholar, slot: TimeSlot, day: WeekDays): boolean {
     return this.isSlotScheduled(scholar, slot, day);
   }
 
-  // Format day titles
   formatDayTitle(day: string): string {
     return day.charAt(0).toUpperCase() + day.slice(1);
   }

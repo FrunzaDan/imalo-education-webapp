@@ -1,0 +1,52 @@
+/* General table styling */
+.scholar-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 20px 0;
+  font-family: Arial, sans-serif;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Table header styling */
+.table-header {
+  background-color: #165b59;
+  color: white;
+  padding: 12px 15px;
+  text-align: left;
+  font-weight: bold;
+}
+
+/* Table row styling */
+.table-row {
+  background-color: #f9f9f9;
+  border-bottom: 1px solid #ddd;
+}
+
+.table-row:hover {
+  background-color: #f1f1f1;
+}
+
+/* Table cell styling */
+.table-cell {
+  padding: 10px 15px;
+  text-align: left;
+}
+
+/* Alternate row coloring */
+.table-row:nth-child(even) {
+  background-color: #f2f2f2;
+}
+
+/* Optional: Make table responsive */
+@media screen and (max-width: 600px) {
+  .scholar-table {
+    width: 100%;
+    font-size: 14px;
+  }
+  .table-header,
+  .table-cell {
+    padding: 10px;
+  }
+}

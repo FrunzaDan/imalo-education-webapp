@@ -1,0 +1,14 @@
+<table class="scholar-table">
+  <thead>
+    <tr>
+      <th class="table-header">Student Name</th>
+      <th class="table-header">School</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr *ngFor="let scholar of scholarData" class="table-row">
+      <td class="table-cell">{{ scholar.name }}</td>
+      <td class="table-cell">{{ scholar.schoolName }}</td>
+    </tr>
+  </tbody>
+</table>
