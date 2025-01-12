@@ -1,10 +1,12 @@
 import { Component, OnInit } from '@angular/core';
-import { forkJoin } from 'rxjs';
+
 import { ScholarsService } from '../../services/scholars.service';
 import { SchoolsService } from '../../services/schools.service';
+import { SortingService } from '../../services/sorting.service';
 import { Scholar } from '../../interfaces/scholar';
 import { School } from '../../interfaces/school';
 import { CommonModule } from '@angular/common';
+import { forkJoin } from 'rxjs/internal/observable/forkJoin';
 
 @Component({
   imports: [CommonModule],
@@ -23,9 +25,13 @@ export class ScholarTableComponent implements OnInit {
     birthDate: string;
   }[] = [];
 
+  currentSortColumn: string = '';
+  isAscending: boolean = true;
+
   constructor(
     private scholarsService: ScholarsService,
-    private schoolsService: SchoolsService
+    private schoolsService: SchoolsService,
+    private sortingService: SortingService
   ) {}
 
   ngOnInit(): void {
@@ -53,10 +59,30 @@ export class ScholarTableComponent implements OnInit {
         name: `${scholar.firstName} ${scholar.lastName}`,
         schoolName: school ? school.name : 'Unknown',
         grade: scholar.grade,
-        schoolColor: school ? school.color : '#FFFFFF', // Default to white if no color
-        birthDate: new Date(scholar.birthDate).toLocaleDateString(), // Format the birthdate for display
+        schoolColor: school ? school.color : '#FFFFFF',
+        birthDate: new Date(scholar.birthDate).toLocaleDateString('en-GB', {
+          day: '2-digit',
+          month: 'short',
+          year: 'numeric',
+        }),
       };
     });
+  }
+
+  sortData(column: string, type: 'string' | 'number' | 'date'): void {
+    if (this.currentSortColumn === column) {
+      this.isAscending = !this.isAscending;
+    } else {
+      this.currentSortColumn = column;
+      this.isAscending = true;
+    }
+
+    this.scholarData = this.sortingService.sort(
+      this.scholarData,
+      column as keyof (typeof this.scholarData)[0],
+      type,
+      this.isAscending
+    );
   }
 
   getTextColor(backgroundColor: string): string {

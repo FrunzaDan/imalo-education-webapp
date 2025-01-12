@@ -1,10 +1,57 @@
 <table class="scholar-table">
   <thead>
     <tr>
-      <th class="table-header">Student Name</th>
-      <th class="table-header">School</th>
-      <th class="table-header">Grade</th>
-      <th class="table-header">Birth Date</th>
+      <th class="table-header sortable" (click)="sortData('name', 'string')">
+        Student Name
+        <span class="sort-icon">
+          <span [class.active]="currentSortColumn === 'name' && isAscending"
+            >↑</span
+          >
+          <span [class.active]="currentSortColumn === 'name' && !isAscending"
+            >↓</span
+          >
+        </span>
+      </th>
+      <th
+        class="table-header sortable"
+        (click)="sortData('schoolName', 'string')"
+      >
+        School
+        <span class="sort-icon">
+          <span
+            [class.active]="currentSortColumn === 'schoolName' && isAscending"
+            >↑</span
+          >
+          <span
+            [class.active]="currentSortColumn === 'schoolName' && !isAscending"
+            >↓</span
+          >
+        </span>
+      </th>
+      <th class="table-header sortable" (click)="sortData('grade', 'number')">
+        Grade
+        <span class="sort-icon">
+          <span [class.active]="currentSortColumn === 'grade' && isAscending"
+            >↑</span
+          >
+          <span [class.active]="currentSortColumn === 'grade' && !isAscending"
+            >↓</span
+          >
+        </span>
+      </th>
+      <th class="table-header sortable" (click)="sortData('birthDate', 'date')">
+        Birth Date
+        <span class="sort-icon">
+          <span
+            [class.active]="currentSortColumn === 'birthDate' && isAscending"
+            >↑</span
+          >
+          <span
+            [class.active]="currentSortColumn === 'birthDate' && !isAscending"
+            >↓</span
+          >
+        </span>
+      </th>
     </tr>
   </thead>
   <tbody>
