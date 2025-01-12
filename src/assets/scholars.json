@@ -8,7 +8,9 @@
       "thursday": "12:15",
       "friday": "11:00"
     },
-    "schoolId": "1"
+    "schoolId": "1",
+    "grade": 2,
+    "birthDate": "2010-08-15"
   },
   {
     "firstName": "Lea",
@@ -19,7 +21,9 @@
       "thursday": "12:45",
       "friday": "11:30"
     },
-    "schoolId": "2"
+    "schoolId": "2",
+    "grade": 2,
+    "birthDate": "2010-08-15"
   },
   {
     "firstName": "Alex",
@@ -30,7 +34,8 @@
       "thursday": "12:00",
       "friday": "11:15"
     },
-    "schoolId": "3"
+    "schoolId": "3",
+    "grade": 3
   },
   {
     "firstName": "Martha",
@@ -41,7 +46,8 @@
       "thursday": "12:30",
       "friday": "11:45"
     },
-    "schoolId": "4"
+    "schoolId": "4",
+    "grade": 1
   },
   {
     "firstName": "Ethan",
@@ -52,7 +58,8 @@
       "thursday": "12:00",
       "friday": "12:15"
     },
-    "schoolId": "1"
+    "schoolId": "1",
+    "grade": 3
   },
   {
     "firstName": "Olivia",
@@ -63,7 +70,8 @@
       "thursday": "13:00",
       "friday": "13:15"
     },
-    "schoolId": "2"
+    "schoolId": "2",
+    "grade": 3
   },
   {
     "firstName": "Liam",
@@ -74,7 +82,8 @@
       "thursday": "12:15",
       "friday": "12:00"
     },
-    "schoolId": "3"
+    "schoolId": "3",
+    "grade": 2
   },
   {
     "firstName": "Isabella",
@@ -85,7 +94,8 @@
       "thursday": "11:45",
       "friday": "12:30"
     },
-    "schoolId": "4"
+    "schoolId": "4",
+    "grade": 3
   },
   {
     "firstName": "Noah",
@@ -96,7 +106,8 @@
       "thursday": "13:15",
       "friday": "11:15"
     },
-    "schoolId": "1"
+    "schoolId": "1",
+    "grade": 2
   },
   {
     "firstName": "Maria",
@@ -107,6 +118,7 @@
       "thursday": "12:30",
       "friday": "13:30"
     },
-    "schoolId": "2"
+    "schoolId": "2",
+    "grade": 1
   }
 ]

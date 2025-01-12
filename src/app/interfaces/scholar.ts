@@ -5,4 +5,6 @@ export interface Scholar {
   lastName: string;
   pickUpSchedule: PickUpSchedule;
   schoolId: string;
+  grade: number;
+  birthDate: Date;
 }

@@ -15,7 +15,13 @@ import { CommonModule } from '@angular/common';
 export class ScholarTableComponent implements OnInit {
   scholars: Scholar[] = [];
   schools: Map<string, School> = new Map();
-  scholarData: { name: string; schoolName: string }[] = [];
+  scholarData: {
+    name: string;
+    schoolName: string;
+    grade: number;
+    schoolColor: string;
+    birthDate: string;
+  }[] = [];
 
   constructor(
     private scholarsService: ScholarsService,
@@ -46,7 +52,19 @@ export class ScholarTableComponent implements OnInit {
       return {
         name: `${scholar.firstName} ${scholar.lastName}`,
         schoolName: school ? school.name : 'Unknown',
+        grade: scholar.grade,
+        schoolColor: school ? school.color : '#FFFFFF', // Default to white if no color
+        birthDate: new Date(scholar.birthDate).toLocaleDateString(), // Format the birthdate for display
       };
     });
+  }
+
+  getTextColor(backgroundColor: string): string {
+    const hex = backgroundColor.replace('#', '');
+    const r = parseInt(hex.substring(0, 2), 16);
+    const g = parseInt(hex.substring(2, 4), 16);
+    const b = parseInt(hex.substring(4, 6), 16);
+    const brightness = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+    return brightness < 128 ? 'white' : 'black';
   }
 }

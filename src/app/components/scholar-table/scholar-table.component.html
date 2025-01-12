@@ -3,12 +3,24 @@
     <tr>
       <th class="table-header">Student Name</th>
       <th class="table-header">School</th>
+      <th class="table-header">Grade</th>
+      <th class="table-header">Birth Date</th>
     </tr>
   </thead>
   <tbody>
     <tr *ngFor="let scholar of scholarData" class="table-row">
       <td class="table-cell">{{ scholar.name }}</td>
-      <td class="table-cell">{{ scholar.schoolName }}</td>
+      <td
+        class="table-cell"
+        [ngStyle]="{
+          'background-color': scholar.schoolColor,
+          color: getTextColor(scholar.schoolColor)
+        }"
+      >
+        {{ scholar.schoolName }}
+      </td>
+      <td class="table-cell">{{ scholar.grade }}</td>
+      <td class="table-cell">{{ scholar.birthDate }}</td>
     </tr>
   </tbody>
 </table>
