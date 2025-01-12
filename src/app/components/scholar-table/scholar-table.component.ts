@@ -1,12 +1,12 @@
 import { Component, OnInit } from '@angular/core';
-
 import { ScholarsService } from '../../services/scholars.service';
 import { SchoolsService } from '../../services/schools.service';
 import { SortingService } from '../../services/sorting.service';
 import { Scholar } from '../../interfaces/scholar';
 import { School } from '../../interfaces/school';
 import { CommonModule } from '@angular/common';
-import { forkJoin } from 'rxjs/internal/observable/forkJoin';
+import { forkJoin } from 'rxjs';
+import { map, switchMap } from 'rxjs/operators';
 
 @Component({
   imports: [CommonModule],
@@ -23,6 +23,7 @@ export class ScholarTableComponent implements OnInit {
     grade: number;
     schoolColor: string;
     birthDate: string;
+    textColor: string;
   }[] = [];
 
   currentSortColumn: string = '';
@@ -42,29 +43,47 @@ export class ScholarTableComponent implements OnInit {
     forkJoin({
       scholars: this.scholarsService.getScholars(),
       schools: this.schoolsService.getSchools(),
-    }).subscribe(({ scholars, schools }) => {
-      this.scholars = scholars;
-      this.schools = new Map(
-        schools.map((school) => [school.id.toString(), school])
-      );
-      this.mergeScholarData();
-    });
+    })
+      .pipe(
+        map(({ scholars, schools }) => {
+          this.schools = new Map(
+            schools.map((school) => [school.id.toString(), school])
+          );
+          return scholars;
+        }),
+        switchMap((scholars) => {
+          this.scholarData = this.transformScholarData(scholars);
+          return [];
+        })
+      )
+      .subscribe();
   }
 
-  private mergeScholarData(): void {
-    this.scholarData = this.scholars.map((scholar) => {
+  private transformScholarData(scholars: Scholar[]): {
+    name: string;
+    schoolName: string;
+    grade: number;
+    schoolColor: string;
+    birthDate: string;
+    textColor: string;
+  }[] {
+    return scholars.map((scholar) => {
       const school = this.schools.get(scholar.schoolId.toString());
+      const schoolName = school ? school.name : 'Unknown';
+      const schoolColor = school ? school.color : '#FFFFFF';
+      const textColor = this.getTextColor(schoolColor);
 
       return {
         name: `${scholar.firstName} ${scholar.lastName}`,
-        schoolName: school ? school.name : 'Unknown',
+        schoolName,
         grade: scholar.grade,
-        schoolColor: school ? school.color : '#FFFFFF',
+        schoolColor,
         birthDate: new Date(scholar.birthDate).toLocaleDateString('en-GB', {
           day: '2-digit',
           month: 'short',
           year: 'numeric',
         }),
+        textColor,
       };
     });
   }

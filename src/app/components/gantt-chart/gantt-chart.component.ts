@@ -6,7 +6,8 @@ import { School } from '../../interfaces/school';
 import { ScholarsService } from '../../services/scholars.service';
 import { SchoolsService } from '../../services/schools.service';
 import { WeekDays } from '../../constants/week-days';
-import { forkJoin } from 'rxjs/internal/observable/forkJoin';
+import { forkJoin } from 'rxjs';
+import { map } from 'rxjs/operators';
 
 @Component({
   selector: 'app-gantt-chart',
@@ -19,7 +20,7 @@ export class GanttChartComponent implements OnInit {
   scholars: Scholar[] = [];
   schools: Map<string, School> = new Map();
   timeSlots: TimeSlot[] = [];
-  weekDays = Object.values(WeekDays);
+  weekDays = Object.values(WeekDays); // Explicitly define weekDays here
   private readonly SLOT_DURATION = 30;
 
   constructor(
@@ -40,12 +41,16 @@ export class GanttChartComponent implements OnInit {
     forkJoin({
       scholars: this.scholarsService.getScholars(),
       schools: this.schoolsService.getSchools(),
-    }).subscribe(({ scholars, schools }) => {
-      this.scholars = scholars;
-      this.schools = new Map(
-        schools.map((school) => [school.id.toString(), school])
-      );
-    });
+    })
+      .pipe(
+        map(({ scholars, schools }) => {
+          this.schools = new Map(
+            schools.map((school) => [school.id.toString(), school])
+          );
+          return scholars;
+        })
+      )
+      .subscribe((scholars) => (this.scholars = scholars));
   }
 
   private generateTimeSlots(
@@ -67,13 +72,11 @@ export class GanttChartComponent implements OnInit {
     return `${hours}:${minutes.toString().padStart(2, '0')}`;
   }
 
-  // Convert time string to total minutes
   private timeToMinutes(time: string): number {
     const [hours, minutes] = time.split(':').map(Number);
     return hours * 60 + minutes;
   }
 
-  // Convert total minutes to time string
   private minutesToTime(minutes: number): string {
     const hours = Math.floor(minutes / 60);
     const mins = minutes % 60;
