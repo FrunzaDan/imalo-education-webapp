@@ -4,31 +4,70 @@
     Attendance for {{ scholar.firstName }} {{ scholar.lastName }}
   </h2>
 
+  <div class="controls">
+    <label for="monthSelect">Select Month:</label>
+    <select id="monthSelect" [(ngModel)]="selectedMonth">
+      @for (month of availableMonths; track month) {
+      <option [value]="month">{{ month }}</option>
+      }
+    </select>
+  </div>
+
   <table class="attendance-table">
     <thead>
       <tr>
+        <th>Lunch</th>
+        <th>Transport</th>
+        <th>Both</th>
         <th>Date</th>
         <th>Lunch Cost</th>
         <th>Transport Cost</th>
       </tr>
     </thead>
     <tbody>
-      @for (record of attendance; track record) {
+      @for (record of filteredAttendance(); track record) {
       <tr>
+        <td>
+          <input
+            type="checkbox"
+            [(ngModel)]="record.selectedLunch"
+            (change)="syncSelection(record, 'lunch')"
+          />
+        </td>
+        <td>
+          <input
+            type="checkbox"
+            [(ngModel)]="record.selectedTransport"
+            (change)="syncSelection(record, 'transport')"
+          />
+        </td>
+        <td>
+          <input
+            type="checkbox"
+            [checked]="record.selectedLunch && record.selectedTransport"
+            (change)="syncSelection(record, 'both', $event)"
+          />
+        </td>
         <td>{{ record.date | date : 'longDate' }}</td>
-        <td>{{ record.lunchCost | currency }}</td>
-        <td>{{ record.transportCost | currency }}</td>
+        <td>{{ record.lunchCost | currency : 'RON' : 'symbol' : '1.2-2' }}</td>
+        <td>
+          {{ record.transportCost | currency : 'RON' : 'symbol' : '1.2-2' }}
+        </td>
       </tr>
       }
     </tbody>
     <tfoot>
       <tr class="total-row">
-        <td><strong>Total</strong></td>
+        <td colspan="4"><strong>Total (Selected)</strong></td>
         <td>
-          <strong>{{ totalLunchCost | currency }}</strong>
+          <strong>{{
+            selectedLunchTotal | currency : 'RON' : 'symbol' : '1.2-2'
+          }}</strong>
         </td>
         <td>
-          <strong>{{ totalTransportCost | currency }}</strong>
+          <strong>{{
+            selectedTransportTotal | currency : 'RON' : 'symbol' : '1.2-2'
+          }}</strong>
         </td>
       </tr>
     </tfoot>
