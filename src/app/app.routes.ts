@@ -3,6 +3,7 @@ import { ScholarTableComponent } from './components/scholar-table/scholar-table.
 import { GanttChartComponent } from './components/gantt-chart/gantt-chart.component';
 import { AttendanceComponent } from './components/attendance/attendance.component';
 import { ScholarDetailComponent } from './components/scholar-detail/scholar-detail.component';
+import { AttendancePerScholarComponent } from './components/attendance-per-scholar/attendance-per-scholar.component';
 
 export const routes: Routes = [
   { path: '', component: ScholarTableComponent },
@@ -10,4 +11,5 @@ export const routes: Routes = [
   { path: 'scholars/:id', component: ScholarDetailComponent },
   { path: 'pickup-time', component: GanttChartComponent },
   { path: 'attendance', component: AttendanceComponent },
+  { path: 'attendance/:id', component: AttendancePerScholarComponent },
 ];

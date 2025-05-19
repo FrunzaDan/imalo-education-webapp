@@ -1,24 +1,26 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, RouterModule } from '@angular/router';
 import { ScholarsService } from '../../services/scholars.service';
 import { SchoolsService } from '../../services/schools.service';
 import { Scholar } from '../../interfaces/scholar';
 import { School } from '../../interfaces/school';
-import { WeekDays } from '../../constants/week-days'; // adjust path as needed
+import { WeekDays } from '../../constants/week-days';
 import { PickUpSchedule } from '../../interfaces/pick-up-schedule';
+import { switchMap, map, filter, tap } from 'rxjs/operators';
+import { of } from 'rxjs';
 
 @Component({
   selector: 'app-scholar-detail',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, RouterModule],
   templateUrl: './scholar-detail.component.html',
   styleUrls: ['./scholar-detail.component.css'],
 })
 export class ScholarDetailComponent implements OnInit {
-  private route = inject(ActivatedRoute);
-  private scholarsService = inject(ScholarsService);
-  private schoolsService = inject(SchoolsService);
+  private readonly route = inject(ActivatedRoute);
+  private readonly scholarsService = inject(ScholarsService);
+  private readonly schoolsService = inject(SchoolsService);
 
   scholar: Scholar | null = null;
   school: School | null = null;
@@ -26,20 +28,29 @@ export class ScholarDetailComponent implements OnInit {
   daysOfWeek: (keyof PickUpSchedule)[] = Object.values(WeekDays);
 
   ngOnInit(): void {
-    const id = this.route.snapshot.paramMap.get('id');
-    if (!id) return;
-
-    this.scholarsService.getScholars().subscribe((scholars) => {
-      this.scholar = scholars.find((s) => s.id === id) || null;
-
-      if (this.scholar) {
-        this.schoolsService.getSchools().subscribe((schools) => {
-          this.school =
-            schools.find(
-              (school) => school.id.toString() === this.scholar!.schoolId,
-            ) || null;
-        });
-      }
-    });
+    this.route.paramMap
+      .pipe(
+        map((params) => params.get('id')),
+        filter((id): id is string => id !== null), // narrow type to string
+        switchMap((id) =>
+          this.scholarsService.getScholars().pipe(
+            map((scholars) => scholars.find((s) => s.id === id) || null),
+            tap((scholar) => (this.scholar = scholar)),
+            switchMap((scholar) => {
+              if (!scholar) return of(null);
+              return this.schoolsService.getSchools().pipe(
+                map(
+                  (schools) =>
+                    schools.find(
+                      (school) => school.id.toString() === scholar.schoolId,
+                    ) || null,
+                ),
+                tap((school) => (this.school = school)),
+              );
+            }),
+          ),
+        ),
+      )
+      .subscribe();
   }
 }

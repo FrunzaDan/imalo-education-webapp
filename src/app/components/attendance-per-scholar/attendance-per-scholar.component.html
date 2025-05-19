@@ -1,0 +1,39 @@
+@if (scholar) {
+<div class="attendance-container">
+  <h2 class="title">
+    Attendance for {{ scholar.firstName }} {{ scholar.lastName }}
+  </h2>
+
+  <table class="attendance-table">
+    <thead>
+      <tr>
+        <th>Date</th>
+        <th>Lunch Cost</th>
+        <th>Transport Cost</th>
+      </tr>
+    </thead>
+    <tbody>
+      @for (record of attendance; track record) {
+      <tr>
+        <td>{{ record.date | date : 'longDate' }}</td>
+        <td>{{ record.lunchCost | currency }}</td>
+        <td>{{ record.transportCost | currency }}</td>
+      </tr>
+      }
+    </tbody>
+    <tfoot>
+      <tr class="total-row">
+        <td><strong>Total</strong></td>
+        <td>
+          <strong>{{ totalLunchCost | currency }}</strong>
+        </td>
+        <td>
+          <strong>{{ totalTransportCost | currency }}</strong>
+        </td>
+      </tr>
+    </tfoot>
+  </table>
+</div>
+} @if (!scholar) {
+<div class="loading">Loading attendance...</div>
+}
