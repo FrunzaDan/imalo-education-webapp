@@ -7,9 +7,10 @@ import { School } from '../../interfaces/school';
 import { CommonModule } from '@angular/common';
 import { forkJoin } from 'rxjs';
 import { map, switchMap } from 'rxjs/operators';
+import { RouterModule } from '@angular/router';
 
 @Component({
-  imports: [CommonModule],
+  imports: [CommonModule, RouterModule],
   selector: 'app-scholar-table',
   templateUrl: './scholar-table.component.html',
   styleUrls: ['./scholar-table.component.css'],
@@ -18,6 +19,7 @@ export class ScholarTableComponent implements OnInit {
   scholars: Scholar[] = [];
   schools: Map<string, School> = new Map();
   scholarData: {
+    id: string;
     name: string;
     schoolName: string;
     grade: number;
@@ -32,7 +34,7 @@ export class ScholarTableComponent implements OnInit {
   constructor(
     private scholarsService: ScholarsService,
     private schoolsService: SchoolsService,
-    private sortingService: SortingService
+    private sortingService: SortingService,
   ) {}
 
   ngOnInit(): void {
@@ -47,19 +49,20 @@ export class ScholarTableComponent implements OnInit {
       .pipe(
         map(({ scholars, schools }) => {
           this.schools = new Map(
-            schools.map((school) => [school.id.toString(), school])
+            schools.map((school) => [school.id.toString(), school]),
           );
           return scholars;
         }),
         switchMap((scholars) => {
           this.scholarData = this.transformScholarData(scholars);
           return [];
-        })
+        }),
       )
       .subscribe();
   }
 
   private transformScholarData(scholars: Scholar[]): {
+    id: string;
     name: string;
     schoolName: string;
     grade: number;
@@ -74,6 +77,7 @@ export class ScholarTableComponent implements OnInit {
       const textColor = this.getTextColor(schoolColor);
 
       return {
+        id: scholar.id,
         name: `${scholar.firstName} ${scholar.lastName}`,
         schoolName,
         grade: scholar.grade,
@@ -100,7 +104,7 @@ export class ScholarTableComponent implements OnInit {
       this.scholarData,
       column as keyof (typeof this.scholarData)[0],
       type,
-      this.isAscending
+      this.isAscending,
     );
   }
 

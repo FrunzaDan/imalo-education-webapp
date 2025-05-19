@@ -1,0 +1,40 @@
+.scholar-detail-container {
+  max-width: 600px;
+  margin: 2rem auto;
+  padding: 1.5rem;
+  border-radius: 1rem;
+  background-color: #f9f9f9;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
+}
+
+h2 {
+  text-align: center;
+  margin-bottom: 1rem;
+}
+
+.detail-card p {
+  margin: 0.5rem 0;
+}
+
+.pickup-schedule {
+  margin-top: 2rem;
+}
+
+.pickup-schedule table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.pickup-schedule th,
+.pickup-schedule td {
+  padding: 0.5rem;
+  border: 1px solid #ccc;
+  text-align: left;
+}
+
+.loading {
+  text-align: center;
+  margin-top: 2rem;
+  font-style: italic;
+  color: #666;
+}

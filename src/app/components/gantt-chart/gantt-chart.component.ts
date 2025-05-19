@@ -21,7 +21,7 @@ export class GanttChartComponent implements OnInit {
   schools: Map<string, School> = new Map();
   timeSlots: TimeSlot[] = [];
   weekDays = Object.values(WeekDays); // Explicitly define weekDays here
-  private readonly SLOT_DURATION = 30;
+  private readonly SLOT_DURATION = 10;
 
   constructor(
     private scholarsService: ScholarsService,
@@ -34,7 +34,7 @@ export class GanttChartComponent implements OnInit {
   }
 
   private initializeTimeSlots(): void {
-    this.timeSlots = this.generateTimeSlots(11, 15, 15);
+    this.timeSlots = this.generateTimeSlots(11, 14, 15);
   }
 
   private loadData(): void {
@@ -106,9 +106,12 @@ export class GanttChartComponent implements OnInit {
   ): Record<string, string> {
     if (this.isSlotScheduled(scholar, slot, day)) {
       const school = this.schools.get(scholar.schoolId.toString());
+
+      const columnsSpan = Math.ceil(this.SLOT_DURATION / 15);
+
       return {
         backgroundColor: school?.color || '#gray',
-        gridColumn: 'span 2',
+        gridColumn: `span ${columnsSpan}`,
       };
     }
     return {};

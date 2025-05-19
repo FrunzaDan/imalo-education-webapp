@@ -55,7 +55,12 @@
     </tr>
   </thead>
   <tbody>
-    <tr *ngFor="let scholar of scholarData" class="table-row">
+    @for (scholar of scholarData; track scholar.id) {
+    <tr
+      class="table-row"
+      [routerLink]="['/scholars', scholar.id]"
+      style="cursor: pointer"
+    >
       <td class="table-cell">{{ scholar.name }}</td>
       <td
         class="table-cell"
@@ -69,5 +74,6 @@
       <td class="table-cell">{{ scholar.grade }}</td>
       <td class="table-cell">{{ scholar.birthDate }}</td>
     </tr>
+    }
   </tbody>
 </table>
