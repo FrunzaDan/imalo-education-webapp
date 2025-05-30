@@ -30,27 +30,46 @@ export class ScholarDetailComponent implements OnInit {
   ngOnInit(): void {
     this.route.paramMap
       .pipe(
-        map((params) => params.get('id')),
-        filter((id): id is string => id !== null), // narrow type to string
-        switchMap((id) =>
-          this.scholarsService.getScholars().pipe(
-            map((scholars) => scholars.find((s) => s.id === id) || null),
-            tap((scholar) => (this.scholar = scholar)),
-            switchMap((scholar) => {
-              if (!scholar) return of(null);
-              return this.schoolsService.getSchools().pipe(
-                map(
-                  (schools) =>
-                    schools.find(
-                      (school) => school.id.toString() === scholar.schoolId,
-                    ) || null,
-                ),
-                tap((school) => (this.school = school)),
-              );
-            }),
-          ),
-        ),
+        // Get the 'id' parameter from the URL
+        switchMap((params) => {
+          const scholarId = params.get('id');
+          if (!scholarId) {
+            console.error('Scholar ID not found in route parameters.');
+            return of(null); // Return observable of null if no ID
+          }
+          // Use the new getScholarById method
+          return this.scholarsService.getScholarById(scholarId);
+        }),
+        tap((scholar) => {
+          this.scholar = scholar; // Assign the fetched scholar
+          if (!scholar) {
+            console.warn('Scholar not found for the given ID.');
+          }
+        }),
+        // Now, if a scholar was found, fetch their school
+        switchMap((scholar) => {
+          if (!scholar) {
+            return of(null); // If no scholar, no school to fetch
+          }
+          // Fetch all schools, then find the one matching the scholar's schoolId
+          return this.schoolsService.getSchools().pipe(
+            map(
+              (schools) =>
+                schools.find(
+                  (school) => school.id.toString() === scholar.schoolId, // Ensure ID types match
+                ) || null,
+            ),
+          );
+        }),
+        tap((school) => {
+          this.school = school; // Assign the fetched school
+          if (!school && this.scholar) {
+            console.warn(
+              `School with ID ${this.scholar.schoolId} not found for scholar ${this.scholar.firstName} ${this.scholar.lastName}.`,
+            );
+          }
+        }),
       )
-      .subscribe();
+      .subscribe(); // Subscribe to kick off the observable chain
   }
 }
