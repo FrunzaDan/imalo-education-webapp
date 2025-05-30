@@ -1,0 +1,115 @@
+[
+  {
+    "scholarId": "a1f71a80-9c4f-4e91-8d62-b5a64b305f1a",
+    "attendance": [
+      { "date": "2024-09-02", "lunchCost": 5.0, "transportCost": 3.0 },
+      { "date": "2024-09-03", "lunchCost": 5.0, "transportCost": 3.0 },
+      { "date": "2024-09-04", "lunchCost": 0.0, "transportCost": 3.0 },
+      { "date": "2024-09-05", "lunchCost": 5.0, "transportCost": 0.0 },
+      { "date": "2024-09-06", "lunchCost": 5.0, "transportCost": 3.0 },
+      { "date": "2024-09-09", "lunchCost": 5.0, "transportCost": 3.0 },
+      { "date": "2024-09-10", "lunchCost": 5.0, "transportCost": 3.0 },
+      { "date": "2024-09-11", "lunchCost": 0.0, "transportCost": 3.0 },
+      { "date": "2024-09-12", "lunchCost": 5.0, "transportCost": 0.0 },
+      { "date": "2024-09-13", "lunchCost": 5.0, "transportCost": 3.0 },
+      { "date": "2024-10-01", "lunchCost": 5.0, "transportCost": 3.0 },
+      { "date": "2024-10-02", "lunchCost": 6.0, "transportCost": 4.0 },
+      { "date": "2024-10-03", "lunchCost": 6.0, "transportCost": 4.0 },
+      { "date": "2024-10-04", "lunchCost": 6.0, "transportCost": 0.0 },
+      { "date": "2024-10-07", "lunchCost": 0.0, "transportCost": 4.0 }
+    ]
+  },
+  {
+    "scholarId": "c34816e9-5150-42bb-9c14-3bb6e6e098b1",
+    "attendance": [
+      { "date": "2024-09-02", "lunchCost": 5.0, "transportCost": 3.0 },
+      { "date": "2024-09-03", "lunchCost": 5.0, "transportCost": 3.0 },
+      { "date": "2024-09-04", "lunchCost": 5.0, "transportCost": 3.0 },
+      { "date": "2024-09-05", "lunchCost": 0.0, "transportCost": 3.0 },
+      { "date": "2024-09-06", "lunchCost": 5.0, "transportCost": 0.0 },
+      { "date": "2024-10-01", "lunchCost": 6.0, "transportCost": 3.5 },
+      { "date": "2024-10-02", "lunchCost": 6.0, "transportCost": 3.5 },
+      { "date": "2024-10-03", "lunchCost": 0.0, "transportCost": 3.5 }
+    ]
+  },
+  {
+    "scholarId": "5b12c482-c02b-4b8b-b0e5-90c426bd4f76",
+    "attendance": [
+      { "date": "2024-09-01", "lunchCost": 5.0, "transportCost": 3.0 },
+      { "date": "2024-09-02", "lunchCost": 0.0, "transportCost": 3.0 },
+      { "date": "2024-09-03", "lunchCost": 5.0, "transportCost": 3.0 },
+      { "date": "2024-09-04", "lunchCost": 5.0, "transportCost": 0.0 },
+      { "date": "2024-09-05", "lunchCost": 5.0, "transportCost": 3.0 },
+      { "date": "2024-10-05", "lunchCost": 5.0, "transportCost": 3.0 },
+      { "date": "2024-10-06", "lunchCost": 5.0, "transportCost": 3.0 }
+    ]
+  },
+  {
+    "scholarId": "bc062964-9d1e-4f3c-a062-9d9debe8b9b2",
+    "attendance": [
+      { "date": "2024-09-01", "lunchCost": 5.0, "transportCost": 3.0 },
+      { "date": "2024-09-02", "lunchCost": 5.0, "transportCost": 3.0 },
+      { "date": "2024-09-03", "lunchCost": 5.0, "transportCost": 0.0 },
+      { "date": "2024-09-04", "lunchCost": 0.0, "transportCost": 3.0 },
+      { "date": "2024-09-05", "lunchCost": 5.0, "transportCost": 3.0 },
+      { "date": "2024-10-01", "lunchCost": 5.0, "transportCost": 3.0 },
+      { "date": "2024-10-02", "lunchCost": 5.0, "transportCost": 3.0 }
+    ]
+  },
+  {
+    "scholarId": "88ee3e4c-dfea-4f34-bb2f-28dbe029e302",
+    "attendance": [
+      { "date": "2024-09-01", "lunchCost": 5.0, "transportCost": 3.0 },
+      { "date": "2024-09-02", "lunchCost": 5.0, "transportCost": 3.0 },
+      { "date": "2024-09-03", "lunchCost": 5.0, "transportCost": 3.0 },
+      { "date": "2024-10-01", "lunchCost": 5.0, "transportCost": 3.0 },
+      { "date": "2024-10-02", "lunchCost": 6.0, "transportCost": 3.5 }
+    ]
+  },
+  {
+    "scholarId": "dcb5cb3d-13ec-48f2-b8b3-0591548ab7f1",
+    "attendance": [
+      { "date": "2024-09-01", "lunchCost": 5.0, "transportCost": 3.0 },
+      { "date": "2024-09-02", "lunchCost": 5.0, "transportCost": 3.0 },
+      { "date": "2024-09-03", "lunchCost": 5.0, "transportCost": 3.0 },
+      { "date": "2024-10-01", "lunchCost": 5.0, "transportCost": 3.0 },
+      { "date": "2024-10-02", "lunchCost": 6.0, "transportCost": 4.0 }
+    ]
+  },
+  {
+    "scholarId": "f740e44f-49b7-4a41-a316-9c9303e9948e",
+    "attendance": [
+      { "date": "2024-09-01", "lunchCost": 5.0, "transportCost": 3.0 },
+      { "date": "2024-09-02", "lunchCost": 5.0, "transportCost": 3.0 },
+      { "date": "2024-10-01", "lunchCost": 5.5, "transportCost": 3.0 },
+      { "date": "2024-10-02", "lunchCost": 5.5, "transportCost": 3.5 }
+    ]
+  },
+  {
+    "scholarId": "a10f3675-7771-4947-813b-24f6b3f5d86f",
+    "attendance": [
+      { "date": "2024-09-01", "lunchCost": 5.0, "transportCost": 3.0 },
+      { "date": "2024-09-02", "lunchCost": 5.0, "transportCost": 3.0 },
+      { "date": "2024-10-01", "lunchCost": 6.0, "transportCost": 4.0 },
+      { "date": "2024-10-02", "lunchCost": 6.0, "transportCost": 4.0 }
+    ]
+  },
+  {
+    "scholarId": "2be6a703-fd45-4327-a0cf-274ef86c5cf7",
+    "attendance": [
+      { "date": "2024-09-01", "lunchCost": 5.0, "transportCost": 3.0 },
+      { "date": "2024-09-02", "lunchCost": 5.0, "transportCost": 3.0 },
+      { "date": "2024-10-01", "lunchCost": 5.0, "transportCost": 3.0 },
+      { "date": "2024-10-02", "lunchCost": 5.0, "transportCost": 3.0 }
+    ]
+  },
+  {
+    "scholarId": "ec7a607b-76f7-4eb0-8a55-389216542e25",
+    "attendance": [
+      { "date": "2024-09-01", "lunchCost": 5.0, "transportCost": 3.0 },
+      { "date": "2024-09-02", "lunchCost": 5.0, "transportCost": 3.0 },
+      { "date": "2024-10-01", "lunchCost": 5.0, "transportCost": 3.0 },
+      { "date": "2024-10-02", "lunchCost": 5.0, "transportCost": 3.0 }
+    ]
+  }
+]

@@ -1,37 +1,39 @@
 @if (scholar) {
-  <div class="scholar-detail-container">
-    <h2>{{ scholar.firstName }} {{ scholar.lastName }}</h2>
-    <div class="detail-card">
-      <p><strong>Grade:</strong> {{ scholar.grade }}</p>
-      <p>
-        <strong>Birth Date:</strong> {{ scholar.birthDate | date : 'longDate' }}
-      </p>
-      <p><strong>School:</strong> {{ school?.name || 'Unknown' }}</p>
-    </div>
-    <div class="pickup-schedule">
-      <h3>Pick-Up Schedule</h3>
-      <table>
-        <thead>
-          <tr>
-            <th>Day</th>
-            <th>Time</th>
-          </tr>
-        </thead>
-        <tbody>
-          @for (day of daysOfWeek; track day) {
-            <tr>
-              <td>{{ day | titlecase }}</td>
-              <td>{{ scholar.pickUpSchedule[day] }}</td>
-            </tr>
-          }
-        </tbody>
-      </table>
-    </div>
+<div class="scholar-detail-container">
+  <h2>{{ scholar.firstName }} {{ scholar.lastName }}</h2>
+  <div class="detail-card">
+    <p><strong>Grade:</strong> {{ scholar.grade }}</p>
+    <p>
+      <strong>Birth Date:</strong> {{ scholar.birthDate | date : 'longDate' }}
+    </p>
+    <p><strong>School:</strong> {{ school?.name || 'Unknown' }}</p>
   </div>
+  <div class="pickup-schedule">
+    <h3>Pick-Up Schedule</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Day</th>
+          <th>Time</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (day of daysOfWeek; track day) {
+        <tr>
+          <td>{{ day | titlecase }}</td>
+          <td>{{ scholar.pickUpSchedule[day] }}</td>
+        </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+</div>
 }
 
-<button [routerLink]="['/attendance', scholar?.id]">View Attendance</button>
+<button [routerLink]="['/attendance', scholar?.id]" class="app-button">
+  View Attendance
+</button>
 
 @if (!scholar) {
-  <div class="loading">Loading scholar details...</div>
+<div class="loading">Loading scholar details...</div>
 }

@@ -16,20 +16,98 @@ h2 {
   margin: 0.5rem 0;
 }
 
+.loading {
+  text-align: center;
+  margin-top: 2rem;
+  font-style: italic;
+  color: #666;
+}
+
+/* //--------- */
+
+.scholar-detail-container {
+  max-width: 600px;
+  margin: 2rem auto;
+  padding: 1.5rem;
+  border-radius: 1rem;
+  background-color: #f9f9f9;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
+}
+
+h2 {
+  text-align: center;
+  margin-bottom: 1rem;
+  color: #333; /* A slightly softer black for headings */
+}
+
+.detail-card p {
+  margin: 0.5rem 0;
+  color: #555;
+}
+
+/* Pick-Up Schedule Section Styling */
 .pickup-schedule {
   margin-top: 2rem;
+  background-color: #ffffff; /* White background for the table area */
+  border-radius: 0.75rem; /* Slightly rounded corners for the table section */
+  overflow: hidden; /* Ensures table borders don't overflow rounded corners */
+  box-shadow: 0 1px 8px rgba(0, 0, 0, 0.08); /* A subtle shadow for the table block */
+}
+
+.pickup-schedule h3 {
+  text-align: center;
+  margin-bottom: 1rem;
+  padding: 1rem 0;
+  color: #333;
+  background-color: #f0f0f0; /* Light background for the sub-heading */
+  border-bottom: 1px solid #eee; /* Separator for the heading */
 }
 
 .pickup-schedule table {
   width: 100%;
-  border-collapse: collapse;
+  border-collapse: collapse; /* Ensures single, crisp borders */
+  font-size: 0.95rem; /* Slightly smaller font for table content */
 }
 
 .pickup-schedule th,
 .pickup-schedule td {
-  padding: 0.5rem;
-  border: 1px solid #ccc;
+  padding: 0.8rem 1rem; /* Generous padding for better spacing */
   text-align: left;
+}
+
+/* Table Header Styling */
+.pickup-schedule th {
+  background-color: #165b58; /* Theme color for header background */
+  color: white; /* White text for header */
+  font-weight: 600; /* Slightly bolder header text */
+  text-transform: uppercase; /* Uppercase for header text */
+  letter-spacing: 0.05em; /* A little spacing for uppercase letters */
+}
+
+/* Table Body Row Styling */
+.pickup-schedule tbody tr {
+  border-bottom: 1px solid #e0e0e0; /* Lighter border for rows */
+}
+
+.pickup-schedule tbody tr:last-child {
+  border-bottom: none; /* No border for the last row */
+}
+
+/* Zebra Striping for Readability */
+.pickup-schedule tbody tr:nth-child(even) {
+  background-color: #f5fcfc; /* Very light teal/grey for even rows */
+}
+
+/* Hover effect on table rows */
+.pickup-schedule tbody tr:hover {
+  background-color: #e6f6f5; /* Slightly darker light teal on hover */
+  cursor: default; /* Indicate rows are not clickable (unless intended) */
+}
+
+/* Specific cell styling if needed, e.g., for times */
+.pickup-schedule td:last-child {
+  font-weight: 500; /* Make the time stand out a bit */
+  color: #2c7a7b; /* A darker shade of your theme color */
 }
 
 .loading {

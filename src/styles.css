@@ -1,1 +1,39 @@
-/* You can add global styles to this file, and also import other style files */
+/* General Button Style */
+.app-button {
+  display: inline-block; /* Allows padding and margin, and centers text */
+  padding: 10px 20px;
+  background-color: #165b58; /* Dark teal background */
+  color: white; /* White text */
+  border: none; /* Remove default border */
+  border-radius: 8px; /* Rounded edges */
+  cursor: pointer; /* Indicate it's clickable */
+  font-size: 16px;
+  font-weight: 600;
+  text-align: center;
+  text-decoration: none; /* Remove underline for routerLink buttons */
+  transition: background-color 0.3s ease, transform 0.2s ease,
+    box-shadow 0.3s ease; /* Smooth transitions for effects */
+  -webkit-appearance: none; /* Remove default button styles for cross-browser consistency */
+  -moz-appearance: none;
+  appearance: none;
+}
+
+/* Hover Effect */
+.app-button:hover {
+  background-color: #114543; /* Slightly darker teal on hover */
+  transform: translateY(-2px); /* Lift button slightly */
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2); /* Soft shadow for depth */
+}
+
+/* Active/Click Effect */
+.app-button:active {
+  background-color: #0c302e; /* Even darker teal when clicked */
+  transform: translateY(0); /* Press button down */
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); /* Smaller shadow when pressed */
+}
+
+/* Focus State (for keyboard navigation accessibility) */
+.app-button:focus {
+  outline: none; /* Remove default focus outline */
+  box-shadow: 0 0 0 3px rgba(22, 91, 88, 0.5); /* Custom focus ring */
+}
