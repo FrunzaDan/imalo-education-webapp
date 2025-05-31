@@ -5,9 +5,20 @@ import { SortingService } from '../../services/sorting.service';
 import { Scholar } from '../../interfaces/scholar';
 import { School } from '../../interfaces/school';
 import { CommonModule } from '@angular/common';
-import { forkJoin } from 'rxjs';
-import { map, switchMap } from 'rxjs/operators';
+import { forkJoin, Observable } from 'rxjs'; // Import Observable
+import { map } from 'rxjs/operators'; // Only need map, switchMap is no longer needed here
 import { RouterModule } from '@angular/router';
+
+// Define the type for the transformed scholar data once for clarity
+interface TransformedScholarData {
+  id: string;
+  name: string;
+  schoolName: string;
+  grade: number;
+  schoolColor: string;
+  birthDate: string;
+  textColor: string;
+}
 
 @Component({
   imports: [CommonModule, RouterModule],
@@ -16,17 +27,9 @@ import { RouterModule } from '@angular/router';
   styleUrls: ['./scholar-table.component.css'],
 })
 export class ScholarTableComponent implements OnInit {
-  scholars: Scholar[] = [];
-  schools: Map<string, School> = new Map();
-  scholarData: {
-    id: string;
-    name: string;
-    schoolName: string;
-    grade: number;
-    schoolColor: string;
-    birthDate: string;
-    textColor: string;
-  }[] = [];
+  scholars: Scholar[] = []; // You might not need to store this directly if `scholarData` is primary
+  schools: Map<string, School> = new Map(); // You might not need to store this directly either
+  scholarData: TransformedScholarData[] = []; // Use the defined interface
 
   currentSortColumn: string = '';
   isAscending: boolean = true;
@@ -47,49 +50,53 @@ export class ScholarTableComponent implements OnInit {
       schools: this.schoolsService.getSchools(),
     })
       .pipe(
+        // Use a single map operator to process both streams
         map(({ scholars, schools }) => {
-          this.schools = new Map(
+          // Create the schools map directly within this operator's scope
+          const schoolsMap = new Map(
             schools.map((school) => [school.id.toString(), school]),
           );
-          return scholars;
-        }),
-        switchMap((scholars) => {
-          this.scholarData = this.transformScholarData(scholars);
-          return [];
+
+          // Transform scholar data using the local schoolsMap
+          return scholars.map((scholar) => {
+            const school = schoolsMap.get(scholar.schoolId.toString());
+            const schoolName = school ? school.name : 'Unknown';
+            const schoolColor = school ? school.color : '#FFFFFF';
+            const textColor = this.getTextColor(schoolColor);
+
+            return {
+              id: scholar.id,
+              name: `${scholar.firstName} ${scholar.lastName}`,
+              schoolName,
+              grade: scholar.grade,
+              schoolColor,
+              birthDate: new Date(scholar.birthDate).toLocaleDateString(
+                'en-GB',
+                {
+                  day: '2-digit',
+                  month: 'short',
+                  year: 'numeric',
+                },
+              ),
+              textColor,
+            };
+          });
         }),
       )
-      .subscribe();
+      .subscribe((transformedData: TransformedScholarData[]) => {
+        // Assign the fully transformed data to scholarData in the subscribe callback
+        this.scholarData = transformedData;
+      });
   }
 
-  private transformScholarData(scholars: Scholar[]): {
-    id: string;
-    name: string;
-    schoolName: string;
-    grade: number;
-    schoolColor: string;
-    birthDate: string;
-    textColor: string;
-  }[] {
-    return scholars.map((scholar) => {
-      const school = this.schools.get(scholar.schoolId.toString());
-      const schoolName = school ? school.name : 'Unknown';
-      const schoolColor = school ? school.color : '#FFFFFF';
-      const textColor = this.getTextColor(schoolColor);
-
-      return {
-        id: scholar.id,
-        name: `${scholar.firstName} ${scholar.lastName}`,
-        schoolName,
-        grade: scholar.grade,
-        schoolColor,
-        birthDate: new Date(scholar.birthDate).toLocaleDateString('en-GB', {
-          day: '2-digit',
-          month: 'short',
-          year: 'numeric',
-        }),
-        textColor,
-      };
-    });
+  // Moved out to ensure no reliance on component properties
+  public getTextColor(backgroundColor: string): string {
+    const hex = backgroundColor.replace('#', '');
+    const r = parseInt(hex.substring(0, 2), 16);
+    const g = parseInt(hex.substring(2, 4), 16);
+    const b = parseInt(hex.substring(4, 6), 16);
+    const brightness = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+    return brightness < 128 ? 'white' : 'black';
   }
 
   sortData(column: string, type: 'string' | 'number' | 'date'): void {
@@ -102,18 +109,9 @@ export class ScholarTableComponent implements OnInit {
 
     this.scholarData = this.sortingService.sort(
       this.scholarData,
-      column as keyof (typeof this.scholarData)[0],
+      column as keyof TransformedScholarData, // Use the new interface for keyof
       type,
       this.isAscending,
     );
-  }
-
-  getTextColor(backgroundColor: string): string {
-    const hex = backgroundColor.replace('#', '');
-    const r = parseInt(hex.substring(0, 2), 16);
-    const g = parseInt(hex.substring(2, 4), 16);
-    const b = parseInt(hex.substring(4, 6), 16);
-    const brightness = 0.2126 * r + 0.7152 * g + 0.0722 * b;
-    return brightness < 128 ? 'white' : 'black';
   }
 }
