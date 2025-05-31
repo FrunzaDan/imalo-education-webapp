@@ -1,6 +1,8 @@
 /* General Button Style */
 .app-button {
   display: inline-block; /* Allows padding and margin, and centers text */
+  margin-top: 6px;
+  margin-bottom: 6px;
   padding: 10px 20px;
   background-color: #165b58; /* Dark teal background */
   color: white; /* White text */

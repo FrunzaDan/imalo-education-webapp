@@ -1,0 +1,121 @@
+<div class="min-h-screen flex items-center justify-center bg-gray-100 p-4">
+  <div class="bg-white p-8 rounded-lg shadow-xl w-full max-w-md">
+    <h2 class="text-3xl font-extrabold text-gray-900 text-center mb-8">
+      Create New Scholar
+    </h2>
+
+    <form [formGroup]="scholarForm" (ngSubmit)="onSubmit()" class="space-y-6">
+      <div>
+        <label for="firstName" class="block text-sm font-medium text-gray-700"
+          >First Name</label
+        >
+        <input
+          type="text"
+          id="firstName"
+          formControlName="firstName"
+          class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+          placeholder="Enter first name"
+        />
+        @if (scholarForm.get('firstName')?.invalid &&
+        (scholarForm.get('firstName')?.dirty ||
+        scholarForm.get('firstName')?.touched)) {
+        <div class="text-red-600 text-xs mt-1">First Name is required.</div>
+        }
+      </div>
+
+      <div>
+        <label for="lastName" class="block text-sm font-medium text-gray-700"
+          >Last Name</label
+        >
+        <input
+          type="text"
+          id="lastName"
+          formControlName="lastName"
+          class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+          placeholder="Enter last name"
+        />
+        @if (scholarForm.get('lastName')?.invalid &&
+        (scholarForm.get('lastName')?.dirty ||
+        scholarForm.get('lastName')?.touched)) {
+        <div class="text-red-600 text-xs mt-1">Last Name is required.</div>
+        }
+      </div>
+
+      <div>
+        <label for="schoolId" class="block text-sm font-medium text-gray-700"
+          >School ID</label
+        >
+        <input
+          type="text"
+          id="schoolId"
+          formControlName="schoolId"
+          class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+          placeholder="Enter school ID"
+        />
+        @if (scholarForm.get('schoolId')?.invalid &&
+        (scholarForm.get('schoolId')?.dirty ||
+        scholarForm.get('schoolId')?.touched)) {
+        <div class="text-red-600 text-xs mt-1">School ID is required.</div>
+        }
+      </div>
+
+      <div>
+        <label for="grade" class="block text-sm font-medium text-gray-700"
+          >Grade</label
+        >
+        <input
+          type="number"
+          id="grade"
+          formControlName="grade"
+          class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+          placeholder="Enter grade (0-12)"
+        />
+        @if (scholarForm.get('grade')?.invalid &&
+        (scholarForm.get('grade')?.dirty || scholarForm.get('grade')?.touched))
+        {
+        <div class="text-red-600 text-xs mt-1">
+          @if (scholarForm.get('grade')?.errors?.['required']) {
+          <span>Grade is required.</span>
+          } @if (scholarForm.get('grade')?.errors?.['min'] ||
+          scholarForm.get('grade')?.errors?.['max']) {
+          <span>Grade must be between 0 and 12.</span>
+          }
+        </div>
+        }
+      </div>
+
+      <div>
+        <label for="birthDate" class="block text-sm font-medium text-gray-700"
+          >Birth Date</label
+        >
+        <input
+          type="date"
+          id="birthDate"
+          formControlName="birthDate"
+          class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+        />
+        @if (scholarForm.get('birthDate')?.invalid &&
+        (scholarForm.get('birthDate')?.dirty ||
+        scholarForm.get('birthDate')?.touched)) {
+        <div class="text-red-600 text-xs mt-1">
+          @if (scholarForm.get('birthDate')?.errors?.['required']) {
+          <span>Birth Date is required.</span>
+          } @if (scholarForm.get('birthDate')?.errors?.['invalidDate']) {
+          <span>Please enter a valid date (not in the future).</span>
+          }
+        </div>
+        }
+      </div>
+
+      <div>
+        <button
+          type="submit"
+          [disabled]="scholarForm.invalid"
+          class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          Create Scholar
+        </button>
+      </div>
+    </form>
+  </div>
+</div>

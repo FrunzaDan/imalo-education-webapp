@@ -4,7 +4,7 @@ export interface Scholar {
   id: string;
   firstName: string;
   lastName: string;
-  pickUpSchedule: PickUpSchedule;
+  pickUpSchedule: PickUpSchedule | null;
   schoolId: string;
   grade: number;
   birthDate: Date;

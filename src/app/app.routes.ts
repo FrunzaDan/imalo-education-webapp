@@ -4,10 +4,12 @@ import { GanttChartComponent } from './components/gantt-chart/gantt-chart.compon
 import { AttendanceComponent } from './components/attendance/attendance.component';
 import { ScholarDetailComponent } from './components/scholar-detail/scholar-detail.component';
 import { AttendancePerScholarComponent } from './components/attendance-per-scholar/attendance-per-scholar.component';
+import { CreateScholarComponent } from './components/create-scholar/create-scholar.component';
 
 export const routes: Routes = [
   { path: '', component: ScholarTableComponent },
   { path: 'scholars', component: ScholarTableComponent },
+  { path: 'create-scholar', component: CreateScholarComponent },
   { path: 'scholars/:id', component: ScholarDetailComponent },
   { path: 'pickup-time', component: GanttChartComponent },
   { path: 'attendance', component: AttendanceComponent },

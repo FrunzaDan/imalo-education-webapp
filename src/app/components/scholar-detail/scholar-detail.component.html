@@ -8,6 +8,7 @@
     </p>
     <p><strong>School:</strong> {{ school?.name || 'Unknown' }}</p>
   </div>
+  @if (scholar.pickUpSchedule) {
   <div class="pickup-schedule">
     <h3>Pick-Up Schedule</h3>
     <table>
@@ -27,6 +28,11 @@
       </tbody>
     </table>
   </div>
+  } @else {
+  <div class="pickup-schedule-unavailable">
+    <p class="text-gray-600 italic">Pick-Up Schedule not available.</p>
+  </div>
+  }
 </div>
 }
 
