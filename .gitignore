@@ -1,17 +1,40 @@
 # See https://docs.github.com/get-started/getting-started-with-git/ignoring-files for more about ignoring files.
 
-# Compiled output
-/dist
-/tmp
-/out-tsc
-/bazel-out
+# --- Compiled Output & Build Artifacts ---
+# Angular build output
+/Frontend/dist/
+/Frontend/tmp/
+/Frontend/out-tsc/
+/Frontend/bazel-out/
+/Frontend/.angular/cache/
+/Frontend/coverage/
 
-# Node
-/node_modules
+# .NET / C# build output
+/ImaloEducationApi/bin/
+/ImaloEducationApi/obj/
+/ImaloEducationApi/publish/
+*.pdb # Debugging symbols
+*.suo # Visual Studio Solution User Options
+*.user # Visual Studio user settings
+*.bak # Backup files
+
+# --- Dependencies ---
+# Node.js modules for Angular
+/Frontend/node_modules/
 npm-debug.log
 yarn-error.log
+.pnp/
+.pnp.js
 
-# IDEs and editors
+# .NET packages
+# NuGet packages are typically restored, not committed
+packages/
+# Rider and ReSharper specific files
+*.DotSettings.user
+*.resharper
+*.dotsettings
+
+# --- IDEs and Editors ---
 .idea/
 .project
 .classpath
@@ -19,6 +42,9 @@ yarn-error.log
 *.launch
 .settings/
 *.sublime-workspace
+*.vspscc
+*.vssscc
+.vs/ # Visual Studio hidden folder for solution-specific files
 
 # Visual Studio Code
 .vscode/*
@@ -26,17 +52,24 @@ yarn-error.log
 !.vscode/tasks.json
 !.vscode/launch.json
 !.vscode/extensions.json
-.history/*
+.history/
 
-# Miscellaneous
-/.angular/cache
+# --- Miscellaneous ---
 .sass-cache/
 /connect.lock
-/coverage
 /libpeerconnection.log
 testem.log
 /typings
+*.log # General log files
+*.sqlite # If using local SQLite databases
 
-# System files
+# --- System Files ---
 .DS_Store
 Thumbs.db
+
+# --- Environment Specific Configuration ---
+# You might want to ignore appsettings.Development.json or other environment-specific
+# config files if they contain sensitive information or are managed separately.
+# For example:
+# /ImaloEducationApi/appsettings.Development.json
+# /ImaloEducationApi/appsettings.Production.json
