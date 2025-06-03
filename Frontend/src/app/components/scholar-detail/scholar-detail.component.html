@@ -4,7 +4,7 @@
   <div class="detail-card">
     <p><strong>Grade:</strong> {{ scholar.grade }}</p>
     <p>
-      <strong>Birth Date:</strong> {{ scholar.birthDate | date : 'longDate' }}
+      <strong>Birth Date:</strong> {{ scholar.DateOfBirth | date : 'longDate' }}
     </p>
     <p><strong>School:</strong> {{ school?.name || 'Unknown' }}</p>
   </div>

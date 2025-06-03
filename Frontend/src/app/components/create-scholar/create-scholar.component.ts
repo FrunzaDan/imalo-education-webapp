@@ -57,7 +57,7 @@ export class CreateScholarComponent implements OnInit {
         pickUpSchedule: null,
         schoolId: this.scholarForm.value.schoolId,
         grade: this.scholarForm.value.grade,
-        birthDate: new Date(this.scholarForm.value.birthDate),
+        DateOfBirth: new Date(this.scholarForm.value.birthDate),
       };
 
       console.log('Form submitted successfully:', newScholar);

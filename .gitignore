@@ -9,6 +9,14 @@
 /Frontend/.angular/cache/
 /Frontend/coverage/
 
+# ImaloEducationDB build output
+/ImaloEducationDB/bin/
+/ImaloEducationDB/obj/
+
+# SQL Server Data Tools (SSDT) intermediate files
+*.dbmdl
+*.sqlproj.user
+
 # .NET / C# build output
 /ImaloEducationApi/bin/
 /ImaloEducationApi/obj/

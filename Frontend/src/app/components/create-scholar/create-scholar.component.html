@@ -85,22 +85,22 @@
       </div>
 
       <div>
-        <label for="birthDate" class="block text-sm font-medium text-gray-700"
+        <label for="DateOfBirth" class="block text-sm font-medium text-gray-700"
           >Birth Date</label
         >
         <input
           type="date"
-          id="birthDate"
-          formControlName="birthDate"
+          id="DateOfBirth"
+          formControlName="DateOfBirth"
           class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
         />
-        @if (scholarForm.get('birthDate')?.invalid &&
-        (scholarForm.get('birthDate')?.dirty ||
-        scholarForm.get('birthDate')?.touched)) {
+        @if (scholarForm.get('DateOfBirth')?.invalid &&
+        (scholarForm.get('DateOfBirth')?.dirty ||
+        scholarForm.get('DateOfBirth')?.touched)) {
         <div class="text-red-600 text-xs mt-1">
-          @if (scholarForm.get('birthDate')?.errors?.['required']) {
+          @if (scholarForm.get('DateOfBirth')?.errors?.['required']) {
           <span>Birth Date is required.</span>
-          } @if (scholarForm.get('birthDate')?.errors?.['invalidDate']) {
+          } @if (scholarForm.get('DateOfBirth')?.errors?.['invalidDate']) {
           <span>Please enter a valid date (not in the future).</span>
           }
         </div>

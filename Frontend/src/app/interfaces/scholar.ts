@@ -7,5 +7,5 @@ export interface Scholar {
   pickUpSchedule: PickUpSchedule | null;
   schoolId: string;
   grade: number;
-  birthDate: Date;
+  DateOfBirth: Date;
 }

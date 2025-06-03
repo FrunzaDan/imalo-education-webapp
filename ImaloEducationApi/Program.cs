@@ -1,3 +1,4 @@
+using ImaloEducationApi.Data;
 using ImaloEducationApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -7,7 +8,7 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-// builder.Services.AddScoped<ScholarDataAccess>();
+builder.Services.AddScoped<ScholarDataAccess>();
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowSpecificOrigin",
