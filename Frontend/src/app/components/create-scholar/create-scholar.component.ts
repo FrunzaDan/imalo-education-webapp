@@ -1,12 +1,13 @@
+import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
 import {
   FormBuilder,
   FormGroup,
-  Validators,
   ReactiveFormsModule,
+  Validators,
 } from '@angular/forms';
-import { CommonModule } from '@angular/common';
 import { Scholar } from '../../interfaces/scholar';
+import { ScholarsService } from '../../services/scholars.service';
 
 @Component({
   selector: 'app-create-scholar',
@@ -18,7 +19,10 @@ import { Scholar } from '../../interfaces/scholar';
 export class CreateScholarComponent implements OnInit {
   scholarForm!: FormGroup;
 
-  constructor(private fb: FormBuilder) {}
+  constructor(
+    private fb: FormBuilder,
+    private scholarsService: ScholarsService,
+  ) {}
 
   ngOnInit(): void {
     this.initForm();
@@ -33,7 +37,7 @@ export class CreateScholarComponent implements OnInit {
         null,
         [Validators.required, Validators.min(0), Validators.max(12)],
       ],
-      birthDate: [[Validators.required, this.dateValidator]],
+      dateOfBirth: ['', [Validators.required, this.dateValidator]],
     });
   }
 
@@ -51,17 +55,24 @@ export class CreateScholarComponent implements OnInit {
   onSubmit(): void {
     if (this.scholarForm.valid) {
       const newScholar: Scholar = {
-        id: 'temp-id-' + Date.now(), // Placeholder ID
+        id: '00000000-0000-0000-0000-000000000000',
         firstName: this.scholarForm.value.firstName,
         lastName: this.scholarForm.value.lastName,
         pickUpSchedule: null,
         schoolId: this.scholarForm.value.schoolId,
         grade: this.scholarForm.value.grade,
-        DateOfBirth: new Date(this.scholarForm.value.birthDate),
+        dateOfBirth: new Date(this.scholarForm.value.dateOfBirth),
       };
 
-      console.log('Form submitted successfully:', newScholar);
-      this.scholarForm.reset();
+      this.scholarsService.createScholar(newScholar).subscribe({
+        next: (createdScholar) => {
+          console.log('Scholar created:', createdScholar);
+          this.scholarForm.reset();
+        },
+        error: (err) => {
+          console.error('Error creating scholar:', err.message);
+        },
+      });
     } else {
       this.scholarForm.markAllAsTouched();
       console.log('Form is invalid. Please correct the errors.');

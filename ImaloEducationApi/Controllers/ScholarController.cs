@@ -27,8 +27,24 @@ namespace ImaloEducationApi.Controllers
         {
             if (!ModelState.IsValid)
             {
-                _logger.LogWarning("Invalid model state for CreateScholar request.");
-                return BadRequest(ModelState);
+                var errors = new Dictionary<string, string[]>();
+
+                foreach (var key in ModelState.Keys)
+                {
+                    var state = ModelState[key];
+                    if (state is not null && state.Errors.Count > 0)
+                    {
+                        errors[key] = state.Errors.Select(e => e.ErrorMessage).ToArray();
+                    }
+                }
+
+                _logger.LogWarning("Invalid model state for CreateScholar request: {@Errors}", errors);
+
+                return BadRequest(new
+                {
+                    message = "Validation failed for the scholar data.",
+                    errors = errors
+                });
             }
 
             try
@@ -40,12 +56,20 @@ namespace ImaloEducationApi.Controllers
             catch (InvalidOperationException ex)
             {
                 _logger.LogError(ex, "API: Error creating scholar due to invalid operation: {Message}", ex.Message);
-                return StatusCode(500, "An error occurred while creating the scholar: " + ex.Message);
+                return StatusCode(500, new
+                {
+                    message = "An error occurred while creating the scholar.",
+                    details = ex.Message
+                });
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "API: An unexpected error occurred while creating scholar: {Message}", ex.Message);
-                return StatusCode(500, "An unexpected error occurred while processing your request.");
+                return StatusCode(500, new
+                {
+                    message = "An unexpected error occurred while processing your request.",
+                    details = ex.Message
+                });
             }
         }
 

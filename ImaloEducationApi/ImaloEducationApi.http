@@ -1,6 +1,5 @@
 @ImaloEducationApi_HostAddress = http://localhost:5244
 
-GET {{ImaloEducationApi_HostAddress}}/weatherforecast/
 Accept: application/json
 
 ###

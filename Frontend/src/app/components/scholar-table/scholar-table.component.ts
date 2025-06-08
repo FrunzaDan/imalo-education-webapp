@@ -70,7 +70,7 @@ export class ScholarTableComponent implements OnInit {
               schoolName,
               grade: scholar.grade,
               schoolColor,
-              birthDate: new Date(scholar.DateOfBirth).toLocaleDateString(
+              birthDate: new Date(scholar.dateOfBirth).toLocaleDateString(
                 'en-GB',
                 {
                   day: '2-digit',

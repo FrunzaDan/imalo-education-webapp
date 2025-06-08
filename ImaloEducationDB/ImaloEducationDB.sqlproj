@@ -6,12 +6,18 @@
     <ProjectGuid>{AAD63E17-4222-4DFC-A51A-90F700A04929}</ProjectGuid>
     <DSP>Microsoft.Data.Tools.Schema.Sql.Sql160DatabaseSchemaProvider</DSP>
     <ModelCollation>1033, CI</ModelCollation>
+    <TargetDatabaseName>ImaloEducationDB</TargetDatabaseName>
+    <DefaultSchema>dbo</DefaultSchema>
+    <DefaultCollation>SQL_Latin1_General_CP1_CI_AS</DefaultCollation>
+    <DefaultFileStructure>BySchemaAndSchemaType</DefaultFileStructure>
   </PropertyGroup>
   <ItemGroup>
+    <Folder Include="Scripts" />
+    <Folder Include="Scripts\Pre-Deployment" />
     <Folder Include="Tables" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="ImaloEducationDB_1.publish.xml" />
+    <PreDeploy Include="Scripts\Pre-Deployment\Script.PreDeployment.sql" />
   </ItemGroup>
   <Target Name="BeforeBuild">
     <Delete Files="$(BaseIntermediateOutputPath)\project.assets.json" />
