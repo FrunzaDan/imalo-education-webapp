@@ -39,3 +39,69 @@
   outline: none; /* Remove default focus outline */
   box-shadow: 0 0 0 3px rgba(22, 91, 88, 0.5); /* Custom focus ring */
 }
+
+/* General Input Style */
+.app-input {
+  width: 100%;
+  padding: 10px 14px;
+  margin-bottom: 6px;
+  font-size: 16px;
+  font-weight: 400;
+  color: #165b58;
+  background-color: #f7faf9; /* Very light teal-ish background */
+  border: 2px solid #7fafa9; /* Soft teal border */
+  border-radius: 8px;
+  box-sizing: border-box;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+  font-family: inherit;
+  appearance: none;
+}
+
+/* Placeholder text */
+.app-input::placeholder {
+  color: #a7c4bf;
+  font-style: italic;
+}
+
+/* Focus State */
+.app-input:focus {
+  outline: none;
+  border-color: #165b58;
+  box-shadow: 0 0 0 3px rgba(22, 91, 88, 0.3);
+  background-color: #ecf7f6; /* Slightly lighter on focus */
+}
+
+/* Disabled State */
+.app-input:disabled {
+  background-color: #e0e6e5;
+  color: #8a9a97;
+  cursor: not-allowed;
+}
+
+/* Error State */
+.app-input.error {
+  border-color: #dc2626; /* Red border for error */
+  box-shadow: 0 0 5px 1px rgba(220, 38, 38, 0.5);
+  background-color: #fdecea; /* Light red background */
+}
+
+/* Label Style */
+.app-label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #165b58; /* Primary teal */
+  letter-spacing: 0.3px;
+}
+
+.app-label.error {
+  color: #dc2626; /* Red for errors */
+}
+
+.app-error-message {
+  color: #dc2626; /* Red color for error text */
+  font-size: 0.875rem;
+  margin-top: 4px;
+  margin-bottom: 8px;
+}

@@ -1,0 +1,25 @@
+.api-down-card {
+  max-width: 600px;
+  margin: 40px auto;
+  padding: 24px;
+  background-color: #fff;
+  border: 1px solid #e0e0e0;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  text-align: center;
+  color: #333;
+  font-family: 'Segoe UI', sans-serif;
+}
+
+.api-down-card h2 {
+  color: #dc2626; /* red warning color */
+  margin-bottom: 12px;
+}
+
+.api-down-card code {
+  background-color: #f1f5f9;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 0.95rem;
+  font-family: monospace;
+}
