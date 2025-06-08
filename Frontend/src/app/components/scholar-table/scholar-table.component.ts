@@ -109,7 +109,7 @@ export class ScholarTableComponent implements OnInit {
 
     this.scholarData = this.sortingService.sort(
       this.scholarData,
-      column as keyof TransformedScholarData, // Use the new interface for keyof
+      column as keyof TransformedScholarData,
       type,
       this.isAscending,
     );

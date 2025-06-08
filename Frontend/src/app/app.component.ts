@@ -1,9 +1,8 @@
+import { HttpClient } from '@angular/common/http';
 import { Component, OnInit } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
-import { GanttChartComponent } from './components/gantt-chart/gantt-chart.component';
-import { NavbarComponent } from './components/navbar/navbar.component';
-import { HttpClient } from '@angular/common/http';
 import { environment } from '../environments/environment';
+import { NavbarComponent } from './components/navbar/navbar.component';
 
 @Component({
   selector: 'app-root',

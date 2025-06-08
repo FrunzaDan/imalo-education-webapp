@@ -1,5 +1,5 @@
 export interface School {
-  id: string;
+  id: number;
   name: string;
   color: string;
 }

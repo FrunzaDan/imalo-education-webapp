@@ -33,12 +33,12 @@ export class SortingService {
     type: 'string' | 'number' | 'date',
   ): (a: any, b: any) => number {
     const comparators: Record<string, (a: any, b: any) => number> = {
-      string: this.compareStrings,
-      number: this.compareNumbers,
-      date: this.compareDates,
+      string: this.compareStrings.bind(this),
+      number: this.compareNumbers.bind(this),
+      date: this.compareDates.bind(this),
     };
 
-    return comparators[type] || this.compareStrings;
+    return comparators[type] || this.compareStrings.bind(this);
   }
 
   private compareStrings(a: any, b: any): number {
