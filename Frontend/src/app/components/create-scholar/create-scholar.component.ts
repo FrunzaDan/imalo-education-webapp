@@ -38,6 +38,13 @@ export class CreateScholarComponent implements OnInit {
         [Validators.required, Validators.min(0), Validators.max(12)],
       ],
       dateOfBirth: ['', [Validators.required, this.dateValidator]],
+      pickUpSchedule: this.fb.group({
+        monday: [''],
+        tuesday: [''],
+        wednesday: [''],
+        thursday: [''],
+        friday: [''],
+      }),
     });
   }
 
@@ -54,14 +61,16 @@ export class CreateScholarComponent implements OnInit {
 
   onSubmit(): void {
     if (this.scholarForm.valid) {
+      const formValue = this.scholarForm.value;
+
       const newScholar: Scholar = {
         id: '00000000-0000-0000-0000-000000000000',
-        firstName: this.scholarForm.value.firstName,
-        lastName: this.scholarForm.value.lastName,
-        pickUpSchedule: null,
-        schoolId: this.scholarForm.value.schoolId,
-        grade: this.scholarForm.value.grade,
-        dateOfBirth: new Date(this.scholarForm.value.dateOfBirth),
+        firstName: formValue.firstName,
+        lastName: formValue.lastName,
+        pickUpSchedule: formValue.pickUpSchedule,
+        schoolId: formValue.schoolId,
+        grade: formValue.grade,
+        dateOfBirth: new Date(formValue.dateOfBirth),
       };
 
       this.scholarsService.createScholar(newScholar).subscribe({
@@ -75,7 +84,11 @@ export class CreateScholarComponent implements OnInit {
       });
     } else {
       this.scholarForm.markAllAsTouched();
-      console.log('Form is invalid. Please correct the errors.');
+      console.warn('Form is invalid. Please correct the errors.');
     }
+  }
+
+  get pickUpScheduleGroup(): FormGroup {
+    return this.scholarForm.get('pickUpSchedule') as FormGroup;
   }
 }

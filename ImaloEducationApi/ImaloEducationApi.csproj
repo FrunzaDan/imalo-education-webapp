@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk.Web">
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
 
   <PropertyGroup>
     <TargetFramework>net9.0</TargetFramework>
@@ -6,6 +6,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <DebugType>portable</DebugType>
     <WarningsAsErrors>nullable</WarningsAsErrors>
+    <UserSecretsId>d0af71d4-294a-4a18-9be7-d5e426e12e1e</UserSecretsId>
   </PropertyGroup>
 
   <ItemGroup>

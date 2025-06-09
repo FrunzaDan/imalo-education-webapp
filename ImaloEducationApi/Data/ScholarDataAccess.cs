@@ -23,29 +23,46 @@ namespace ImaloEducationApi.Data
             if (scholar == null)
                 throw new ArgumentNullException(nameof(scholar));
 
-            const string sql = @"
-                INSERT INTO Scholars (FirstName, LastName, DateOfBirth, Grade, SchoolId)
-                OUTPUT INSERTED.Id
-                VALUES (@FirstName, @LastName, @DateOfBirth, @Grade, @SchoolId);";
+            const string insertScholarSql = @"
+        INSERT INTO Scholars (FirstName, LastName, DateOfBirth, Grade, SchoolId)
+        OUTPUT INSERTED.Id
+        VALUES (@FirstName, @LastName, @DateOfBirth, @Grade, @SchoolId);";
+
+            const string insertScheduleSql = @"
+        INSERT INTO PickUpSchedule (ScholarId, ScheduleJson)
+        VALUES (@ScholarId, @ScheduleJson);";
 
             using var connection = new SqlConnection(_connectionString);
-            using var command = new SqlCommand(sql, connection);
+            using var insertScholarCmd = new SqlCommand(insertScholarSql, connection);
 
-            command.Parameters.AddWithValue("@FirstName", scholar.FirstName ?? string.Empty);
-            command.Parameters.AddWithValue("@LastName", scholar.LastName ?? string.Empty);
-            command.Parameters.AddWithValue("@DateOfBirth", scholar.DateOfBirth);
-            command.Parameters.AddWithValue("@Grade", (object?)scholar.Grade ?? DBNull.Value);
-            command.Parameters.AddWithValue("@SchoolId", (object?)scholar.SchoolId ?? DBNull.Value);
+            insertScholarCmd.Parameters.AddWithValue("@FirstName", scholar.FirstName ?? string.Empty);
+            insertScholarCmd.Parameters.AddWithValue("@LastName", scholar.LastName ?? string.Empty);
+            insertScholarCmd.Parameters.AddWithValue("@DateOfBirth", scholar.DateOfBirth);
+            insertScholarCmd.Parameters.AddWithValue("@Grade", (object?)scholar.Grade ?? DBNull.Value);
+            insertScholarCmd.Parameters.AddWithValue("@SchoolId", (object?)scholar.SchoolId ?? DBNull.Value);
 
             try
             {
                 await connection.OpenAsync();
-                var result = await command.ExecuteScalarAsync();
 
-                if (result is Guid id)
+                var insertedIdObj = await insertScholarCmd.ExecuteScalarAsync();
+                if (insertedIdObj is Guid insertedId)
                 {
-                    scholar.Id = id;
-                    _logger.LogInformation("Scholar created with ID: {ScholarId}", id);
+                    scholar.Id = insertedId;
+                    _logger.LogInformation("Scholar created with ID: {ScholarId}", insertedId);
+
+                    // Insert pickup schedule if provided
+                    if (scholar.PickUpSchedule != null && scholar.PickUpSchedule.Any())
+                    {
+                        using var insertScheduleCmd = new SqlCommand(insertScheduleSql, connection);
+                        insertScheduleCmd.Parameters.AddWithValue("@ScholarId", insertedId);
+                        insertScheduleCmd.Parameters.AddWithValue("@ScheduleJson",
+                            JsonSerializer.Serialize(scholar.PickUpSchedule));
+
+                        await insertScheduleCmd.ExecuteNonQueryAsync();
+                        _logger.LogInformation("Pickup schedule inserted for scholar ID: {ScholarId}", insertedId);
+                    }
+
                     return scholar;
                 }
 
@@ -54,7 +71,7 @@ namespace ImaloEducationApi.Data
             }
             catch (SqlException ex)
             {
-                _logger.LogError(ex, "SQL error occurred while inserting scholar.");
+                _logger.LogError(ex, "SQL error occurred while inserting scholar or pickup schedule.");
                 throw new Exception("A database error occurred while creating the scholar.", ex);
             }
             catch (Exception ex)
@@ -172,7 +189,7 @@ namespace ImaloEducationApi.Data
                 if (!reader.IsDBNull(reader.GetOrdinal("ScheduleJson")))
                 {
                     var json = reader.GetString(reader.GetOrdinal("ScheduleJson"));
-                    scholar.PickUpSchedule = JsonSerializer.Deserialize<Dictionary<string, string>>(json,
+                    scholar.PickUpSchedule = JsonSerializer.Deserialize<Dictionary<string, string?>>(json,
                         new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
                 }
 

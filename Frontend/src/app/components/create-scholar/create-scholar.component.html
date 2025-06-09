@@ -122,6 +122,63 @@
       }
     </div>
 
+    <!-- Pick Up Schedule -->
+    <div class="create-scholar-entry">
+      <label class="app-label block mb-2">Pick Up Schedule (Optional)</label>
+      <div [formGroup]="pickUpScheduleGroup" class="grid gap-4 md:grid-cols-2">
+        <div>
+          <label for="monday" class="block mb-1">Monday</label>
+          <input
+            id="monday"
+            type="text"
+            formControlName="monday"
+            class="app-input"
+            placeholder="e.g. 12:00"
+          />
+        </div>
+        <div>
+          <label for="tuesday" class="block mb-1">Tuesday</label>
+          <input
+            id="tuesday"
+            type="text"
+            formControlName="tuesday"
+            class="app-input"
+            placeholder="e.g. 12:00"
+          />
+        </div>
+        <div>
+          <label for="wednesday" class="block mb-1">Wednesday</label>
+          <input
+            id="wednesday"
+            type="text"
+            formControlName="wednesday"
+            class="app-input"
+            placeholder="e.g. 12:00"
+          />
+        </div>
+        <div>
+          <label for="thursday" class="block mb-1">Thursday</label>
+          <input
+            id="thursday"
+            type="text"
+            formControlName="thursday"
+            class="app-input"
+            placeholder="e.g. 12:00"
+          />
+        </div>
+        <div>
+          <label for="friday" class="block mb-1">Friday</label>
+          <input
+            id="friday"
+            type="text"
+            formControlName="friday"
+            class="app-input"
+            placeholder="e.g. 12:00"
+          />
+        </div>
+      </div>
+    </div>
+
     <!-- Submit Button -->
     <div>
       <button type="submit" [disabled]="scholarForm.invalid" class="app-button">
