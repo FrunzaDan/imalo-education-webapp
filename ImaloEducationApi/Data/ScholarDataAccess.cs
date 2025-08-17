@@ -172,6 +172,124 @@ namespace ImaloEducationApi.Data
             }
         }
 
+        public async Task<Scholar?> UpdateScholarAsync(Scholar scholar)
+        {
+            if (scholar == null)
+                throw new ArgumentNullException(nameof(scholar));
+            if (scholar.Id == Guid.Empty)
+                throw new ArgumentException("Scholar ID must not be empty.", nameof(scholar));
+
+            const string updateScholarSql = @"
+        UPDATE Scholars
+        SET FirstName = @FirstName,
+            LastName = @LastName,
+            DateOfBirth = @DateOfBirth,
+            Grade = @Grade,
+            SchoolId = @SchoolId
+        WHERE Id = @Id;";
+
+            const string updateScheduleSql = @"
+        IF EXISTS (SELECT 1 FROM PickUpSchedule WHERE ScholarId = @Id)
+            UPDATE PickUpSchedule
+            SET ScheduleJson = @ScheduleJson
+            WHERE ScholarId = @Id
+        ELSE
+            INSERT INTO PickUpSchedule (ScholarId, ScheduleJson)
+            VALUES (@Id, @ScheduleJson);";
+
+            using var connection = new SqlConnection(_connectionString);
+            using var updateScholarCmd = new SqlCommand(updateScholarSql, connection);
+            using var updateScheduleCmd = new SqlCommand(updateScheduleSql, connection);
+
+            updateScholarCmd.Parameters.AddWithValue("@Id", scholar.Id);
+            updateScholarCmd.Parameters.AddWithValue("@FirstName", scholar.FirstName ?? string.Empty);
+            updateScholarCmd.Parameters.AddWithValue("@LastName", scholar.LastName ?? string.Empty);
+            updateScholarCmd.Parameters.AddWithValue("@DateOfBirth", scholar.DateOfBirth);
+            updateScholarCmd.Parameters.AddWithValue("@Grade", (object?)scholar.Grade ?? DBNull.Value);
+            updateScholarCmd.Parameters.AddWithValue("@SchoolId", (object?)scholar.SchoolId ?? DBNull.Value);
+
+            try
+            {
+                await connection.OpenAsync();
+
+                int rowsAffected = await updateScholarCmd.ExecuteNonQueryAsync();
+                if (rowsAffected == 0)
+                {
+                    _logger.LogWarning("No scholar found to update with ID: {ScholarId}", scholar.Id);
+                    return null; // Scholar not found
+                }
+
+                // Update or insert pickup schedule if provided
+                if (scholar.PickUpSchedule != null)
+                {
+                    updateScheduleCmd.Parameters.AddWithValue("@Id", scholar.Id);
+                    updateScheduleCmd.Parameters.AddWithValue("@ScheduleJson", JsonSerializer.Serialize(scholar.PickUpSchedule));
+                    await updateScheduleCmd.ExecuteNonQueryAsync();
+                    _logger.LogInformation("Updated pickup schedule for scholar ID: {ScholarId}", scholar.Id);
+                }
+
+                _logger.LogInformation("Updated scholar with ID: {ScholarId}", scholar.Id);
+                return scholar;
+            }
+            catch (SqlException ex)
+            {
+                _logger.LogError(ex, "SQL error occurred while updating scholar with ID: {ScholarId}", scholar.Id);
+                throw;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Unexpected error updating scholar with ID: {ScholarId}", scholar.Id);
+                throw;
+            }
+        }
+
+        public async Task<bool> DeleteScholarAsync(Guid id)
+        {
+            if (id == Guid.Empty)
+                throw new ArgumentException("Scholar ID must not be empty.", nameof(id));
+
+            const string deleteScheduleSql = "DELETE FROM PickUpSchedule WHERE ScholarId = @Id;";
+            const string deleteScholarSql = "DELETE FROM Scholars WHERE Id = @Id;";
+
+            using var connection = new SqlConnection(_connectionString);
+            using var deleteScheduleCmd = new SqlCommand(deleteScheduleSql, connection);
+            using var deleteScholarCmd = new SqlCommand(deleteScholarSql, connection);
+
+            deleteScheduleCmd.Parameters.AddWithValue("@Id", id);
+            deleteScholarCmd.Parameters.AddWithValue("@Id", id);
+
+            try
+            {
+                await connection.OpenAsync();
+
+                // Remove pickup schedule first
+                await deleteScheduleCmd.ExecuteNonQueryAsync();
+
+                // Delete the scholar
+                int rowsAffected = await deleteScholarCmd.ExecuteNonQueryAsync();
+
+                if (rowsAffected == 0)
+                {
+                    _logger.LogWarning("No scholar found to delete with ID: {ScholarId}", id);
+                    return false; // Scholar not found
+                }
+
+                _logger.LogInformation("Deleted scholar with ID: {ScholarId}", id);
+                return true;
+            }
+            catch (SqlException ex)
+            {
+                _logger.LogError(ex, "SQL error occurred while deleting scholar with ID: {ScholarId}", id);
+                throw;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Unexpected error deleting scholar with ID: {ScholarId}", id);
+                throw;
+            }
+        }
+
+
         private Scholar? TryMapScholarFromReader(SqlDataReader reader)
         {
             try

@@ -40,6 +40,13 @@ export class ScholarsService {
       .pipe(catchError(this.handleError<Scholar>('createScholar')));
   }
 
+  deleteScholar(id: string): Observable<void> {
+    const url = `${this.baseUrl}/${id}`;
+    return this.http
+      .delete<void>(url)
+      .pipe(catchError(this.handleError<void>(`deleteScholar id=${id}`)));
+  }
+
   private handleError<T>(operation = 'operation') {
     return (error: HttpErrorResponse): Observable<T> => {
       let userFriendlyMessage = `${operation} failed: ${error.message}`;

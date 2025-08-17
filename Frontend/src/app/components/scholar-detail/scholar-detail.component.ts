@@ -1,6 +1,6 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ActivatedRoute, RouterModule } from '@angular/router';
+import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { ScholarsService } from '../../services/scholars.service';
 import { SchoolsService } from '../../services/schools.service';
 import { Scholar } from '../../interfaces/scholar';
@@ -21,6 +21,7 @@ export class ScholarDetailComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly scholarsService = inject(ScholarsService);
   private readonly schoolsService = inject(SchoolsService);
+  private readonly router = inject(Router);
 
   scholar: Scholar | null = null;
   school: School | null = null;
@@ -65,5 +66,28 @@ export class ScholarDetailComponent implements OnInit {
         }),
       )
       .subscribe();
+  }
+
+  deleteScholar(): void {
+    if (!this.scholar?.id) return;
+
+    if (
+      !confirm(
+        `Are you sure you want to delete ${this.scholar.firstName} ${this.scholar.lastName}?`,
+      )
+    ) {
+      return;
+    }
+
+    this.scholarsService.deleteScholar(this.scholar.id).subscribe({
+      next: () => {
+        console.log(`Scholar ${this.scholar?.id} deleted successfully.`);
+        this.router.navigate(['/scholars']);
+      },
+      error: (err) => {
+        console.error('Failed to delete scholar:', err.message);
+        alert('Failed to delete scholar. See console for details.');
+      },
+    });
   }
 }

@@ -111,5 +111,76 @@ namespace ImaloEducationApi.Controllers
                 });
             }
         }
+
+        [HttpPut("{id}")]
+        public async Task<IActionResult> UpdateScholar(Guid id, [FromBody] Scholar scholar)
+        {
+            if (id != scholar.Id)
+            {
+                return BadRequest(new { message = "ID in URL does not match ID in request body." });
+            }
+
+            if (!ModelState.IsValid)
+            {
+                var errors = ModelState
+                    .Where(ms => ms.Value?.Errors.Count > 0)
+                    .ToDictionary(
+                        kvp => kvp.Key,
+                        kvp => kvp.Value!.Errors.Select(e => e.ErrorMessage).ToArray()
+                    );
+
+                _logger.LogWarning("Invalid model state for UpdateScholar request: {@Errors}", errors);
+
+                return BadRequest(new
+                {
+                    message = "Validation failed for the scholar data.",
+                    errors
+                });
+            }
+
+            try
+            {
+                var updatedScholar = await _scholarDataAccess.UpdateScholarAsync(scholar);
+                if (updatedScholar == null)
+                {
+                    return NotFound(new { message = $"Scholar with ID {id} not found." });
+                }
+
+                return Ok(updatedScholar);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Unexpected error updating scholar with ID: {ScholarId}", id);
+                return StatusCode(500, new
+                {
+                    message = "An unexpected error occurred while updating the scholar.",
+                    details = ex.Message
+                });
+            }
+        }
+
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> DeleteScholar(Guid id)
+        {
+            try
+            {
+                var deleted = await _scholarDataAccess.DeleteScholarAsync(id);
+                if (!deleted)
+                {
+                    return NotFound(new { message = $"Scholar with ID {id} not found." });
+                }
+
+                return NoContent(); // 204 No Content is standard for successful DELETE
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Unexpected error deleting scholar with ID: {ScholarId}", id);
+                return StatusCode(500, new
+                {
+                    message = "An unexpected error occurred while deleting the scholar.",
+                    details = ex.Message
+                });
+            }
+        }
     }
 }

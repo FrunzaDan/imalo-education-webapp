@@ -9,7 +9,6 @@ import { forkJoin, Observable } from 'rxjs'; // Import Observable
 import { map } from 'rxjs/operators'; // Only need map, switchMap is no longer needed here
 import { RouterModule } from '@angular/router';
 
-// Define the type for the transformed scholar data once for clarity
 interface TransformedScholarData {
   id: string;
   name: string;
@@ -27,9 +26,9 @@ interface TransformedScholarData {
   styleUrls: ['./scholar-table.component.css'],
 })
 export class ScholarTableComponent implements OnInit {
-  scholars: Scholar[] = []; // You might not need to store this directly if `scholarData` is primary
-  schools: Map<string, School> = new Map(); // You might not need to store this directly either
-  scholarData: TransformedScholarData[] = []; // Use the defined interface
+  scholars: Scholar[] = [];
+  schools: Map<string, School> = new Map();
+  scholarData: TransformedScholarData[] = [];
 
   currentSortColumn: string = '';
   isAscending: boolean = true;
@@ -50,14 +49,11 @@ export class ScholarTableComponent implements OnInit {
       schools: this.schoolsService.getSchools(),
     })
       .pipe(
-        // Use a single map operator to process both streams
         map(({ scholars, schools }) => {
-          // Create the schools map directly within this operator's scope
           const schoolsMap = new Map(
             schools.map((school) => [school.id.toString(), school]),
           );
 
-          // Transform scholar data using the local schoolsMap
           return scholars.map((scholar) => {
             const school = schoolsMap.get(scholar.schoolId.toString());
             const schoolName = school ? school.name : 'Unknown';
@@ -84,12 +80,10 @@ export class ScholarTableComponent implements OnInit {
         }),
       )
       .subscribe((transformedData: TransformedScholarData[]) => {
-        // Assign the fully transformed data to scholarData in the subscribe callback
         this.scholarData = transformedData;
       });
   }
 
-  // Moved out to ensure no reliance on component properties
   public getTextColor(backgroundColor: string): string {
     const hex = backgroundColor.replace('#', '');
     const r = parseInt(hex.substring(0, 2), 16);
