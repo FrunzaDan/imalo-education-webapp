@@ -7,7 +7,7 @@ import { environment } from '../../environments/environment';
   providedIn: 'root',
 })
 export class HealthService {
-  private readonly healthUrl = environment.baseUrlScholars; // easy to change later
+  private readonly healthUrl = environment.baseUrlScholars;
 
   constructor(private readonly http: HttpClient) {}
 
@@ -17,23 +17,22 @@ export class HealthService {
    */
   checkApiHealth(): Observable<boolean> {
     return this.http.get<void>(this.healthUrl, { observe: 'response' }).pipe(
-      map((response: HttpResponse<void>) => {
-        return response.status >= 200 && response.status < 300;
-      }),
+      map((response: HttpResponse<void>) => response.ok), // cleaner than status check
       catchError((error) => {
-        const errorMsg = [
-          'API health check failed!',
-          `URL: ${this.healthUrl}`,
-          `Error: ${error.name}`,
-          `Message: ${error.message}`,
-          error.status ? `Status: ${error.status}` : '',
-        ]
-          .filter(Boolean)
-          .join(' | ');
-
-        console.error(errorMsg);
+        this.logHealthError(error);
         return of(false);
       }),
+    );
+  }
+
+  /** Logs health check errors in a consistent format */
+  private logHealthError(error: any) {
+    console.error(
+      `API health check failed! | URL: ${this.healthUrl} | Error: ${
+        error.name ?? 'Unknown'
+      } | Message: ${error.message ?? 'No message'}${
+        error.status ? ` | Status: ${error.status}` : ''
+      }`,
     );
   }
 }

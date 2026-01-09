@@ -1,9 +1,9 @@
-<div class="update-scholar-page">
+<div class="create-update-scholar-page">
   <h2>Update Scholar</h2>
 
   <form [formGroup]="scholarForm" (ngSubmit)="onSubmit()" class="space-y-6">
     <!-- First Name -->
-    <div class="create-scholar-entry">
+    <div class="create-update-scholar-entry">
       <label for="firstName" class="app-label">First Name</label>
       <input
         type="text"
@@ -25,7 +25,7 @@
     </div>
 
     <!-- Last Name -->
-    <div class="create-scholar-entry">
+    <div class="create-update-scholar-entry">
       <label for="lastName" class="app-label">Last Name</label>
       <input
         type="text"
@@ -47,7 +47,7 @@
     </div>
 
     <!-- School ID -->
-    <div class="create-scholar-entry">
+    <div class="create-update-scholar-entry">
       <label for="schoolId" class="app-label">School ID</label>
       <input
         type="text"
@@ -69,7 +69,7 @@
     </div>
 
     <!-- Grade -->
-    <div class="create-scholar-entry">
+    <div class="create-update-scholar-entry">
       <label for="grade" class="app-label">Grade</label>
       <input
         type="number"
@@ -96,7 +96,7 @@
     </div>
 
     <!-- Date of Birth -->
-    <div class="create-scholar-entry">
+    <div class="create-update-scholar-entry">
       <label for="dateOfBirth" class="app-label">Birth Date</label>
       <input
         type="date"
@@ -123,7 +123,7 @@
     </div>
 
     <!-- Pick Up Schedule -->
-    <div class="create-scholar-entry">
+    <div class="create-update-scholar-entry">
       <label class="app-label block mb-2">Pick Up Schedule (Optional)</label>
       <div [formGroup]="pickUpScheduleGroup" class="grid gap-4 md:grid-cols-2">
         <div>
@@ -182,13 +182,6 @@
     <div>
       <button type="submit" [disabled]="scholarForm.invalid" class="app-button">
         Update Scholar
-      </button>
-      <button
-        type="button"
-        class="app-button ml-2"
-        (click)="scholarForm.reset()"
-      >
-        Reset
       </button>
     </div>
   </form>

@@ -4,6 +4,7 @@
   margin-top: 6px;
   margin-bottom: 6px;
   padding: 10px 20px;
+  margin-right: 8px;
   background-color: #165b58; /* Dark teal background */
   color: white; /* White text */
   border: none; /* Remove default border */
@@ -104,4 +105,15 @@
   font-size: 0.875rem;
   margin-top: 4px;
   margin-bottom: 8px;
+}
+
+.create-update-scholar-page {
+  margin: 4rem;
+  padding: 2rem;
+  border: 2px solid #165b58;
+  border-radius: 1rem;
+}
+
+.create-update-scholar-entry {
+  padding: 0.4rem 0rem;
 }

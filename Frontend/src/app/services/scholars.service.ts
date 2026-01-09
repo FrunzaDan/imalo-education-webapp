@@ -9,75 +9,76 @@ import { catchError } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
 import { Scholar } from '../interfaces/scholar';
 
-@Injectable({
-  providedIn: 'root',
-})
+@Injectable({ providedIn: 'root' })
 export class ScholarsService {
   private baseUrl = environment.baseUrlScholars;
-
-  private jsonHeaders = {
-    headers: new HttpHeaders({ 'Content-Type': 'application/json' }),
-  };
+  private jsonHeaders = new HttpHeaders({ 'Content-Type': 'application/json' });
 
   constructor(private http: HttpClient) {}
 
+  // ---- CRUD METHODS ----
+
   getScholars(): Observable<Scholar[]> {
-    return this.http
-      .get<Scholar[]>(this.baseUrl)
-      .pipe(catchError(this.handleError<Scholar[]>('getScholars')));
+    return this.request<Scholar[]>(this.baseUrl, 'getScholars');
   }
 
   getScholarById(id: string): Observable<Scholar> {
-    const url = `${this.baseUrl}/${id}`;
-    return this.http
-      .get<Scholar>(url)
-      .pipe(catchError(this.handleError<Scholar>(`getScholarById id=${id}`)));
+    return this.request<Scholar>(this.urlWithId(id), `getScholarById id=${id}`);
   }
 
   createScholar(scholar: Scholar): Observable<Scholar> {
     return this.http
-      .post<Scholar>(this.baseUrl, scholar, this.jsonHeaders)
+      .post<Scholar>(this.baseUrl, scholar, { headers: this.jsonHeaders })
       .pipe(catchError(this.handleError<Scholar>('createScholar')));
   }
 
   updateScholar(scholar: Scholar): Observable<Scholar> {
     if (!scholar.id) {
-      throw new Error('Cannot update scholar without an ID');
+      return throwError(() => new Error('Cannot update scholar without an ID'));
     }
-    const url = `${this.baseUrl}/${scholar.id}`;
     return this.http
-      .put<Scholar>(url, scholar, this.jsonHeaders)
+      .put<Scholar>(this.urlWithId(scholar.id), scholar, {
+        headers: this.jsonHeaders,
+      })
       .pipe(
         catchError(this.handleError<Scholar>(`updateScholar id=${scholar.id}`)),
       );
   }
 
   deleteScholar(id: string): Observable<void> {
-    const url = `${this.baseUrl}/${id}`;
     return this.http
-      .delete<void>(url)
+      .delete<void>(this.urlWithId(id))
       .pipe(catchError(this.handleError<void>(`deleteScholar id=${id}`)));
+  }
+
+  // ---- HELPERS ----
+
+  private urlWithId(id: string) {
+    return `${this.baseUrl}/${id}`;
+  }
+
+  private request<T>(url: string, operation: string): Observable<T> {
+    return this.http
+      .get<T>(url)
+      .pipe(catchError(this.handleError<T>(operation)));
   }
 
   private handleError<T>(operation = 'operation') {
     return (error: HttpErrorResponse): Observable<T> => {
-      let userFriendlyMessage = `${operation} failed: ${error.message}`;
+      let message = `${operation} failed: ${error.message}`;
 
-      if (error.error && typeof error.error === 'object') {
-        if (error.error.errors) {
-          const validationErrors = Object.values(error.error.errors)
-            .flat()
-            .join('; ');
-
-          userFriendlyMessage = `${operation} failed: Validation errors - ${validationErrors}`;
-        } else if (error.error.message) {
-          userFriendlyMessage = `${operation} failed: ${error.error.message}`;
-        }
+      // Optional chaining for brevity
+      if (error.error?.errors) {
+        const validationErrors = Object.values(error.error.errors)
+          .flat()
+          .join('; ');
+        message = `${operation} failed: Validation errors - ${validationErrors}`;
+      } else if (error.error?.message) {
+        message = `${operation} failed: ${error.error.message}`;
       }
 
-      console.error(userFriendlyMessage, error);
-
-      return throwError(() => new Error(userFriendlyMessage));
+      console.error(message, error);
+      return throwError(() => new Error(message));
     };
   }
 }
