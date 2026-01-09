@@ -1,4 +1,4 @@
-import { CommonModule } from '@angular/common';
+
 import { Component, OnInit, inject } from '@angular/core';
 import {
   FormBuilder,
@@ -13,7 +13,7 @@ import { ScholarsService } from '../../services/scholars.service';
 @Component({
   selector: 'app-update-scholar',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterModule],
+  imports: [ReactiveFormsModule, RouterModule],
   templateUrl: './update-scholar.component.html',
   styleUrls: ['./update-scholar.component.css'],
 })

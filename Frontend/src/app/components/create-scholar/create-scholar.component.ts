@@ -1,4 +1,4 @@
-import { CommonModule } from '@angular/common';
+
 import { Component, OnInit } from '@angular/core';
 import {
   FormBuilder,
@@ -12,7 +12,7 @@ import { ScholarsService } from '../../services/scholars.service';
 @Component({
   selector: 'app-create-scholar',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [ReactiveFormsModule],
   templateUrl: './create-scholar.component.html',
   styleUrls: ['./create-scholar.component.css'],
 })
