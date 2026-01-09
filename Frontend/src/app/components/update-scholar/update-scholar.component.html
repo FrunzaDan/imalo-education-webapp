@@ -1,0 +1,195 @@
+<div class="update-scholar-page">
+  <h2>Update Scholar</h2>
+
+  <form [formGroup]="scholarForm" (ngSubmit)="onSubmit()" class="space-y-6">
+    <!-- First Name -->
+    <div class="create-scholar-entry">
+      <label for="firstName" class="app-label">First Name</label>
+      <input
+        type="text"
+        id="firstName"
+        formControlName="firstName"
+        class="app-input"
+        [class.error]="
+          scholarForm.get('firstName')?.invalid &&
+          (scholarForm.get('firstName')?.dirty ||
+            scholarForm.get('firstName')?.touched)
+        "
+        placeholder="Enter first name"
+      />
+      @if (scholarForm.get('firstName')?.invalid &&
+      (scholarForm.get('firstName')?.dirty ||
+      scholarForm.get('firstName')?.touched)) {
+      <div class="app-error-message">First Name is required.</div>
+      }
+    </div>
+
+    <!-- Last Name -->
+    <div class="create-scholar-entry">
+      <label for="lastName" class="app-label">Last Name</label>
+      <input
+        type="text"
+        id="lastName"
+        formControlName="lastName"
+        class="app-input"
+        [class.error]="
+          scholarForm.get('lastName')?.invalid &&
+          (scholarForm.get('lastName')?.dirty ||
+            scholarForm.get('lastName')?.touched)
+        "
+        placeholder="Enter last name"
+      />
+      @if (scholarForm.get('lastName')?.invalid &&
+      (scholarForm.get('lastName')?.dirty ||
+      scholarForm.get('lastName')?.touched)) {
+      <div class="app-error-message">Last Name is required.</div>
+      }
+    </div>
+
+    <!-- School ID -->
+    <div class="create-scholar-entry">
+      <label for="schoolId" class="app-label">School ID</label>
+      <input
+        type="text"
+        id="schoolId"
+        formControlName="schoolId"
+        class="app-input"
+        [class.error]="
+          scholarForm.get('schoolId')?.invalid &&
+          (scholarForm.get('schoolId')?.dirty ||
+            scholarForm.get('schoolId')?.touched)
+        "
+        placeholder="Enter school ID"
+      />
+      @if (scholarForm.get('schoolId')?.invalid &&
+      (scholarForm.get('schoolId')?.dirty ||
+      scholarForm.get('schoolId')?.touched)) {
+      <div class="app-error-message">School ID is required.</div>
+      }
+    </div>
+
+    <!-- Grade -->
+    <div class="create-scholar-entry">
+      <label for="grade" class="app-label">Grade</label>
+      <input
+        type="number"
+        id="grade"
+        formControlName="grade"
+        class="app-input"
+        [class.error]="
+          scholarForm.get('grade')?.invalid &&
+          (scholarForm.get('grade')?.dirty || scholarForm.get('grade')?.touched)
+        "
+        placeholder="Enter grade (0-12)"
+      />
+      @if (scholarForm.get('grade')?.invalid && (scholarForm.get('grade')?.dirty
+      || scholarForm.get('grade')?.touched)) {
+      <div class="app-error-message">
+        @if (scholarForm.get('grade')?.errors?.['required']) {
+        <span>Grade is required.</span>
+        } @if (scholarForm.get('grade')?.errors?.['min'] ||
+        scholarForm.get('grade')?.errors?.['max']) {
+        <span>Grade must be between 0 and 12.</span>
+        }
+      </div>
+      }
+    </div>
+
+    <!-- Date of Birth -->
+    <div class="create-scholar-entry">
+      <label for="dateOfBirth" class="app-label">Birth Date</label>
+      <input
+        type="date"
+        id="dateOfBirth"
+        formControlName="dateOfBirth"
+        class="app-input"
+        [class.error]="
+          scholarForm.get('dateOfBirth')?.invalid &&
+          (scholarForm.get('dateOfBirth')?.dirty ||
+            scholarForm.get('dateOfBirth')?.touched)
+        "
+      />
+      @if (scholarForm.get('dateOfBirth')?.invalid &&
+      (scholarForm.get('dateOfBirth')?.dirty ||
+      scholarForm.get('dateOfBirth')?.touched)) {
+      <div class="app-error-message">
+        @if (scholarForm.get('dateOfBirth')?.errors?.['required']) {
+        <span>Birth Date is required.</span>
+        } @if (scholarForm.get('dateOfBirth')?.errors?.['invalidDate']) {
+        <span>Please enter a valid date (not in the future).</span>
+        }
+      </div>
+      }
+    </div>
+
+    <!-- Pick Up Schedule -->
+    <div class="create-scholar-entry">
+      <label class="app-label block mb-2">Pick Up Schedule (Optional)</label>
+      <div [formGroup]="pickUpScheduleGroup" class="grid gap-4 md:grid-cols-2">
+        <div>
+          <label for="monday" class="block mb-1">Monday</label>
+          <input
+            id="monday"
+            type="text"
+            formControlName="monday"
+            class="app-input"
+            placeholder="e.g. 12:00"
+          />
+        </div>
+        <div>
+          <label for="tuesday" class="block mb-1">Tuesday</label>
+          <input
+            id="tuesday"
+            type="text"
+            formControlName="tuesday"
+            class="app-input"
+            placeholder="e.g. 12:00"
+          />
+        </div>
+        <div>
+          <label for="wednesday" class="block mb-1">Wednesday</label>
+          <input
+            id="wednesday"
+            type="text"
+            formControlName="wednesday"
+            class="app-input"
+            placeholder="e.g. 12:00"
+          />
+        </div>
+        <div>
+          <label for="thursday" class="block mb-1">Thursday</label>
+          <input
+            id="thursday"
+            type="text"
+            formControlName="thursday"
+            class="app-input"
+            placeholder="e.g. 12:00"
+          />
+        </div>
+        <div>
+          <label for="friday" class="block mb-1">Friday</label>
+          <input
+            id="friday"
+            type="text"
+            formControlName="friday"
+            class="app-input"
+            placeholder="e.g. 12:00"
+          />
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <button type="submit" [disabled]="scholarForm.invalid" class="app-button">
+        Update Scholar
+      </button>
+      <button
+        type="button"
+        class="app-button ml-2"
+        (click)="scholarForm.reset()"
+      >
+        Reset
+      </button>
+    </div>
+  </form>
+</div>

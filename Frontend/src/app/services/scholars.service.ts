@@ -40,6 +40,18 @@ export class ScholarsService {
       .pipe(catchError(this.handleError<Scholar>('createScholar')));
   }
 
+  updateScholar(scholar: Scholar): Observable<Scholar> {
+    if (!scholar.id) {
+      throw new Error('Cannot update scholar without an ID');
+    }
+    const url = `${this.baseUrl}/${scholar.id}`;
+    return this.http
+      .put<Scholar>(url, scholar, this.jsonHeaders)
+      .pipe(
+        catchError(this.handleError<Scholar>(`updateScholar id=${scholar.id}`)),
+      );
+  }
+
   deleteScholar(id: string): Observable<void> {
     const url = `${this.baseUrl}/${id}`;
     return this.http

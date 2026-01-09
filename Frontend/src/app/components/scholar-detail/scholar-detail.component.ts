@@ -68,6 +68,13 @@ export class ScholarDetailComponent implements OnInit {
       .subscribe();
   }
 
+  navigateToUpdateScholar(): void {
+    if (!this.scholar?.id) return;
+
+    // Navigate to the UpdateScholarComponent route with the scholar ID
+    this.router.navigate(['/scholars/update', this.scholar.id]);
+  }
+
   deleteScholar(): void {
     if (!this.scholar?.id) return;
 

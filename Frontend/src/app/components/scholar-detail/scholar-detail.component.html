@@ -1,11 +1,21 @@
 @if (scholar) {
 <button
+  type="button"
+  class="app-button delete-button"
+  (click)="navigateToUpdateScholar()"
+  [disabled]="!scholar"
+>
+  Edit Scholar
+</button>
+<button
+  type="button"
   class="app-button delete-button"
   (click)="deleteScholar()"
   [disabled]="!scholar"
 >
   Delete Scholar
 </button>
+
 <div class="scholar-detail-container">
   <h2>{{ scholar.firstName }} {{ scholar.lastName }}</h2>
   <div class="detail-card">
