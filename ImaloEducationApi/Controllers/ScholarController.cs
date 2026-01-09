@@ -2,185 +2,175 @@ using ImaloEducationApi.Data;
 using ImaloEducationApi.Models;
 using Microsoft.AspNetCore.Mvc;
 
-namespace ImaloEducationApi.Controllers
+namespace ImaloEducationApi.Controllers;
+
+[ApiController]
+[Route("api/[controller]")]
+public class ScholarsController : ControllerBase
 {
-    [ApiController]
-    [Route("api/[controller]")]
-    public class ScholarsController : ControllerBase
+    private readonly ILogger<ScholarsController> _logger;
+    private readonly ScholarDataAccess _scholarDataAccess;
+
+    public ScholarsController(ScholarDataAccess scholarDataAccess, ILogger<ScholarsController> logger)
     {
-        private readonly ScholarDataAccess _scholarDataAccess;
-        private readonly ILogger<ScholarsController> _logger;
+        _scholarDataAccess = scholarDataAccess;
+        _logger = logger;
+    }
 
-        public ScholarsController(ScholarDataAccess scholarDataAccess, ILogger<ScholarsController> logger)
+    [HttpPost]
+    public async Task<ActionResult<Scholar>> CreateScholar([FromBody] Scholar scholar)
+    {
+        if (!ModelState.IsValid)
         {
-            _scholarDataAccess = scholarDataAccess;
-            _logger = logger;
+            var errors = ModelState
+                .Where(ms => ms.Value?.Errors.Count > 0)
+                .ToDictionary(
+                    kvp => kvp.Key,
+                    kvp => kvp.Value!.Errors.Select(e => e.ErrorMessage).ToArray()
+                );
+
+            _logger.LogWarning("Invalid model state for CreateScholar request: {@Errors}", errors);
+
+            return BadRequest(new
+            {
+                message = "Validation failed for the scholar data.",
+                errors
+            });
         }
 
-        [HttpPost]
-        public async Task<ActionResult<Scholar>> CreateScholar([FromBody] Scholar scholar)
+        try
         {
-            if (!ModelState.IsValid)
+            var createdScholar = await _scholarDataAccess.CreateScholarAsync(scholar);
+            _logger.LogInformation("Scholar created with ID: {ScholarId}", createdScholar.Id);
+            return CreatedAtAction(nameof(GetScholarById), new { id = createdScholar.Id }, createdScholar);
+        }
+        catch (InvalidOperationException ex)
+        {
+            _logger.LogError(ex, "Error creating scholar: {Message}", ex.Message);
+            return StatusCode(500, new
             {
-                var errors = ModelState
-                    .Where(ms => ms.Value?.Errors.Count > 0)
-                    .ToDictionary(
-                        kvp => kvp.Key,
-                        kvp => kvp.Value!.Errors.Select(e => e.ErrorMessage).ToArray()
-                    );
+                message = "Error creating scholar.",
+                details = ex.Message
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unexpected error creating scholar.");
+            return StatusCode(500, new
+            {
+                message = "An unexpected error occurred.",
+                details = ex.Message
+            });
+        }
+    }
 
-                _logger.LogWarning("Invalid model state for CreateScholar request: {@Errors}", errors);
+    [HttpGet]
+    public async Task<ActionResult<IEnumerable<Scholar>>> GetScholars()
+    {
+        try
+        {
+            var scholars = (await _scholarDataAccess.GetScholarsAsync()).ToList();
 
-                return BadRequest(new
-                {
-                    message = "Validation failed for the scholar data.",
-                    errors
-                });
+            _logger.LogInformation("Retrieved {Count} scholars.", scholars.Count);
+            return Ok(scholars);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unexpected error retrieving scholars.");
+            return StatusCode(500, new
+            {
+                message = "An unexpected error occurred.",
+                details = ex.Message
+            });
+        }
+    }
+
+    [HttpGet("{id:guid}")]
+    public async Task<ActionResult<Scholar>> GetScholarById(Guid id)
+    {
+        try
+        {
+            var scholar = await _scholarDataAccess.GetScholarByIdAsync(id);
+
+            if (scholar is null)
+            {
+                _logger.LogWarning("Scholar with ID {ScholarId} not found.", id);
+                return NotFound(new { message = $"Scholar with ID {id} not found." });
             }
 
-            try
+            _logger.LogInformation("Retrieved scholar with ID: {ScholarId}", id);
+            return Ok(scholar);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unexpected error retrieving scholar by ID: {ScholarId}", id);
+            return StatusCode(500, new
             {
-                var createdScholar = await _scholarDataAccess.CreateScholarAsync(scholar);
-                _logger.LogInformation("Scholar created with ID: {ScholarId}", createdScholar.Id);
-                return CreatedAtAction(nameof(GetScholarById), new { id = createdScholar.Id }, createdScholar);
-            }
-            catch (InvalidOperationException ex)
+                message = "An unexpected error occurred.",
+                details = ex.Message
+            });
+        }
+    }
+
+    [HttpPut("{id:guid}")]
+    public async Task<IActionResult> UpdateScholar(Guid id, [FromBody] Scholar scholar)
+    {
+        if (id != scholar.Id) return BadRequest(new { message = "ID in URL does not match ID in request body." });
+
+        if (!ModelState.IsValid)
+        {
+            var errors = ModelState
+                .Where(ms => ms.Value?.Errors.Count > 0)
+                .ToDictionary(
+                    kvp => kvp.Key,
+                    kvp => kvp.Value!.Errors.Select(e => e.ErrorMessage).ToArray()
+                );
+
+            _logger.LogWarning("Invalid model state for UpdateScholar request: {@Errors}", errors);
+
+            return BadRequest(new
             {
-                _logger.LogError(ex, "Error creating scholar: {Message}", ex.Message);
-                return StatusCode(500, new
-                {
-                    message = "Error creating scholar.",
-                    details = ex.Message
-                });
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Unexpected error creating scholar.");
-                return StatusCode(500, new
-                {
-                    message = "An unexpected error occurred.",
-                    details = ex.Message
-                });
-            }
+                message = "Validation failed for the scholar data.",
+                errors
+            });
         }
 
-        [HttpGet]
-        public async Task<ActionResult<IEnumerable<Scholar>>> GetScholars()
+        try
         {
-            try
-            {
-                var scholars = (await _scholarDataAccess.GetScholarsAsync()).ToList();
+            var updatedScholar = await _scholarDataAccess.UpdateScholarAsync(scholar);
+            if (updatedScholar == null) return NotFound(new { message = $"Scholar with ID {id} not found." });
 
-                _logger.LogInformation("Retrieved {Count} scholars.", scholars.Count);
-                return Ok(scholars);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Unexpected error retrieving scholars.");
-                return StatusCode(500, new
-                {
-                    message = "An unexpected error occurred.",
-                    details = ex.Message
-                });
-            }
+            return Ok(updatedScholar);
         }
-
-        [HttpGet("{id}")]
-        public async Task<ActionResult<Scholar>> GetScholarById(Guid id)
+        catch (Exception ex)
         {
-            try
+            _logger.LogError(ex, "Unexpected error updating scholar with ID: {ScholarId}", id);
+            return StatusCode(500, new
             {
-                var scholar = await _scholarDataAccess.GetScholarByIdAsync(id);
-
-                if (scholar is null)
-                {
-                    _logger.LogWarning("Scholar with ID {ScholarId} not found.", id);
-                    return NotFound(new { message = $"Scholar with ID {id} not found." });
-                }
-
-                _logger.LogInformation("Retrieved scholar with ID: {ScholarId}", id);
-                return Ok(scholar);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Unexpected error retrieving scholar by ID: {ScholarId}", id);
-                return StatusCode(500, new
-                {
-                    message = "An unexpected error occurred.",
-                    details = ex.Message
-                });
-            }
+                message = "An unexpected error occurred while updating the scholar.",
+                details = ex.Message
+            });
         }
+    }
 
-        [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateScholar(Guid id, [FromBody] Scholar scholar)
+    [HttpDelete("{id:guid}")]
+    public async Task<IActionResult> DeleteScholar(Guid id)
+    {
+        try
         {
-            if (id != scholar.Id)
-            {
-                return BadRequest(new { message = "ID in URL does not match ID in request body." });
-            }
+            var deleted = await _scholarDataAccess.DeleteScholarAsync(id);
+            if (!deleted) return NotFound(new { message = $"Scholar with ID {id} not found." });
 
-            if (!ModelState.IsValid)
-            {
-                var errors = ModelState
-                    .Where(ms => ms.Value?.Errors.Count > 0)
-                    .ToDictionary(
-                        kvp => kvp.Key,
-                        kvp => kvp.Value!.Errors.Select(e => e.ErrorMessage).ToArray()
-                    );
-
-                _logger.LogWarning("Invalid model state for UpdateScholar request: {@Errors}", errors);
-
-                return BadRequest(new
-                {
-                    message = "Validation failed for the scholar data.",
-                    errors
-                });
-            }
-
-            try
-            {
-                var updatedScholar = await _scholarDataAccess.UpdateScholarAsync(scholar);
-                if (updatedScholar == null)
-                {
-                    return NotFound(new { message = $"Scholar with ID {id} not found." });
-                }
-
-                return Ok(updatedScholar);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Unexpected error updating scholar with ID: {ScholarId}", id);
-                return StatusCode(500, new
-                {
-                    message = "An unexpected error occurred while updating the scholar.",
-                    details = ex.Message
-                });
-            }
+            return NoContent(); // 204 No Content is standard for successful DELETE
         }
-
-        [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteScholar(Guid id)
+        catch (Exception ex)
         {
-            try
+            _logger.LogError(ex, "Unexpected error deleting scholar with ID: {ScholarId}", id);
+            return StatusCode(500, new
             {
-                var deleted = await _scholarDataAccess.DeleteScholarAsync(id);
-                if (!deleted)
-                {
-                    return NotFound(new { message = $"Scholar with ID {id} not found." });
-                }
-
-                return NoContent(); // 204 No Content is standard for successful DELETE
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Unexpected error deleting scholar with ID: {ScholarId}", id);
-                return StatusCode(500, new
-                {
-                    message = "An unexpected error occurred while deleting the scholar.",
-                    details = ex.Message
-                });
-            }
+                message = "An unexpected error occurred while deleting the scholar.",
+                details = ex.Message
+            });
         }
     }
 }

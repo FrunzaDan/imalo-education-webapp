@@ -3,6 +3,7 @@ import { Component, OnInit } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 import { environment } from '../environments/environment';
 import { NavbarComponent } from './components/navbar/navbar.component';
+import { HealthService } from './services/health.service';
 
 @Component({
   selector: 'app-root',
@@ -15,13 +16,11 @@ export class AppComponent implements OnInit {
   environment = environment;
   apiAvailable = true;
 
-  constructor(private http: HttpClient) {}
+  constructor(private healthService: HealthService) {}
 
   ngOnInit(): void {
-    // Check API health by pinging endpoint
-    this.http.get(environment.baseUrlScholars).subscribe({
-      next: () => (this.apiAvailable = true),
-      error: () => (this.apiAvailable = false),
+    this.healthService.checkApiHealth().subscribe((status) => {
+      this.apiAvailable = status;
     });
   }
 }

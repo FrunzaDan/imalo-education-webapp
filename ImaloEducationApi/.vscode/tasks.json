@@ -5,7 +5,10 @@
       "label": "build",
       "command": "dotnet",
       "type": "process",
-      "args": ["build", "${workspaceFolder}/ImaloEducationApi.csproj"],
+      "args": [
+        "build",
+        "${workspaceFolder}/ImaloEducationApi.csproj"
+      ],
       "problemMatcher": "$msCompile",
       "group": {
         "kind": "build",

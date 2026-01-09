@@ -52,13 +52,10 @@ if (app.Environment.IsDevelopment())
         options.RoutePrefix = "swagger";
     });
 }
-else
-{
-    // Optional: Swagger in production with auth
-    // app.UseSwagger();
-    // app.UseSwaggerUI();
-}
 
+// Optional: Swagger in production with auth
+// app.UseSwagger();
+// app.UseSwaggerUI();
 // Enforce HTTPS redirection
 app.UseHttpsRedirection();
 
@@ -68,7 +65,7 @@ app.UseRouting();
 // Enable CORS (should come *before* authorization)
 app.UseCors("AllowSpecificOrigin");
 
-app.UseMiddleware<ImaloEducationApi.Logging.RequestLoggingMiddleware>();
+app.UseMiddleware<RequestLoggingMiddleware>();
 
 // Authentication/Authorization middleware (if needed)
 app.UseAuthorization();
