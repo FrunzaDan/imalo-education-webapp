@@ -173,4 +173,125 @@ public class ScholarsController : ControllerBase
             });
         }
     }
+
+    // ---------------------------------------
+    // Attendance endpoints for each Scholar
+    // ---------------------------------------
+
+    [HttpPost("{id:guid}/attendance")]
+    public async Task<IActionResult> CreateOrUpdateAttendance(Guid id, [FromBody] List<AttendanceRecord> attendance)
+    {
+        if (id == Guid.Empty)
+            return BadRequest(new { message = "Invalid scholar ID." });
+
+        if (attendance == null)
+            return BadRequest(new { message = "Attendance data is required." });
+
+        try
+        {
+            var result = await _scholarDataAccess.CreateOrUpdateAttendanceAsync(id, attendance);
+            if (result)
+            {
+                _logger.LogInformation("Attendance created/updated for scholar {ScholarId}", id);
+                return Ok(new { message = "Attendance record saved successfully." });
+            }
+
+            return StatusCode(500, new { message = "Failed to save attendance record." });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unexpected error saving attendance for scholar ID: {ScholarId}", id);
+            return StatusCode(500, new
+            {
+                message = "An unexpected error occurred while saving attendance.",
+                details = ex.Message
+            });
+        }
+    }
+
+    [HttpGet("{id:guid}/attendance")]
+    public async Task<ActionResult<IEnumerable<AttendanceRecord>>> GetAttendance(Guid id)
+    {
+        if (id == Guid.Empty)
+            return BadRequest(new { message = "Invalid scholar ID." });
+
+        try
+        {
+            var attendance = await _scholarDataAccess.GetAttendanceByScholarIdAsync(id);
+            if (attendance == null || !attendance.Any())
+            {
+                _logger.LogInformation("No attendance found for scholar {ScholarId}", id);
+                return NotFound(new { message = $"No attendance data found for scholar {id}." });
+            }
+
+            _logger.LogInformation("Fetched attendance for scholar {ScholarId}", id);
+            return Ok(attendance);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unexpected error fetching attendance for scholar ID: {ScholarId}", id);
+            return StatusCode(500, new
+            {
+                message = "An unexpected error occurred while retrieving attendance.",
+                details = ex.Message
+            });
+        }
+    }
+
+    [HttpDelete("{id:guid}/attendance")]
+    public async Task<IActionResult> DeleteAttendance(Guid id)
+    {
+        if (id == Guid.Empty)
+            return BadRequest(new { message = "Invalid scholar ID." });
+
+        try
+        {
+            var deleted = await _scholarDataAccess.DeleteAttendanceAsync(id);
+            if (!deleted)
+            {
+                _logger.LogWarning("No attendance record found to delete for scholar {ScholarId}", id);
+                return NotFound(new { message = $"No attendance record found for scholar {id}." });
+            }
+
+            _logger.LogInformation("Deleted attendance for scholar {ScholarId}", id);
+            return NoContent();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unexpected error deleting attendance for scholar ID: {ScholarId}", id);
+            return StatusCode(500, new
+            {
+                message = "An unexpected error occurred while deleting attendance.",
+                details = ex.Message
+            });
+        }
+    }
+
+    [HttpGet("attendance")]
+    public async Task<ActionResult<IEnumerable<object>>> GetAllAttendance()
+    {
+        try
+        {
+            var allAttendance = await _scholarDataAccess.GetAllAttendanceAsync();
+
+            var result = allAttendance.Select(a => new
+            {
+                ScholarId = a.ScholarId,
+                Attendance = a.Attendance
+            });
+
+            _logger.LogInformation("Retrieved attendance for {Count} scholars.", result.Count());
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unexpected error retrieving all attendance records.");
+            return StatusCode(500, new
+            {
+                message = "An unexpected error occurred while fetching all attendance records.",
+                details = ex.Message
+            });
+        }
+    }
+
 }

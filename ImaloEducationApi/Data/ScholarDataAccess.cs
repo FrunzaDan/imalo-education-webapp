@@ -297,6 +297,180 @@ public class ScholarDataAccess
         }
     }
 
+    // -----------------------------
+    // Attendance management methods
+    // -----------------------------
+
+    public async Task<bool> CreateOrUpdateAttendanceAsync(Guid scholarId, List<AttendanceRecord> attendanceRecords)
+    {
+        if (scholarId == Guid.Empty)
+            throw new ArgumentException("Scholar ID must not be empty.", nameof(scholarId));
+
+        ArgumentNullException.ThrowIfNull(attendanceRecords);
+
+        const string upsertAttendanceSql = """
+                                           IF EXISTS (SELECT 1 FROM Attendance WHERE ScholarId = @ScholarId)
+                                               UPDATE Attendance
+                                               SET AttendanceJson = @AttendanceJson
+                                               WHERE ScholarId = @ScholarId;
+                                           ELSE
+                                               INSERT INTO Attendance (ScholarId, AttendanceJson)
+                                               VALUES (@ScholarId, @AttendanceJson);
+                                           """;
+
+        await using var connection = new SqlConnection(_connectionString);
+        await using var command = new SqlCommand(upsertAttendanceSql, connection);
+
+        command.Parameters.AddWithValue("@ScholarId", scholarId);
+        command.Parameters.AddWithValue("@AttendanceJson", JsonSerializer.Serialize(attendanceRecords));
+
+        try
+        {
+            await connection.OpenAsync();
+            await command.ExecuteNonQueryAsync();
+
+            _logger.LogInformation("Attendance record upserted for scholar ID: {ScholarId}", scholarId);
+            return true;
+        }
+        catch (SqlException ex)
+        {
+            _logger.LogError(ex, "SQL error while creating or updating attendance for scholar ID: {ScholarId}", scholarId);
+            throw;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unexpected error while creating/updating attendance for scholar ID: {ScholarId}", scholarId);
+            throw;
+        }
+    }
+
+    public async Task<List<AttendanceRecord>> GetAttendanceByScholarIdAsync(Guid scholarId)
+    {
+        if (scholarId == Guid.Empty)
+            throw new ArgumentException("Scholar ID must not be empty.", nameof(scholarId));
+
+        const string sql = "SELECT AttendanceJson FROM Attendance WHERE ScholarId = @ScholarId;";
+
+        await using var connection = new SqlConnection(_connectionString);
+        await using var command = new SqlCommand(sql, connection);
+        command.Parameters.AddWithValue("@ScholarId", scholarId);
+
+        try
+        {
+            await connection.OpenAsync();
+            var result = await command.ExecuteScalarAsync();
+
+            if (result == null || result == DBNull.Value)
+            {
+                _logger.LogInformation("No attendance found for scholar ID: {ScholarId}", scholarId);
+                return new List<AttendanceRecord>();
+            }
+
+            var json = result.ToString();
+            return JsonSerializer.Deserialize<List<AttendanceRecord>>(json!,
+                new JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? new List<AttendanceRecord>();
+        }
+        catch (JsonException ex)
+        {
+            _logger.LogError(ex, "Invalid JSON found for scholar ID {ScholarId}", scholarId);
+            throw new Exception("Corrupted attendance JSON in database.", ex);
+        }
+        catch (SqlException ex)
+        {
+            _logger.LogError(ex, "SQL error while fetching attendance for scholar ID {ScholarId}", scholarId);
+            throw;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unexpected error while fetching attendance for scholar ID: {ScholarId}", scholarId);
+            throw;
+        }
+    }
+
+    public async Task<IEnumerable<(Guid ScholarId, List<AttendanceRecord> Attendance)>> GetAllAttendanceAsync()
+    {
+        const string sql = "SELECT ScholarId, AttendanceJson FROM Attendance;";
+
+        var results = new List<(Guid, List<AttendanceRecord>)>();
+
+        await using var connection = new SqlConnection(_connectionString);
+        await using var command = new SqlCommand(sql, connection);
+
+        try
+        {
+            await connection.OpenAsync();
+            await using var reader = await command.ExecuteReaderAsync();
+
+            while (await reader.ReadAsync())
+            {
+                var scholarId = reader.GetGuid(reader.GetOrdinal("ScholarId"));
+                var json = reader.GetString(reader.GetOrdinal("AttendanceJson"));
+
+                try
+                {
+                    var records = JsonSerializer.Deserialize<List<AttendanceRecord>>(json,
+                        new JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? new List<AttendanceRecord>();
+                    results.Add((scholarId, records));
+                }
+                catch (JsonException ex)
+                {
+                    _logger.LogWarning(ex, "Failed to parse attendance JSON for scholar {ScholarId}", scholarId);
+                }
+            }
+
+            _logger.LogInformation("Fetched attendance for {Count} scholars.", results.Count);
+            return results;
+        }
+        catch (SqlException ex)
+        {
+            _logger.LogError(ex, "SQL error occurred while fetching all attendance.");
+            throw;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unexpected error fetching all attendance.");
+            throw;
+        }
+    }
+
+    public async Task<bool> DeleteAttendanceAsync(Guid scholarId)
+    {
+        if (scholarId == Guid.Empty)
+            throw new ArgumentException("Scholar ID must not be empty.", nameof(scholarId));
+
+        const string sql = "DELETE FROM Attendance WHERE ScholarId = @ScholarId;";
+
+        await using var connection = new SqlConnection(_connectionString);
+        await using var command = new SqlCommand(sql, connection);
+        command.Parameters.AddWithValue("@ScholarId", scholarId);
+
+        try
+        {
+            await connection.OpenAsync();
+            var rows = await command.ExecuteNonQueryAsync();
+
+            if (rows > 0)
+            {
+                _logger.LogInformation("Deleted attendance for scholar ID: {ScholarId}", scholarId);
+                return true;
+            }
+
+            _logger.LogWarning("No attendance found to delete for scholar ID: {ScholarId}", scholarId);
+            return false;
+        }
+        catch (SqlException ex)
+        {
+            _logger.LogError(ex, "SQL error while deleting attendance for scholar ID: {ScholarId}", scholarId);
+            throw;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unexpected error deleting attendance for scholar ID: {ScholarId}", scholarId);
+            throw;
+        }
+    }
+
+
 
     private Scholar? TryMapScholarFromReader(SqlDataReader reader)
     {
