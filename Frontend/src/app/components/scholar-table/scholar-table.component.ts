@@ -5,8 +5,8 @@ import { SortingService } from '../../services/sorting.service';
 import { Scholar } from '../../interfaces/scholar';
 import { School } from '../../interfaces/school';
 import { CommonModule } from '@angular/common';
-import { forkJoin, Observable } from 'rxjs'; // Import Observable
-import { map } from 'rxjs/operators'; // Only need map, switchMap is no longer needed here
+import { forkJoin, from, of } from 'rxjs';
+import { catchError, concatMap, map, toArray } from 'rxjs/operators';
 import { RouterModule } from '@angular/router';
 
 interface TransformedScholarData {
@@ -33,6 +33,9 @@ export class ScholarTableComponent implements OnInit {
 
   currentSortColumn: string = '';
   isAscending: boolean = true;
+
+  selectedIds: Set<string> = new Set();
+  bulkDeleteInProgress: boolean = false;
 
   constructor(
     private scholarsService: ScholarsService,
@@ -82,6 +85,9 @@ export class ScholarTableComponent implements OnInit {
       )
       .subscribe((transformedData: TransformedScholarData[]) => {
         this.scholarData = transformedData;
+        // Stale selections (from before a reload) would otherwise reference
+        // rows that may no longer exist or may have shifted.
+        this.selectedIds = new Set();
       });
   }
 
@@ -108,5 +114,73 @@ export class ScholarTableComponent implements OnInit {
       type,
       this.isAscending,
     );
+  }
+
+  get allSelected(): boolean {
+    return (
+      this.scholarData.length > 0 &&
+      this.scholarData.every((s) => this.selectedIds.has(s.id))
+    );
+  }
+
+  isSelected(id: string): boolean {
+    return this.selectedIds.has(id);
+  }
+
+  toggleSelection(id: string, checked: boolean): void {
+    const next = new Set(this.selectedIds);
+    if (checked) {
+      next.add(id);
+    } else {
+      next.delete(id);
+    }
+    this.selectedIds = next;
+  }
+
+  toggleSelectAll(checked: boolean): void {
+    this.selectedIds = checked
+      ? new Set(this.scholarData.map((s) => s.id))
+      : new Set();
+  }
+
+  bulkDeleteSelected(): void {
+    if (this.selectedIds.size === 0 || this.bulkDeleteInProgress) return;
+
+    const ids = Array.from(this.selectedIds);
+    if (
+      !confirm(
+        `Are you sure you want to delete ${ids.length} scholar${ids.length === 1 ? '' : 's'}? ` +
+          `This also deletes their pickup schedule and attendance records. This cannot be undone.`,
+      )
+    ) {
+      return;
+    }
+
+    this.bulkDeleteInProgress = true;
+
+    from(ids)
+      .pipe(
+        concatMap((id) =>
+          this.scholarsService.deleteScholar(id).pipe(
+            map(() => true),
+            catchError((err) => {
+              console.error(`Failed to delete scholar ${id}:`, err);
+              return of(false);
+            }),
+          ),
+        ),
+        toArray(),
+      )
+      .subscribe((results) => {
+        this.bulkDeleteInProgress = false;
+        const succeeded = results.filter(Boolean).length;
+        const failed = results.length - succeeded;
+        alert(
+          failed === 0
+            ? `Deleted ${succeeded} scholar${succeeded === 1 ? '' : 's'}.`
+            : `Deleted ${succeeded} scholar${succeeded === 1 ? '' : 's'} (${failed} failed — check console).`,
+        );
+        this.loadData();
+      });
   }
 }

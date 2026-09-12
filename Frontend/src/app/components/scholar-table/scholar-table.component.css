@@ -1,3 +1,22 @@
 /* Table styling (.app-table, .table-header, .table-row, .table-cell, .sort-icon)
    lives in the global src/styles.css so it can be shared with the attendance
    dashboard's table too. Nothing page-specific left to scope here. */
+
+.scholar-table-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.scholar-table-toolbar__delete {
+  background-color: #b91c1c;
+}
+
+.scholar-table-toolbar__delete:hover:not(:disabled) {
+  background-color: #7f1414;
+}
+
+.scholar-table-toolbar__delete:disabled {
+  background-color: #c9b3b3;
+  cursor: not-allowed;
+}

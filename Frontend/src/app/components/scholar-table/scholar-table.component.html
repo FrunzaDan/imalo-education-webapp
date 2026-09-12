@@ -1,11 +1,31 @@
-<div>
+<div class="scholar-table-toolbar">
   <button [routerLink]="['/create-scholar']" class="app-button">
     Create Scholar
+  </button>
+  <button
+    type="button"
+    class="app-button scholar-table-toolbar__delete"
+    [disabled]="selectedIds.size === 0 || bulkDeleteInProgress"
+    (click)="bulkDeleteSelected()"
+  >
+    {{
+      bulkDeleteInProgress
+        ? 'Deleting...'
+        : 'Delete selected (' + selectedIds.size + ')'
+    }}
   </button>
 </div>
 <table class="app-table">
   <thead>
     <tr>
+      <th class="table-header">
+        <input
+          type="checkbox"
+          aria-label="Select all scholars"
+          [checked]="allSelected"
+          (change)="toggleSelectAll($any($event.target).checked)"
+        />
+      </th>
       <th class="table-header sortable" (click)="sortData('name', 'string')">
         Student Name
         <span class="sort-icon">
@@ -66,6 +86,14 @@
       [routerLink]="['/scholars', scholar.id]"
       style="cursor: pointer"
     >
+      <td class="table-cell" (click)="$event.stopPropagation()">
+        <input
+          type="checkbox"
+          [attr.aria-label]="'Select ' + scholar.name"
+          [checked]="isSelected(scholar.id)"
+          (change)="toggleSelection(scholar.id, $any($event.target).checked)"
+        />
+      </td>
       <td class="table-cell">{{ scholar.name }}</td>
       <td
         class="table-cell"
