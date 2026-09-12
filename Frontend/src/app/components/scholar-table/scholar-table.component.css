@@ -5,7 +5,17 @@
 .scholar-table-toolbar {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 0.5rem;
+}
+
+.scholar-table-toolbar__search {
+  /* .app-input is width:100% by default, which would otherwise consume the
+     whole flex row instead of sitting alongside the buttons. */
+  width: auto;
+  flex: 1 1 240px;
+  max-width: 320px;
+  margin-bottom: 0;
 }
 
 .scholar-table-toolbar__delete {

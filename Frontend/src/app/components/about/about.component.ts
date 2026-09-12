@@ -1,4 +1,9 @@
-import { Component, ChangeDetectionStrategy, inject, signal } from '@angular/core';
+import {
+  Component,
+  ChangeDetectionStrategy,
+  inject,
+  signal,
+} from '@angular/core';
 import { catchError, concatMap, from, map, of, switchMap, toArray } from 'rxjs';
 import { ApiLoggerService } from '../../services/api-logger.service';
 import { ScholarsService } from '../../services/scholars.service';
@@ -14,15 +19,89 @@ import { getWeekdayDatesInMonth } from '../../utils/weekday-dates';
 const TEST_SCHOLAR_COUNT = 20;
 
 const FIRST_NAMES = [
-  'Andrei', 'Maria', 'Ion', 'Elena', 'Mihai', 'Ioana', 'Cristian', 'Ana',
-  'Alexandru', 'Gabriela', 'Florin', 'Andreea', 'Radu', 'Simona', 'George',
-  'Cristina', 'Dan', 'Diana', 'Vasile', 'Larisa',
+  'Andrei',
+  'Maria',
+  'Ion',
+  'Elena',
+  'Mihai',
+  'Ioana',
+  'Cristian',
+  'Ana',
+  'Alexandru',
+  'Gabriela',
+  'Florin',
+  'Andreea',
+  'Radu',
+  'Simona',
+  'George',
+  'Cristina',
+  'Dan',
+  'Diana',
+  'Vasile',
+  'Larisa',
+  'Adrian',
+  'Mihaela',
+  'Bogdan',
+  'Roxana',
+  'Cătălin',
+  'Monica',
+  'Stefan',
+  'Alina',
+  'Vlad',
+  'Nicoleta',
+  'Stefan',
+  'Astrid',
+  'Markus',
+  'Ingrid',
+  'Klaus',
+  'Renate',
+  'Thomas',
+  'Sabine',
+  'Hans',
+  'Ursula',
 ];
 
 const LAST_NAMES = [
-  'Popescu', 'Ionescu', 'Popa', 'Radu', 'Dumitru', 'Stan', 'Gheorghe',
-  'Constantin', 'Marin', 'Stoica', 'Matei', 'Ciobanu', 'Munteanu', 'Rusu',
-  'Barbu', 'Florea', 'Nistor', 'Toma', 'Oprea', 'Cristea',
+  'Popescu',
+  'Ionescu',
+  'Popa',
+  'Radu',
+  'Dumitru',
+  'Stan',
+  'Gheorghe',
+  'Constantin',
+  'Marin',
+  'Stoica',
+  'Matei',
+  'Ciobanu',
+  'Munteanu',
+  'Rusu',
+  'Barbu',
+  'Florea',
+  'Nistor',
+  'Toma',
+  'Oprea',
+  'Cristea',
+  'Preda',
+  'Dobre',
+  'Dima',
+  'Sârbu',
+  'Neagu',
+  'Enache',
+  'Balan',
+  'Diaconu',
+  'Ilie',
+  'Lupu',
+  'Weber',
+  'Schmidt',
+  'Schneider',
+  'Fischer',
+  'Wagner',
+  'Becker',
+  'Hoffmann',
+  'Schuster',
+  'Klein',
+  'Müller',
 ];
 
 const WEEKDAY_KEYS: (keyof PickUpSchedule)[] = Object.values(WeekDays);
@@ -34,7 +113,9 @@ const PICKUP_TIME_SLOTS = (() => {
   const slots: string[] = [];
   for (let hour = 11; hour < 14; hour++) {
     for (let minutes = 0; minutes < 60; minutes += 15) {
-      slots.push(`${hour.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`);
+      slots.push(
+        `${hour.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`,
+      );
     }
   }
   return slots;
@@ -50,8 +131,16 @@ function randomInt(min: number, max: number): number {
 
 function randomBirthdate(): Date {
   const now = new Date();
-  const end = new Date(now.getFullYear() - 5, now.getMonth(), now.getDate()).getTime();
-  const start = new Date(now.getFullYear() - 12, now.getMonth(), now.getDate()).getTime();
+  const end = new Date(
+    now.getFullYear() - 5,
+    now.getMonth(),
+    now.getDate(),
+  ).getTime();
+  const start = new Date(
+    now.getFullYear() - 12,
+    now.getMonth(),
+    now.getDate(),
+  ).getTime();
   return new Date(start + Math.random() * (end - start));
 }
 
@@ -62,6 +151,18 @@ function randomPickUpSchedule(): PickUpSchedule {
     schedule[day] = Math.random() < 0.6 ? pick(PICKUP_TIME_SLOTS) : '';
   }
   return schedule;
+}
+
+// A plausible-looking Romanian mobile number, or null if this scholar has no
+// parent recorded for that role — both mother and father are independently
+// optional in the real data model too.
+function randomParentPhone(chance: number): string | null {
+  if (Math.random() >= chance) return null;
+  const prefix = pick(['072', '073', '074', '075', '076', '077', '078']);
+  let digits = '';
+  for (let i = 0; i < 7; i++)
+    digits += Math.floor(Math.random() * 10).toString();
+  return `${prefix}${digits}`;
 }
 
 @Component({
@@ -96,7 +197,9 @@ export class AboutComponent {
     this.schoolsService.getSchools().subscribe((schools) => {
       if (schools.length === 0) {
         this.addingTestScholars.set(false);
-        this.resultMessage.set('No schools available — cannot generate test scholars.');
+        this.resultMessage.set(
+          'No schools available — cannot generate test scholars.',
+        );
         return;
       }
 
@@ -111,12 +214,17 @@ export class AboutComponent {
               switchMap((created) => {
                 const school = schools.find((s) => s.id === created.schoolId);
                 const attendance = this.buildRandomAttendance(school);
-                return this.attendanceService.saveAttendance(created.id, attendance).pipe(
-                  catchError((err) => {
-                    console.warn(`Created scholar ${created.id} but failed to save its test attendance:`, err);
-                    return of(null);
-                  }),
-                );
+                return this.attendanceService
+                  .saveAttendance(created.id, attendance)
+                  .pipe(
+                    catchError((err) => {
+                      console.warn(
+                        `Created scholar ${created.id} but failed to save its test attendance:`,
+                        err,
+                      );
+                      return of(null);
+                    }),
+                  );
               }),
               map(() => true),
               catchError((err) => {
@@ -149,20 +257,26 @@ export class AboutComponent {
       grade: randomInt(0, 12),
       dateOfBirth: randomBirthdate(),
       pickUpSchedule: randomPickUpSchedule(),
+      motherPhoneNumber: randomParentPhone(0.7),
+      fatherPhoneNumber: randomParentPhone(0.5),
     };
   }
 
   // A couple of recent months of attendance, most (not all) weekdays, so the
   // per-scholar attendance page and the attendance dashboard both have
   // something realistic to show right away.
-  private buildRandomAttendance(school: School | undefined): AttendanceRecord[] {
+  private buildRandomAttendance(
+    school: School | undefined,
+  ): AttendanceRecord[] {
     const lunchPrice = school?.lunchPrice ?? 15;
     const transportPrice = school?.transportPrice ?? 5;
     const now = new Date();
     const months = [
       { year: now.getFullYear(), month: now.getMonth() + 1 },
-      { year: now.getMonth() === 0 ? now.getFullYear() - 1 : now.getFullYear(),
-        month: now.getMonth() === 0 ? 12 : now.getMonth() },
+      {
+        year: now.getMonth() === 0 ? now.getFullYear() - 1 : now.getFullYear(),
+        month: now.getMonth() === 0 ? 12 : now.getMonth(),
+      },
     ];
 
     const records: AttendanceRecord[] = [];

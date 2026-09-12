@@ -25,7 +25,7 @@ ImaloEducationWebapp/
 │   └── appsettings.json         # DefaultConnection connection string
 ├── ImaloEducationDB/
 │   ├── global.json               # pins the .NET 8 SDK for this project — see [[local-dev-setup]]
-│   ├── Tables/                  # Scholars, PickUpSchedule, Attendance
+│   ├── Tables/                  # Scholars, PickUpSchedule, Attendance, Parents
 │   └── Scripts/Pre-Deployment/  # creates the ImaloEducationDB database if missing
 └── Frontend/
     ├── src/server.ts             # standalone Node SSR server, angular.json outputMode:"server"
@@ -44,6 +44,7 @@ ImaloEducationWebapp/
 - Local dev DB runs as a **Docker container** (Azure SQL Edge — the only Microsoft SQL Server image with a working Apple Silicon/arm64 build), shared with other local .NET projects on this machine (same container name `sqlserver`, port `1433`). See [[local-dev-setup]].
 - Data flows: Angular UI → plain HTTP → ASP.NET Core API → ADO.NET (parameterized `SqlCommand`s, direct table access — **no stored procedures**, unlike some sibling projects) → SQL Server.
 - `PickUpSchedule` and `Attendance` are stored as JSON blobs (`ScheduleJson`, `AttendanceJson` columns) keyed by `ScholarId`, serialized/deserialized in `ScholarDataAccess` — not normalized relational tables.
+- `Parents` is a genuinely relational table instead: up to one `Mother` row and one `Father` row per scholar (`UNIQUE (ScholarId, Role)`, `CHECK (Role IN ('Mother','Father'))`), each with a phone number, `ON DELETE CASCADE` from `Scholars`. The API exposes it as two optional fields on `Scholar` (`MotherPhoneNumber`/`FatherPhoneNumber`), fetched via two correlated scalar subqueries (not a `LEFT JOIN`, which would duplicate the scholar row when both exist) and upserted-or-deleted per role on update.
 - The API is **plain HTTP only** (`http://localhost:5244`, see `Properties/launchSettings.json`) — no HTTPS profile, so none of the dev-cert/TLS-trust issues that HTTPS-based sibling projects have apply here.
 
 ## Gotchas / conventions

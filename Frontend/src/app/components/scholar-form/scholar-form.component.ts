@@ -37,6 +37,11 @@ export class ScholarFormComponent implements OnInit {
   scholarId: string | null = null;
   isSubmitting = false;
 
+  // Matches the backend's ValidatePhoneNumber — loose on purpose (no
+  // country-specific format assumed), just enough to catch obviously wrong
+  // input (e.g. text typed into the field) before a round-trip to the API.
+  private static readonly PHONE_PATTERN = /^\+?[0-9 ()-]{6,20}$/;
+
   ngOnInit(): void {
     this.initForm();
 
@@ -68,6 +73,12 @@ export class ScholarFormComponent implements OnInit {
         [Validators.required, Validators.min(0), Validators.max(12)],
       ],
       dateOfBirth: ['', [Validators.required, this.dateValidator]],
+      motherFirstName: ['', [Validators.maxLength(100)]],
+      motherLastName: ['', [Validators.maxLength(100)]],
+      motherPhoneNumber: ['', [Validators.pattern(ScholarFormComponent.PHONE_PATTERN)]],
+      fatherFirstName: ['', [Validators.maxLength(100)]],
+      fatherLastName: ['', [Validators.maxLength(100)]],
+      fatherPhoneNumber: ['', [Validators.pattern(ScholarFormComponent.PHONE_PATTERN)]],
       pickUpSchedule: this.fb.group({
         monday: [''],
         tuesday: [''],
@@ -87,6 +98,12 @@ export class ScholarFormComponent implements OnInit {
       dateOfBirth: scholar.dateOfBirth
         ? new Date(scholar.dateOfBirth).toISOString().substring(0, 10)
         : '',
+      motherFirstName: scholar.motherFirstName ?? '',
+      motherLastName: scholar.motherLastName ?? '',
+      motherPhoneNumber: scholar.motherPhoneNumber ?? '',
+      fatherFirstName: scholar.fatherFirstName ?? '',
+      fatherLastName: scholar.fatherLastName ?? '',
+      fatherPhoneNumber: scholar.fatherPhoneNumber ?? '',
       pickUpSchedule: scholar.pickUpSchedule || {},
     });
   }
@@ -114,6 +131,12 @@ export class ScholarFormComponent implements OnInit {
       schoolId: formValue.schoolId,
       grade: formValue.grade,
       dateOfBirth: new Date(formValue.dateOfBirth),
+      motherFirstName: formValue.motherFirstName || null,
+      motherLastName: formValue.motherLastName || null,
+      motherPhoneNumber: formValue.motherPhoneNumber || null,
+      fatherFirstName: formValue.fatherFirstName || null,
+      fatherLastName: formValue.fatherLastName || null,
+      fatherPhoneNumber: formValue.fatherPhoneNumber || null,
       pickUpSchedule: formValue.pickUpSchedule,
     };
 

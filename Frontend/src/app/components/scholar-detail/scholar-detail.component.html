@@ -25,6 +25,24 @@
     </p>
     <p><strong>School:</strong> {{ school?.name || 'Unknown' }}</p>
   </div>
+  @if (scholar.motherFirstName || scholar.motherLastName || scholar.motherPhoneNumber
+  || scholar.fatherFirstName || scholar.fatherLastName || scholar.fatherPhoneNumber) {
+  <div class="detail-card">
+    <h3>Parents</h3>
+    @if (scholar.motherFirstName || scholar.motherLastName || scholar.motherPhoneNumber) {
+    <p>
+      <strong>Mother:</strong>
+      {{ formatParent(scholar.motherFirstName, scholar.motherLastName, scholar.motherPhoneNumber) }}
+    </p>
+    }
+    @if (scholar.fatherFirstName || scholar.fatherLastName || scholar.fatherPhoneNumber) {
+    <p>
+      <strong>Father:</strong>
+      {{ formatParent(scholar.fatherFirstName, scholar.fatherLastName, scholar.fatherPhoneNumber) }}
+    </p>
+    }
+  </div>
+  }
   @if (scholar.pickUpSchedule) {
   <div class="pickup-schedule">
     <h3>Pick-Up Schedule</h3>

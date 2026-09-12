@@ -137,6 +137,105 @@
       }
     </div>
 
+    <!-- Parents -->
+    <div class="create-update-scholar-entry">
+      <label class="app-label block mb-2">Parents (Optional)</label>
+      <div class="grid gap-6 md:grid-cols-2">
+        <div>
+          <p class="parent-subheading">Mother</p>
+          <div class="grid gap-2">
+            <input
+              id="motherFirstName"
+              type="text"
+              formControlName="motherFirstName"
+              class="app-input"
+              [class.error]="
+                scholarForm.get('motherFirstName')?.invalid &&
+                (scholarForm.get('motherFirstName')?.dirty ||
+                  scholarForm.get('motherFirstName')?.touched)
+              "
+              placeholder="First name"
+            />
+            <input
+              id="motherLastName"
+              type="text"
+              formControlName="motherLastName"
+              class="app-input"
+              [class.error]="
+                scholarForm.get('motherLastName')?.invalid &&
+                (scholarForm.get('motherLastName')?.dirty ||
+                  scholarForm.get('motherLastName')?.touched)
+              "
+              placeholder="Last name"
+            />
+            <input
+              id="motherPhoneNumber"
+              type="tel"
+              formControlName="motherPhoneNumber"
+              class="app-input"
+              [class.error]="
+                scholarForm.get('motherPhoneNumber')?.invalid &&
+                (scholarForm.get('motherPhoneNumber')?.dirty ||
+                  scholarForm.get('motherPhoneNumber')?.touched)
+              "
+              placeholder="Phone, e.g. 0722 111 222"
+            />
+          </div>
+          @if (scholarForm.get('motherPhoneNumber')?.invalid &&
+          (scholarForm.get('motherPhoneNumber')?.dirty ||
+          scholarForm.get('motherPhoneNumber')?.touched)) {
+          <div class="app-error-message">Not a valid phone number.</div>
+          }
+        </div>
+        <div>
+          <p class="parent-subheading">Father</p>
+          <div class="grid gap-2">
+            <input
+              id="fatherFirstName"
+              type="text"
+              formControlName="fatherFirstName"
+              class="app-input"
+              [class.error]="
+                scholarForm.get('fatherFirstName')?.invalid &&
+                (scholarForm.get('fatherFirstName')?.dirty ||
+                  scholarForm.get('fatherFirstName')?.touched)
+              "
+              placeholder="First name"
+            />
+            <input
+              id="fatherLastName"
+              type="text"
+              formControlName="fatherLastName"
+              class="app-input"
+              [class.error]="
+                scholarForm.get('fatherLastName')?.invalid &&
+                (scholarForm.get('fatherLastName')?.dirty ||
+                  scholarForm.get('fatherLastName')?.touched)
+              "
+              placeholder="Last name"
+            />
+            <input
+              id="fatherPhoneNumber"
+              type="tel"
+              formControlName="fatherPhoneNumber"
+              class="app-input"
+              [class.error]="
+                scholarForm.get('fatherPhoneNumber')?.invalid &&
+                (scholarForm.get('fatherPhoneNumber')?.dirty ||
+                  scholarForm.get('fatherPhoneNumber')?.touched)
+              "
+              placeholder="Phone, e.g. 0733 444 555"
+            />
+          </div>
+          @if (scholarForm.get('fatherPhoneNumber')?.invalid &&
+          (scholarForm.get('fatherPhoneNumber')?.dirty ||
+          scholarForm.get('fatherPhoneNumber')?.touched)) {
+          <div class="app-error-message">Not a valid phone number.</div>
+          }
+        </div>
+      </div>
+    </div>
+
     <!-- Pick Up Schedule -->
     <div class="create-update-scholar-entry">
       <label class="app-label block mb-2">Pick Up Schedule (Optional)</label>

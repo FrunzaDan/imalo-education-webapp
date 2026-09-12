@@ -34,6 +34,8 @@ export class ScholarTableComponent implements OnInit {
   currentSortColumn: string = '';
   isAscending: boolean = true;
 
+  searchTerm: string = '';
+
   selectedIds: Set<string> = new Set();
   bulkDeleteInProgress: boolean = false;
 
@@ -116,10 +118,24 @@ export class ScholarTableComponent implements OnInit {
     );
   }
 
+  // The full loaded/sorted list is client-side filtered by name for display —
+  // this dataset is small enough that a server round-trip per keystroke (the
+  // pattern Customer_Management_System uses, justified there by server-side
+  // pagination) would just be unnecessary latency here.
+  get displayedScholarData(): TransformedScholarData[] {
+    const term = this.searchTerm.trim().toLowerCase();
+    if (!term) return this.scholarData;
+    return this.scholarData.filter((s) => s.name.toLowerCase().includes(term));
+  }
+
+  onSearchTermChange(value: string): void {
+    this.searchTerm = value;
+  }
+
   get allSelected(): boolean {
     return (
-      this.scholarData.length > 0 &&
-      this.scholarData.every((s) => this.selectedIds.has(s.id))
+      this.displayedScholarData.length > 0 &&
+      this.displayedScholarData.every((s) => this.selectedIds.has(s.id))
     );
   }
 
@@ -137,10 +153,18 @@ export class ScholarTableComponent implements OnInit {
     this.selectedIds = next;
   }
 
+  // Scoped to whatever's currently visible (matching the search filter), so
+  // selections made under a different search term aren't silently touched.
   toggleSelectAll(checked: boolean): void {
-    this.selectedIds = checked
-      ? new Set(this.scholarData.map((s) => s.id))
-      : new Set();
+    const next = new Set(this.selectedIds);
+    for (const s of this.displayedScholarData) {
+      if (checked) {
+        next.add(s.id);
+      } else {
+        next.delete(s.id);
+      }
+    }
+    this.selectedIds = next;
   }
 
   bulkDeleteSelected(): void {

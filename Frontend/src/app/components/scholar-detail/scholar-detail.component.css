@@ -18,6 +18,16 @@ h2 {
   color: #555;
 }
 
+.detail-card h3 {
+  margin: 0 0 0.25rem;
+  color: #165b58;
+  font-size: 1.05rem;
+}
+
+.detail-card + .detail-card {
+  margin-top: 1rem;
+}
+
 /* Pick-Up Schedule Section Styling */
 .pickup-schedule {
   margin-top: 2rem;

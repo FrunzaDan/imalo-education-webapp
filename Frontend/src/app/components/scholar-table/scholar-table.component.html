@@ -1,4 +1,12 @@
 <div class="scholar-table-toolbar">
+  <input
+    type="search"
+    class="app-input scholar-table-toolbar__search"
+    placeholder="Search by name..."
+    [value]="searchTerm"
+    (input)="onSearchTermChange($any($event.target).value)"
+    aria-label="Search scholars by name"
+  />
   <button [routerLink]="['/create-scholar']" class="app-button">
     Create Scholar
   </button>
@@ -80,7 +88,7 @@
     </tr>
   </thead>
   <tbody>
-    @for (scholar of scholarData; track scholar.id) {
+    @for (scholar of displayedScholarData; track scholar.id) {
     <tr
       class="table-row"
       [routerLink]="['/scholars', scholar.id]"
@@ -106,6 +114,16 @@
       </td>
       <td class="table-cell">{{ scholar.grade }}</td>
       <td class="table-cell">{{ scholar.birthDate }}</td>
+    </tr>
+    } @empty {
+    <tr class="table-row">
+      <td colspan="5" class="table-cell">
+        @if (searchTerm) {
+          No scholars match "{{ searchTerm }}".
+        } @else {
+          No scholars yet.
+        }
+      </td>
     </tr>
     }
   </tbody>

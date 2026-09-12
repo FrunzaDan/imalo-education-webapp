@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using System.Globalization;
+using System.Text.RegularExpressions;
 
 namespace ImaloEducationApi.Models;
 
@@ -28,6 +29,30 @@ public class Scholar
 
     [CustomValidation(typeof(Scholar), nameof(ValidatePickUpSchedule))]
     public Dictionary<string, string?>? PickUpSchedule { get; set; }
+
+    // Optional — a scholar may have a mother, a father, both, or neither, and each
+    // of a parent's own fields (name, phone) is independently optional too. Stored
+    // as separate rows (Role 'Mother'/'Father') in the Parents table, not as
+    // columns on Scholars, so the two roles can be added/edited/removed independently.
+    [StringLength(100)]
+    public string? MotherFirstName { get; set; }
+
+    [StringLength(100)]
+    public string? MotherLastName { get; set; }
+
+    [StringLength(20)]
+    [CustomValidation(typeof(Scholar), nameof(ValidatePhoneNumber))]
+    public string? MotherPhoneNumber { get; set; }
+
+    [StringLength(100)]
+    public string? FatherFirstName { get; set; }
+
+    [StringLength(100)]
+    public string? FatherLastName { get; set; }
+
+    [StringLength(20)]
+    [CustomValidation(typeof(Scholar), nameof(ValidatePhoneNumber))]
+    public string? FatherPhoneNumber { get; set; }
 
     public static ValidationResult? ValidateDateOfBirth(DateTime date, ValidationContext context)
     {
@@ -60,5 +85,14 @@ public class Scholar
         }
 
         return ValidationResult.Success;
+    }
+
+    public static ValidationResult? ValidatePhoneNumber(string? phoneNumber, ValidationContext context)
+    {
+        if (string.IsNullOrWhiteSpace(phoneNumber)) return ValidationResult.Success;
+
+        return Regex.IsMatch(phoneNumber, @"^\+?[0-9 ()-]{6,20}$")
+            ? ValidationResult.Success
+            : new ValidationResult($"Invalid phone number: '{phoneNumber}'.");
     }
 }

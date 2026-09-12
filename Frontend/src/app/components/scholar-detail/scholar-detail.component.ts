@@ -69,6 +69,18 @@ export class ScholarDetailComponent implements OnInit {
       .subscribe();
   }
 
+  // Composes whatever's actually present — a parent may have a name, a
+  // phone number, both, or (if this returns '') neither.
+  formatParent(
+    firstName?: string | null,
+    lastName?: string | null,
+    phoneNumber?: string | null,
+  ): string {
+    const name = [firstName, lastName].filter(Boolean).join(' ');
+    if (name && phoneNumber) return `${name} — ${phoneNumber}`;
+    return name || phoneNumber || '';
+  }
+
   navigateToUpdateScholar(): void {
     if (!this.scholar?.id) return;
 

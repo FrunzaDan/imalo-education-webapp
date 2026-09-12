@@ -70,6 +70,17 @@ app.UseMiddleware<RequestLoggingMiddleware>();
 // Authentication/Authorization middleware (if needed)
 app.UseAuthorization();
 
+// Every response here is live, frequently-mutated data (scholars/attendance),
+// never a fixed resource — without this, browsers apply heuristic caching to
+// a bare 200 OK with no Cache-Control/ETag/Last-Modified, which is exactly
+// what was making the Angular app (using HttpClient's withFetch() backend)
+// show stale data after a create/update/delete until a hard refresh.
+app.Use(async (context, next) =>
+{
+    context.Response.Headers.CacheControl = "no-store";
+    await next();
+});
+
 // Map attribute-based controllers
 app.MapControllers();
 

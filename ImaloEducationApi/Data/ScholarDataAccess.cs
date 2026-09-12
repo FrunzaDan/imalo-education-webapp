@@ -16,6 +16,9 @@ public class ScholarDataAccess
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
+    private static object ToDbValue(string? value) =>
+        string.IsNullOrWhiteSpace(value) ? DBNull.Value : value;
+
     public async Task<Scholar> CreateScholarAsync(Scholar scholar)
     {
         ArgumentNullException.ThrowIfNull(scholar);
@@ -28,10 +31,15 @@ public class ScholarDataAccess
                                         """;
 
         const string insertScheduleSql = """
-                                         
+
                                                  INSERT INTO PickUpSchedule (ScholarId, ScheduleJson)
                                                  VALUES (@ScholarId, @ScheduleJson);
                                          """;
+
+        const string insertParentSql = """
+                                        INSERT INTO Parents (ScholarId, Role, FirstName, LastName, PhoneNumber)
+                                        VALUES (@ScholarId, @Role, @FirstName, @LastName, @PhoneNumber);
+                                        """;
 
         await using var connection = new SqlConnection(_connectionString);
         await using var insertScholarCmd = new SqlCommand(insertScholarSql, connection);
@@ -53,15 +61,37 @@ public class ScholarDataAccess
                 _logger.LogInformation("Scholar created with ID: {ScholarId}", insertedId);
 
                 // Insert pickup schedule if provided
-                if (scholar.PickUpSchedule == null || scholar.PickUpSchedule.Count == 0) return scholar;
+                if (scholar.PickUpSchedule != null && scholar.PickUpSchedule.Count > 0)
+                {
+                    await using var insertScheduleCmd = new SqlCommand(insertScheduleSql, connection);
+                    insertScheduleCmd.Parameters.AddWithValue("@ScholarId", insertedId);
+                    insertScheduleCmd.Parameters.AddWithValue("@ScheduleJson",
+                        JsonSerializer.Serialize(scholar.PickUpSchedule));
 
-                await using var insertScheduleCmd = new SqlCommand(insertScheduleSql, connection);
-                insertScheduleCmd.Parameters.AddWithValue("@ScholarId", insertedId);
-                insertScheduleCmd.Parameters.AddWithValue("@ScheduleJson",
-                    JsonSerializer.Serialize(scholar.PickUpSchedule));
+                    await insertScheduleCmd.ExecuteNonQueryAsync();
+                    _logger.LogInformation("Pickup schedule inserted for scholar ID: {ScholarId}", insertedId);
+                }
 
-                await insertScheduleCmd.ExecuteNonQueryAsync();
-                _logger.LogInformation("Pickup schedule inserted for scholar ID: {ScholarId}", insertedId);
+                // Insert parent rows for whichever of Mother/Father has at least one field
+                // set — every field of a parent is independently optional, so a row is only
+                // created once there's actually something to store.
+                foreach (var (role, firstName, lastName, phoneNumber) in new[]
+                         {
+                             ("Mother", scholar.MotherFirstName, scholar.MotherLastName, scholar.MotherPhoneNumber),
+                             ("Father", scholar.FatherFirstName, scholar.FatherLastName, scholar.FatherPhoneNumber),
+                         })
+                {
+                    if (string.IsNullOrWhiteSpace(firstName) && string.IsNullOrWhiteSpace(lastName) &&
+                        string.IsNullOrWhiteSpace(phoneNumber)) continue;
+
+                    await using var insertParentCmd = new SqlCommand(insertParentSql, connection);
+                    insertParentCmd.Parameters.AddWithValue("@ScholarId", insertedId);
+                    insertParentCmd.Parameters.AddWithValue("@Role", role);
+                    insertParentCmd.Parameters.AddWithValue("@FirstName", ToDbValue(firstName));
+                    insertParentCmd.Parameters.AddWithValue("@LastName", ToDbValue(lastName));
+                    insertParentCmd.Parameters.AddWithValue("@PhoneNumber", ToDbValue(phoneNumber));
+                    await insertParentCmd.ExecuteNonQueryAsync();
+                }
 
                 return scholar;
             }
@@ -83,11 +113,18 @@ public class ScholarDataAccess
 
     public async Task<IEnumerable<Scholar>> GetScholarsAsync()
     {
+        // Parents is joined via OUTER APPLY, not a plain LEFT JOIN — a LEFT JOIN straight
+        // to Parents would duplicate the scholar row when both a Mother and a Father row
+        // exist, and OUTER APPLY is how to pull more than one column per role without that.
         const string sql = """
-                           
-                                           SELECT s.Id, s.FirstName, s.LastName, s.DateOfBirth, s.Grade, s.SchoolId, ps.ScheduleJson
+
+                                           SELECT s.Id, s.FirstName, s.LastName, s.DateOfBirth, s.Grade, s.SchoolId, ps.ScheduleJson,
+                                                  mother.FirstName AS MotherFirstName, mother.LastName AS MotherLastName, mother.PhoneNumber AS MotherPhoneNumber,
+                                                  father.FirstName AS FatherFirstName, father.LastName AS FatherLastName, father.PhoneNumber AS FatherPhoneNumber
                                            FROM Scholars s
-                                           LEFT JOIN PickUpSchedule ps ON s.Id = ps.ScholarId;
+                                           LEFT JOIN PickUpSchedule ps ON s.Id = ps.ScholarId
+                                           OUTER APPLY (SELECT TOP 1 FirstName, LastName, PhoneNumber FROM Parents WHERE ScholarId = s.Id AND Role = 'Mother') AS mother
+                                           OUTER APPLY (SELECT TOP 1 FirstName, LastName, PhoneNumber FROM Parents WHERE ScholarId = s.Id AND Role = 'Father') AS father;
                            """;
 
         var scholars = new List<Scholar>();
@@ -133,10 +170,14 @@ public class ScholarDataAccess
             throw new ArgumentException("Scholar ID must not be empty.", nameof(id));
 
         const string sql = """
-                           
-                                           SELECT s.Id, s.FirstName, s.LastName, s.DateOfBirth, s.Grade, s.SchoolId, ps.ScheduleJson
+
+                                           SELECT s.Id, s.FirstName, s.LastName, s.DateOfBirth, s.Grade, s.SchoolId, ps.ScheduleJson,
+                                                  mother.FirstName AS MotherFirstName, mother.LastName AS MotherLastName, mother.PhoneNumber AS MotherPhoneNumber,
+                                                  father.FirstName AS FatherFirstName, father.LastName AS FatherLastName, father.PhoneNumber AS FatherPhoneNumber
                                            FROM Scholars s
                                            LEFT JOIN PickUpSchedule ps ON s.Id = ps.ScholarId
+                                           OUTER APPLY (SELECT TOP 1 FirstName, LastName, PhoneNumber FROM Parents WHERE ScholarId = s.Id AND Role = 'Mother') AS mother
+                                           OUTER APPLY (SELECT TOP 1 FirstName, LastName, PhoneNumber FROM Parents WHERE ScholarId = s.Id AND Role = 'Father') AS father
                                            WHERE s.Id = @Id;
                            """;
 
@@ -194,7 +235,7 @@ public class ScholarDataAccess
                                         """;
 
         const string updateScheduleSql = """
-                                         
+
                                                  IF EXISTS (SELECT 1 FROM PickUpSchedule WHERE ScholarId = @Id)
                                                      UPDATE PickUpSchedule
                                                      SET ScheduleJson = @ScheduleJson
@@ -203,6 +244,18 @@ public class ScholarDataAccess
                                                      INSERT INTO PickUpSchedule (ScholarId, ScheduleJson)
                                                      VALUES (@Id, @ScheduleJson);
                                          """;
+
+        const string upsertParentSql = """
+                                        IF EXISTS (SELECT 1 FROM Parents WHERE ScholarId = @Id AND Role = @Role)
+                                            UPDATE Parents
+                                            SET FirstName = @FirstName, LastName = @LastName, PhoneNumber = @PhoneNumber
+                                            WHERE ScholarId = @Id AND Role = @Role
+                                        ELSE
+                                            INSERT INTO Parents (ScholarId, Role, FirstName, LastName, PhoneNumber)
+                                            VALUES (@Id, @Role, @FirstName, @LastName, @PhoneNumber);
+                                        """;
+
+        const string deleteParentSql = "DELETE FROM Parents WHERE ScholarId = @Id AND Role = @Role;";
 
         await using var connection = new SqlConnection(_connectionString);
         await using var updateScholarCmd = new SqlCommand(updateScholarSql, connection);
@@ -236,6 +289,36 @@ public class ScholarDataAccess
                 _logger.LogInformation("Updated pickup schedule for scholar ID: {ScholarId}", scholar.Id);
             }
 
+            // Upsert whichever of Mother/Father has at least one field set, delete the row
+            // for whichever has none (clearing every field on the form removes that parent).
+            foreach (var (role, firstName, lastName, phoneNumber) in new[]
+                     {
+                         ("Mother", scholar.MotherFirstName, scholar.MotherLastName, scholar.MotherPhoneNumber),
+                         ("Father", scholar.FatherFirstName, scholar.FatherLastName, scholar.FatherPhoneNumber),
+                     })
+            {
+                var isEmpty = string.IsNullOrWhiteSpace(firstName) && string.IsNullOrWhiteSpace(lastName) &&
+                              string.IsNullOrWhiteSpace(phoneNumber);
+
+                if (isEmpty)
+                {
+                    await using var deleteParentCmd = new SqlCommand(deleteParentSql, connection);
+                    deleteParentCmd.Parameters.AddWithValue("@Id", scholar.Id);
+                    deleteParentCmd.Parameters.AddWithValue("@Role", role);
+                    await deleteParentCmd.ExecuteNonQueryAsync();
+                }
+                else
+                {
+                    await using var upsertParentCmd = new SqlCommand(upsertParentSql, connection);
+                    upsertParentCmd.Parameters.AddWithValue("@Id", scholar.Id);
+                    upsertParentCmd.Parameters.AddWithValue("@Role", role);
+                    upsertParentCmd.Parameters.AddWithValue("@FirstName", ToDbValue(firstName));
+                    upsertParentCmd.Parameters.AddWithValue("@LastName", ToDbValue(lastName));
+                    upsertParentCmd.Parameters.AddWithValue("@PhoneNumber", ToDbValue(phoneNumber));
+                    await upsertParentCmd.ExecuteNonQueryAsync();
+                }
+            }
+
             _logger.LogInformation("Updated scholar with ID: {ScholarId}", scholar.Id);
             return scholar;
         }
@@ -257,21 +340,25 @@ public class ScholarDataAccess
             throw new ArgumentException("Scholar ID must not be empty.", nameof(id));
 
         const string deleteScheduleSql = "DELETE FROM PickUpSchedule WHERE ScholarId = @Id;";
+        const string deleteParentsSql = "DELETE FROM Parents WHERE ScholarId = @Id;";
         const string deleteScholarSql = "DELETE FROM Scholars WHERE Id = @Id;";
 
         await using var connection = new SqlConnection(_connectionString);
         await using var deleteScheduleCmd = new SqlCommand(deleteScheduleSql, connection);
+        await using var deleteParentsCmd = new SqlCommand(deleteParentsSql, connection);
         await using var deleteScholarCmd = new SqlCommand(deleteScholarSql, connection);
 
         deleteScheduleCmd.Parameters.AddWithValue("@Id", id);
+        deleteParentsCmd.Parameters.AddWithValue("@Id", id);
         deleteScholarCmd.Parameters.AddWithValue("@Id", id);
 
         try
         {
             await connection.OpenAsync();
 
-            // Remove pickup schedule first
+            // Remove pickup schedule and parents first
             await deleteScheduleCmd.ExecuteNonQueryAsync();
+            await deleteParentsCmd.ExecuteNonQueryAsync();
 
             // Delete the scholar
             var rowsAffected = await deleteScholarCmd.ExecuteNonQueryAsync();
@@ -486,7 +573,25 @@ public class ScholarDataAccess
                     reader.IsDBNull(reader.GetOrdinal("Grade")) ? null : reader.GetInt32(reader.GetOrdinal("Grade")),
                 SchoolId = reader.IsDBNull(reader.GetOrdinal("SchoolId"))
                     ? null
-                    : reader.GetInt32(reader.GetOrdinal("SchoolId"))
+                    : reader.GetInt32(reader.GetOrdinal("SchoolId")),
+                MotherFirstName = reader.IsDBNull(reader.GetOrdinal("MotherFirstName"))
+                    ? null
+                    : reader.GetString(reader.GetOrdinal("MotherFirstName")),
+                MotherLastName = reader.IsDBNull(reader.GetOrdinal("MotherLastName"))
+                    ? null
+                    : reader.GetString(reader.GetOrdinal("MotherLastName")),
+                MotherPhoneNumber = reader.IsDBNull(reader.GetOrdinal("MotherPhoneNumber"))
+                    ? null
+                    : reader.GetString(reader.GetOrdinal("MotherPhoneNumber")),
+                FatherFirstName = reader.IsDBNull(reader.GetOrdinal("FatherFirstName"))
+                    ? null
+                    : reader.GetString(reader.GetOrdinal("FatherFirstName")),
+                FatherLastName = reader.IsDBNull(reader.GetOrdinal("FatherLastName"))
+                    ? null
+                    : reader.GetString(reader.GetOrdinal("FatherLastName")),
+                FatherPhoneNumber = reader.IsDBNull(reader.GetOrdinal("FatherPhoneNumber"))
+                    ? null
+                    : reader.GetString(reader.GetOrdinal("FatherPhoneNumber")),
             };
 
             if (reader.IsDBNull(reader.GetOrdinal("ScheduleJson"))) return scholar;
