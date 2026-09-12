@@ -1,0 +1,176 @@
+#!/usr/bin/env bash
+# Starts the local dev environment: makes sure the Azure SQL Edge Docker container
+# is up, deploys the DB schema, then starts the API (in the background) and the
+# Angular dev server (in the foreground).
+set -euo pipefail
+
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+API_PROJ="$ROOT_DIR/ImaloEducationApi/ImaloEducationApi.csproj"
+DB_DIR="$ROOT_DIR/ImaloEducationDB"
+DB_PROJ="ImaloEducationDB.sqlproj"
+DB_DACPAC="$DB_DIR/bin/Debug/ImaloEducationDB.dacpac"
+UI_DIR="$ROOT_DIR/Frontend"
+RUN_DIR="$ROOT_DIR/.run"
+
+# Same container/port/password convention as the other local .NET projects on this
+# machine (e.g. Customer_Management_System) — the container is shared across them.
+SQL_IMAGE="${SQL_IMAGE:-mcr.microsoft.com/azure-sql-edge}"
+SQL_CONTAINER_NAME="${SQL_CONTAINER_NAME:-sqlserver}"
+SQL_SA_PASSWORD="${SQL_SA_PASSWORD:-MyStrongPassw0rd?}"
+SQL_PORT="${SQL_PORT:-1433}"
+SQL_PLATFORM="${SQL_PLATFORM:-linux/arm64}"
+SQL_DATABASE="ImaloEducationDB"
+
+API_URL="http://localhost:5244"
+API_LOG="$RUN_DIR/api.log"
+API_PID=""
+
+cleanup() {
+  if [[ -n "$API_PID" ]] && kill -0 "$API_PID" 2>/dev/null; then
+    echo "==> Stopping API (pid $API_PID)"
+    kill "$API_PID" 2>/dev/null || true
+    wait "$API_PID" 2>/dev/null || true
+  fi
+}
+trap cleanup EXIT INT TERM
+
+echo "==> [1/5] Checking Docker"
+if ! docker info >/dev/null 2>&1; then
+  echo "    Docker daemon is not running."
+  if [[ "$(uname -s)" == "Darwin" ]]; then
+    echo "    Starting Docker Desktop..."
+    open -a Docker
+  else
+    echo "    Please start Docker manually and re-run this script." >&2
+    exit 1
+  fi
+
+  echo -n "    Waiting for Docker to be ready"
+  for _ in $(seq 1 60); do
+    if docker info >/dev/null 2>&1; then
+      echo
+      break
+    fi
+    echo -n "."
+    sleep 2
+  done
+
+  if ! docker info >/dev/null 2>&1; then
+    echo "Docker did not become ready in time." >&2
+    exit 1
+  fi
+fi
+echo "    Docker is running."
+
+echo "==> [2/5] Checking SQL Server container ('$SQL_CONTAINER_NAME')"
+if container_state=$(docker inspect -f '{{.State.Running}}' "$SQL_CONTAINER_NAME" 2>/dev/null); then
+  if [[ "$container_state" == "true" ]]; then
+    echo "    Container already running."
+  else
+    echo "    Container exists but is stopped, starting it..."
+    docker start "$SQL_CONTAINER_NAME" >/dev/null
+  fi
+else
+  echo "    Container not found, pulling image and creating it..."
+  docker pull "$SQL_IMAGE"
+  docker run \
+    -e "ACCEPT_EULA=1" \
+    -e "MSSQL_SA_PASSWORD=$SQL_SA_PASSWORD" \
+    -p "$SQL_PORT:1433" \
+    --name "$SQL_CONTAINER_NAME" \
+    --platform "$SQL_PLATFORM" \
+    -d "$SQL_IMAGE" >/dev/null
+fi
+
+mkdir -p "$RUN_DIR"
+
+echo "==> [3/5] Preparing database tooling"
+# Pinned to a version known to run against .NET runtimes commonly installed on this
+# machine; the latest sqlpackage release can require a newer runtime patch than what's
+# available, which fails at launch (not something a "wait longer" fix helps with).
+SQLPACKAGE_VERSION="170.3.93"
+if ! command -v sqlpackage >/dev/null 2>&1; then
+  export PATH="$PATH:$HOME/.dotnet/tools"
+fi
+if command -v sqlpackage >/dev/null 2>&1 && ! sqlpackage /Version >/dev/null 2>&1; then
+  echo "    Installed sqlpackage can't run on this machine's .NET runtime, reinstalling a compatible version..."
+  dotnet tool uninstall -g microsoft.sqlpackage >/dev/null 2>&1 || true
+fi
+if ! command -v sqlpackage >/dev/null 2>&1; then
+  echo "    sqlpackage not found, installing as a global dotnet tool..."
+  dotnet tool install -g microsoft.sqlpackage --version "$SQLPACKAGE_VERSION"
+fi
+
+(
+  cd "$DB_DIR"
+  dotnet build "$DB_PROJ" --configuration Debug
+)
+
+echo "==> [4/5] Deploying database schema (retrying until SQL Server accepts connections)"
+# Azure SQL Edge doesn't ship sqlcmd/mssql-tools inside the container, so instead of
+# probing readiness separately, we retry the real publish (the actual connection the
+# API will use) until it succeeds.
+TARGET_CONN="Data Source=localhost,$SQL_PORT;Initial Catalog=$SQL_DATABASE;User ID=SA;Password=$SQL_SA_PASSWORD;TrustServerCertificate=True;Encrypt=False"
+PUBLISH_LOG="$RUN_DIR/sqlpackage.log"
+
+published=0
+elapsed=0
+max_elapsed=180
+echo -n "    "
+while [[ "$elapsed" -lt "$max_elapsed" ]]; do
+  # BlockOnPossibleDataLoss:false — this is a local, disposable dev DB we actively iterate
+  # schema on; SSDT's default guard refuses any table rebuild against a table that already
+  # has rows, even when the rebuild is actually safe, which otherwise makes every retry
+  # below fail identically for the full timeout instead of just succeeding.
+  if sqlpackage /Action:Publish /SourceFile:"$DB_DACPAC" /TargetConnectionString:"$TARGET_CONN" \
+    /p:BlockOnPossibleDataLoss=false >"$PUBLISH_LOG" 2>&1; then
+    published=1
+    break
+  fi
+  # Base delay plus random jitter so retries aren't in lockstep and the wait is
+  # visible instead of looking hung.
+  delay=$(( 3 + RANDOM % 4 ))
+  echo -n "."
+  sleep "$delay"
+  elapsed=$(( elapsed + delay ))
+done
+echo
+
+if [[ "$published" -ne 1 ]]; then
+  echo "Failed to publish database schema within ${max_elapsed}s. Last error:" >&2
+  tail -n 20 "$PUBLISH_LOG" >&2 || true
+  echo "Full log: $PUBLISH_LOG" >&2
+  exit 1
+fi
+echo "    Database schema is up to date."
+
+echo "==> [5/5] Starting API and Angular client"
+: >"$API_LOG"
+
+ASPNETCORE_ENVIRONMENT=Development dotnet run --project "$API_PROJ" >"$API_LOG" 2>&1 &
+API_PID=$!
+echo "    API starting in background (pid $API_PID), logs: $API_LOG"
+
+echo -n "    Waiting for API to come up"
+for _ in $(seq 1 30); do
+  if curl -s "$API_URL/swagger/index.html" >/dev/null 2>&1; then
+    echo
+    break
+  fi
+  echo -n "."
+  sleep 2
+done
+
+if ! kill -0 "$API_PID" 2>/dev/null; then
+  echo "API process exited early, check $API_LOG" >&2
+  exit 1
+fi
+
+echo "    API is up at $API_URL"
+
+echo "    Starting Angular dev server (Ctrl+C stops both)..."
+cd "$UI_DIR"
+if [[ ! -d node_modules ]]; then
+  npm ci
+fi
+npm start

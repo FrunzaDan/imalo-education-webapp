@@ -75,6 +75,9 @@ testem.log
 .DS_Store
 Thumbs.db
 
+# --- Local dev orchestration (run.sh) ---
+/.run/
+
 # --- Environment Specific Configuration ---
 # You might want to ignore appsettings.Development.json or other environment-specific
 # config files if they contain sensitive information or are managed separately.

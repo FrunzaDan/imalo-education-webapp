@@ -4,7 +4,7 @@
   <PropertyGroup>
     <Name>ImaloEducationDB</Name>
     <ProjectGuid>{AAD63E17-4222-4DFC-A51A-90F700A04929}</ProjectGuid>
-    <DSP>Microsoft.Data.Tools.Schema.Sql.Sql160DatabaseSchemaProvider</DSP>
+    <DSP>Microsoft.Data.Tools.Schema.Sql.SqlAzureV12DatabaseSchemaProvider</DSP>
     <ModelCollation>1033, CI</ModelCollation>
     <TargetDatabaseName>ImaloEducationDB</TargetDatabaseName>
     <DefaultSchema>dbo</DefaultSchema>
