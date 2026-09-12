@@ -5,14 +5,20 @@ import { routes } from './app.routes';
 import {
   provideClientHydration,
   withEventReplay,
+  withNoIncrementalHydration
 } from '@angular/platform-browser';
-import { provideHttpClient, withFetch } from '@angular/common/http';
+import {
+  provideHttpClient,
+  withFetch,
+  withInterceptors,
+} from '@angular/common/http';
+import { apiLoggerInterceptor } from './services/api-logger.interceptor';
 
 export const appConfig: ApplicationConfig = {
   providers: [
     provideZoneChangeDetection({ eventCoalescing: true }),
     provideRouter(routes),
-    provideClientHydration(withEventReplay()),
-    provideHttpClient(withFetch()),
+    provideClientHydration(withEventReplay(), withNoIncrementalHydration()),
+    provideHttpClient(withFetch(), withInterceptors([apiLoggerInterceptor])),
   ],
 };

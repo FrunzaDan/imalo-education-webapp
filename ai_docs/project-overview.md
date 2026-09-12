@@ -8,7 +8,7 @@ A small full-stack CRUD app for tracking scholars (students), their pick-up sche
 
 | Layer | Folder | Tech |
 |---|---|---|
-| UI | `Frontend` | Angular 21 (SSR via `@angular/ssr`, Express server) |
+| UI | `Frontend` | Angular 22 (SSR via `@angular/ssr`, Express server) |
 | API | `ImaloEducationApi` | .NET 10 / ASP.NET Core Web API, C# |
 | DB | `ImaloEducationDB` | SQL Server (SSDT `.sqlproj`, deployed via `sqlpackage`) |
 
@@ -28,10 +28,13 @@ ImaloEducationWebapp/
 │   ├── Tables/                  # Scholars, PickUpSchedule, Attendance
 │   └── Scripts/Pre-Deployment/  # creates the ImaloEducationDB database if missing
 └── Frontend/
+    ├── src/server.ts             # standalone Node SSR server, angular.json outputMode:"server"
     └── src/app/
-        ├── components/          # scholar-table, scholar-detail, create-scholar, update-scholar,
-        │                        # attendance, attendance-per-scholar, gantt-chart, navbar
-        ├── services/            # scholars.service, attendance.service, health.service
+        ├── components/          # scholar-table, scholar-detail, scholar-form (create+edit),
+        │                        # attendance (dashboard), attendance-per-scholar, gantt-chart,
+        │                        # navbar, not-found, about
+        ├── services/            # scholars, attendance, schools, sorting, health, api-logger
+        ├── utils/                # weekday-dates (shared by attendance + the About page's test-data generator)
         └── interfaces/
 ```
 

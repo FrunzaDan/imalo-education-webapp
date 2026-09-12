@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { forkJoin } from 'rxjs';
@@ -22,6 +22,7 @@ interface AttendanceRow {
   standalone: true,
   imports: [CommonModule, RouterModule],
   templateUrl: './attendance.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './attendance.component.css',
 })
 export class AttendanceComponent implements OnInit {

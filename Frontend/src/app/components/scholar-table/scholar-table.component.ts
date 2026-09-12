@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { ScholarsService } from '../../services/scholars.service';
 import { SchoolsService } from '../../services/schools.service';
 import { SortingService } from '../../services/sorting.service';
@@ -23,6 +23,7 @@ interface TransformedScholarData {
   imports: [CommonModule, RouterModule],
   selector: 'app-scholar-table',
   templateUrl: './scholar-table.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrls: ['./scholar-table.component.css'],
 })
 export class ScholarTableComponent implements OnInit {

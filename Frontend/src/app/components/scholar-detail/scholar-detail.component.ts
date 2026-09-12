@@ -1,4 +1,4 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, inject, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { ScholarsService } from '../../services/scholars.service';
@@ -15,6 +15,7 @@ import { of } from 'rxjs';
   standalone: true,
   imports: [CommonModule, RouterModule],
   templateUrl: './scholar-detail.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrls: ['./scholar-detail.component.css'],
 })
 export class ScholarDetailComponent implements OnInit {

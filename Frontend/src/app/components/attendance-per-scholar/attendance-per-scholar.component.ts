@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, OnDestroy } from '@angular/core';
+import { Component, OnInit, inject, OnDestroy, ChangeDetectionStrategy } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { CommonModule, CurrencyPipe, DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -9,6 +9,7 @@ import { SchoolsService } from '../../services/schools.service';
 import { AttendanceService } from '../../services/attendance.service';
 import { Scholar } from '../../interfaces/scholar';
 import { AttendanceRecord } from '../../interfaces/attendance-record';
+import { getWeekdayDatesInMonth } from '../../utils/weekday-dates';
 
 // One row per weekday of the selected month. `record` is always a real
 // AttendanceRecord object so checkboxes can bind to it directly — for a day
@@ -26,6 +27,7 @@ interface AttendanceDayRow {
   standalone: true,
   imports: [CommonModule, FormsModule, CurrencyPipe, DatePipe],
   templateUrl: './attendance-per-scholar.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './attendance-per-scholar.component.css',
 })
 export class AttendancePerScholarComponent implements OnInit, OnDestroy {
@@ -136,25 +138,6 @@ export class AttendancePerScholarComponent implements OnInit, OnDestroy {
     return dateStr.substring(0, 10);
   }
 
-  // Every Monday-Friday date in `selectedMonth`, formatted 'YYYY-MM-DD'.
-  // Weekday-only to match the rest of the app (PickUpSchedule has no
-  // Saturday/Sunday either) — attendance is a school-day concept here.
-  private getWeekdayDatesInMonth(monthStr: string): string[] {
-    const [year, month] = monthStr.split('-').map(Number);
-    const daysInMonth = new Date(year, month, 0).getDate();
-    const dates: string[] = [];
-
-    for (let day = 1; day <= daysInMonth; day++) {
-      const d = new Date(year, month - 1, day);
-      const weekday = d.getDay();
-      if (weekday === 0 || weekday === 6) continue; // skip Sat/Sun
-      dates.push(
-        `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`,
-      );
-    }
-    return dates;
-  }
-
   onMonthChange(): void {
     this.rebuildDayRows();
   }
@@ -166,7 +149,8 @@ export class AttendancePerScholarComponent implements OnInit, OnDestroy {
       return;
     }
 
-    this.dayRows = this.getWeekdayDatesInMonth(this.selectedMonth).map(
+    const [year, month] = this.selectedMonth.split('-').map(Number);
+    this.dayRows = getWeekdayDatesInMonth(year, month).map(
       (date) => {
         const existing = this.allAttendanceRecords.find(
           (r) => this.toDateOnly(r.date) === date,

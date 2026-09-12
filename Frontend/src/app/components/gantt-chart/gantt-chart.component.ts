@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { TimeSlot } from '../../interfaces/time-slot';
 import { Scholar } from '../../interfaces/scholar';
 import { School } from '../../interfaces/school';
@@ -15,6 +15,7 @@ import { PickUpSchedule } from '../../interfaces/pick-up-schedule';
   standalone: true,
   imports: [CommonModule],
   templateUrl: './gantt-chart.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrls: ['./gantt-chart.component.css'],
 })
 export class GanttChartComponent implements OnInit {

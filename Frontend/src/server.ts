@@ -11,8 +11,18 @@ import { fileURLToPath } from 'node:url';
 const serverDistFolder = dirname(fileURLToPath(import.meta.url));
 const browserDistFolder = resolve(serverDistFolder, '../browser');
 
+const port = process.env['PORT'] || 4000;
+
 const app = express();
-const angularApp = new AngularNodeAppEngine();
+// Angular validates the incoming Host header against this list (SSRF hardening,
+// see https://angular.dev/best-practices/security#preventing-server-side-request-forgery-ssrf).
+// The check compares against the *hostname* only (it parses the header with
+// `new URL()` and reads `.hostname`, discarding the port) — listing "localhost:4000"
+// here would never match "localhost", so this must be bare hostnames, not host:port.
+// This app is local-dev-only with no reverse proxy in front of it.
+const angularApp = new AngularNodeAppEngine({
+  allowedHosts: ['localhost', '127.0.0.1'],
+});
 
 /**
  * Example Express Rest API endpoints can be defined here.
@@ -54,7 +64,6 @@ app.use('/**', (req, res, next) => {
  * The server listens on the port defined by the `PORT` environment variable, or defaults to 4000.
  */
 if (isMainModule(import.meta.url)) {
-  const port = process.env['PORT'] || 4000;
   app.listen(port, () => {
     console.log(`Node Express server listening on http://localhost:${port}`);
   });

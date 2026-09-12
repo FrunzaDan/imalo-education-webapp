@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using System.Globalization;
 
 namespace ImaloEducationApi.Models;
 
@@ -48,8 +49,14 @@ public class Scholar
 
             if (!validDays.Contains(day)) return new ValidationResult($"Invalid day in schedule: {scheduleKey}");
 
-            if (!string.IsNullOrWhiteSpace(timeValue) && !TimeSpan.TryParse(timeValue, out _))
-                return new ValidationResult($"Invalid time format for {scheduleKey}: {timeValue}");
+            // Strict 24-hour "HH:mm" (e.g. "12:00"), not TimeSpan.TryParse — that accepts bare
+            // numbers like "12" or "99" as a day-count duration, which silently saves but can
+            // never match a Gantt-chart time slot (no clock time actually parses to "99:00").
+            if (!string.IsNullOrWhiteSpace(timeValue) &&
+                !DateTime.TryParseExact(timeValue, "HH:mm", CultureInfo.InvariantCulture,
+                    DateTimeStyles.None, out _))
+                return new ValidationResult(
+                    $"Invalid time format for {scheduleKey}: '{timeValue}'. Use 24-hour HH:mm, e.g. 13:30.");
         }
 
         return ValidationResult.Success;

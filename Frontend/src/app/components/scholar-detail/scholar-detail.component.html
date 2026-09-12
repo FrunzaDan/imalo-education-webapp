@@ -53,7 +53,7 @@
 </div>
 }
 
-<button [routerLink]="['/attendance', scholar?.id]" class="app-button">
+<button [routerLink]="['/attendance', $safeNavigationMigration(scholar?.id)]" class="app-button">
   View Attendance
 </button>
 

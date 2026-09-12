@@ -1,4 +1,4 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, inject, ChangeDetectionStrategy } from '@angular/core';
 import {
   FormBuilder,
   FormGroup,
@@ -21,6 +21,7 @@ import { SchoolsService } from '../../services/schools.service';
   standalone: true,
   imports: [CommonModule, ReactiveFormsModule, RouterModule],
   templateUrl: './scholar-form.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './scholar-form.component.css',
 })
 export class ScholarFormComponent implements OnInit {
