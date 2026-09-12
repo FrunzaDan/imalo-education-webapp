@@ -1,21 +1,24 @@
-import { Component, OnInit, inject, OnDestroy } from '@angular/core'; // Add OnDestroy
+import { Component, OnInit, inject, OnDestroy } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { CommonModule, CurrencyPipe, DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Subscription } from 'rxjs'; // Import Subscription for managing subscriptions
+import { Subscription } from 'rxjs';
 
-// Import your services and interfaces
 import { ScholarsService } from '../../services/scholars.service';
-import { AttendanceService } from '../../services/attendance.service'; // <--- NEW: Import AttendanceService
+import { SchoolsService } from '../../services/schools.service';
+import { AttendanceService } from '../../services/attendance.service';
 import { Scholar } from '../../interfaces/scholar';
-// Use the raw AttendanceRecord from your interfaces folder
-import { AttendanceRecord } from '../../interfaces/attendance-record'; // <--- Ensure this is correct
+import { AttendanceRecord } from '../../interfaces/attendance-record';
 
-// Define an interface for the records as they are displayed in the UI
-// This extends the raw data with UI-specific state (checkbox selections)
-interface AttendanceDisplayRecord extends AttendanceRecord {
-  selectedLunch: boolean;
-  selectedTransport: boolean;
+// One row per weekday of the selected month. `record` is always a real
+// AttendanceRecord object so checkboxes can bind to it directly — for a day
+// with no saved data yet it's a fresh, not-yet-persisted object that only
+// gets added to allAttendanceRecords (and so included in the next Save) once
+// the user actually checks a box for it.
+interface AttendanceDayRow {
+  date: string; // 'YYYY-MM-DD'
+  record: AttendanceRecord;
+  isPersisted: boolean;
 }
 
 @Component({
@@ -26,23 +29,38 @@ interface AttendanceDisplayRecord extends AttendanceRecord {
   styleUrl: './attendance-per-scholar.component.css',
 })
 export class AttendancePerScholarComponent implements OnInit, OnDestroy {
-  // Implement OnDestroy
   private readonly route = inject(ActivatedRoute);
   private readonly scholarsService = inject(ScholarsService);
-  private readonly attendanceService = inject(AttendanceService); // <--- NEW: Inject AttendanceService
+  private readonly schoolsService = inject(SchoolsService);
+  private readonly attendanceService = inject(AttendanceService);
 
   private scholarSubscription: Subscription | undefined;
-  private attendanceSubscription: Subscription | undefined; // To manage attendance subscription
+  private attendanceSubscription: Subscription | undefined;
 
   scholar: Scholar | null = null;
-  allAttendanceRecords: AttendanceRecord[] = []; // Stores raw attendance data fetched from service
-  filteredMonthAttendance: AttendanceDisplayRecord[] = []; // Stores records for display with UI state
-  availableMonths: string[] = [];
-  selectedMonth: string = '';
+  scholarId: string = '';
+
+  // Standard per-day prices for this scholar's school, applied when a day is
+  // marked for the first time. 0 until the school has loaded (or if the
+  // scholar has no school set).
+  lunchPrice = 0;
+  transportPrice = 0;
+
+  // The full, unfiltered list for this scholar, as loaded from (and sent
+  // back to) the API. Day rows for the selected month hold direct references
+  // into this array once a day has been touched, so editing a row mutates
+  // the record here too — Save just sends this array as-is.
+  allAttendanceRecords: AttendanceRecord[] = [];
+
+  selectedMonth: string = ''; // 'YYYY-MM', bound to <input type="month">
+  dayRows: AttendanceDayRow[] = [];
 
   totalSelectedLunchCost: number = 0;
   totalSelectedTransportCost: number = 0;
-  grandTotal: number = 0; // Added for combined total
+  grandTotal: number = 0;
+
+  isSaving: boolean = false;
+  hasUnsavedChanges: boolean = false;
 
   ngOnInit(): void {
     const scholarId = this.route.snapshot.paramMap.get('id');
@@ -50,148 +68,139 @@ export class AttendancePerScholarComponent implements OnInit, OnDestroy {
       console.error('Scholar ID not found in route parameters.');
       return;
     }
+    this.scholarId = scholarId;
 
     this.scholarSubscription = this.scholarsService.getScholars().subscribe({
       next: (scholars) => {
         this.scholar = scholars.find((s) => s.id === scholarId) || null;
 
-        if (this.scholar) {
-          this.attendanceSubscription = this.attendanceService
-            .getAttendanceByScholarId(scholarId)
-            .subscribe({
-              next: (attendanceData: AttendanceRecord[] | undefined) => {
-                if (attendanceData) {
-                  this.allAttendanceRecords = attendanceData;
-                  this.initializeAttendanceSelections(); // Initialize UI state on fetched data
-                  this.setupMonthsAndFilter(); // Set up months and apply initial filter
-                } else {
-                  console.warn(
-                    `No attendance data found for scholar ID: ${scholarId}`,
-                  );
-                  this.allAttendanceRecords = []; // Ensure empty array
-                  this.filteredMonthAttendance = [];
-                  this.availableMonths = []; // Clear months
-                  this.selectedMonth = ''; // Clear selected month
-                  this.updateTotals(); // Reset totals
-                }
-              },
-              error: (err) => {
-                console.error('Error fetching attendance data:', err);
-                this.allAttendanceRecords = []; // Ensure empty array on error
-                this.filteredMonthAttendance = [];
-                this.availableMonths = [];
-                this.selectedMonth = '';
-                this.updateTotals();
-              },
-            });
-        } else {
+        if (!this.scholar) {
           console.warn(`Scholar with ID ${scholarId} not found.`);
-          // Clear attendance data if scholar not found
-          this.allAttendanceRecords = [];
-          this.filteredMonthAttendance = [];
-          this.availableMonths = [];
-          this.selectedMonth = '';
-          this.updateTotals();
+          return;
         }
+
+        if (this.scholar.schoolId != null) {
+          this.schoolsService.getSchoolById(this.scholar.schoolId).subscribe({
+            next: (school) => {
+              this.lunchPrice = school?.lunchPrice ?? 0;
+              this.transportPrice = school?.transportPrice ?? 0;
+            },
+          });
+        }
+
+        this.attendanceSubscription = this.attendanceService
+          .getAttendanceByScholarId(scholarId)
+          .subscribe({
+            next: (attendanceData: AttendanceRecord[] | undefined) => {
+              this.allAttendanceRecords = attendanceData ?? [];
+              this.selectedMonth = this.pickDefaultMonth();
+              this.rebuildDayRows();
+            },
+            error: (err) => {
+              console.error('Error fetching attendance data:', err);
+              this.allAttendanceRecords = [];
+              this.selectedMonth = this.pickDefaultMonth();
+              this.rebuildDayRows();
+            },
+          });
       },
       error: (err) => {
         console.error('Error fetching scholars:', err);
-        // Clear all data on scholar fetch error
         this.scholar = null;
-        this.allAttendanceRecords = [];
-        this.filteredMonthAttendance = [];
-        this.availableMonths = [];
-        this.selectedMonth = '';
-        this.updateTotals();
       },
     });
   }
 
   ngOnDestroy(): void {
-    if (this.scholarSubscription) {
-      this.scholarSubscription.unsubscribe();
-    }
-    if (this.attendanceSubscription) {
-      this.attendanceSubscription.unsubscribe();
-    }
+    this.scholarSubscription?.unsubscribe();
+    this.attendanceSubscription?.unsubscribe();
   }
 
-  private initializeAttendanceSelections(): void {
-    // Map raw data to display records, adding initial selection state
-    this.filteredMonthAttendance = this.allAttendanceRecords.map((record) => ({
-      ...record,
-      selectedLunch: record.lunchCost > 0, // Default to selected if there's a cost
-      selectedTransport: record.transportCost > 0, // Default to selected if there's a cost
-    }));
-  }
-
-  private setupMonthsAndFilter(): void {
-    const monthsSet = new Set<string>();
-    this.allAttendanceRecords.forEach((record) => {
-      const date = new Date(record.date);
-      const monthYear = date.toLocaleString('default', {
-        month: 'long',
-        year: 'numeric',
-      });
-      monthsSet.add(monthYear);
-    });
-    // Sort months chronologically
-    this.availableMonths = Array.from(monthsSet).sort((a, b) => {
-      const dateA = new Date(a.replace(/(\w+) (\d+)/, '$1 1, $2')); // Convert "Month Year" to "Month 1, Year" for parsing
-      const dateB = new Date(b.replace(/(\w+) (\d+)/, '$1 1, $2'));
-      return dateA.getTime() - dateB.getTime();
-    });
-
-    if (this.availableMonths.length > 0) {
-      this.selectedMonth = this.availableMonths[0]; // Select the earliest month by default
-    } else {
-      this.selectedMonth = ''; // No months available
+  // Defaults to the most recent month that already has data, or the current
+  // real-world month if this scholar has no attendance yet.
+  private pickDefaultMonth(): string {
+    if (this.allAttendanceRecords.length === 0) {
+      return this.toMonthString(new Date());
     }
-
-    this.filterAndCalculateTotals();
+    const latest = this.allAttendanceRecords
+      .map((r) => new Date(r.date))
+      .sort((a, b) => b.getTime() - a.getTime())[0];
+    return this.toMonthString(latest);
   }
 
-  filterAndCalculateTotals(): void {
+  private toMonthString(date: Date): string {
+    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+  }
+
+  private toDateOnly(dateStr: string): string {
+    return dateStr.substring(0, 10);
+  }
+
+  // Every Monday-Friday date in `selectedMonth`, formatted 'YYYY-MM-DD'.
+  // Weekday-only to match the rest of the app (PickUpSchedule has no
+  // Saturday/Sunday either) — attendance is a school-day concept here.
+  private getWeekdayDatesInMonth(monthStr: string): string[] {
+    const [year, month] = monthStr.split('-').map(Number);
+    const daysInMonth = new Date(year, month, 0).getDate();
+    const dates: string[] = [];
+
+    for (let day = 1; day <= daysInMonth; day++) {
+      const d = new Date(year, month - 1, day);
+      const weekday = d.getDay();
+      if (weekday === 0 || weekday === 6) continue; // skip Sat/Sun
+      dates.push(
+        `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`,
+      );
+    }
+    return dates;
+  }
+
+  onMonthChange(): void {
+    this.rebuildDayRows();
+  }
+
+  private rebuildDayRows(): void {
     if (!this.selectedMonth) {
-      this.filteredMonthAttendance = [];
-    } else {
-      // Filter raw data and then map to display records, preserving existing selections if possible
-      this.filteredMonthAttendance = this.allAttendanceRecords
-        .filter((record) => {
-          const recordDate = new Date(record.date);
-          const monthYearLabel = recordDate.toLocaleString('default', {
-            month: 'long',
-            year: 'numeric',
-          });
-          return monthYearLabel === this.selectedMonth;
-        })
-        .map((record) => {
-          const existingDisplayRecord = this.filteredMonthAttendance.find(
-            (displayRec) => displayRec.date === record.date,
-          );
-          return {
-            ...record,
-            selectedLunch: existingDisplayRecord
-              ? existingDisplayRecord.selectedLunch
-              : record.lunchCost > 0,
-            selectedTransport: existingDisplayRecord
-              ? existingDisplayRecord.selectedTransport
-              : record.transportCost > 0,
-          };
-        });
+      this.dayRows = [];
+      this.updateTotals();
+      return;
     }
+
+    this.dayRows = this.getWeekdayDatesInMonth(this.selectedMonth).map(
+      (date) => {
+        const existing = this.allAttendanceRecords.find(
+          (r) => this.toDateOnly(r.date) === date,
+        );
+        if (existing) {
+          return { date, record: existing, isPersisted: true };
+        }
+        return {
+          date,
+          record: {
+            date,
+            lunchCost: 0,
+            transportCost: 0,
+            lunchSelected: false,
+            transportSelected: false,
+          },
+          isPersisted: false,
+        };
+      },
+    );
+
     this.updateTotals();
   }
 
   updateTotals(): void {
-    this.totalSelectedLunchCost = this.filteredMonthAttendance.reduce(
-      (sum, record) => sum + (record.selectedLunch ? record.lunchCost : 0),
+    this.totalSelectedLunchCost = this.dayRows.reduce(
+      (sum, row) =>
+        sum + (row.record.lunchSelected ? row.record.lunchCost : 0),
       0,
     );
 
-    this.totalSelectedTransportCost = this.filteredMonthAttendance.reduce(
-      (sum, record) =>
-        sum + (record.selectedTransport ? record.transportCost : 0),
+    this.totalSelectedTransportCost = this.dayRows.reduce(
+      (sum, row) =>
+        sum + (row.record.transportSelected ? row.record.transportCost : 0),
       0,
     );
 
@@ -199,35 +208,81 @@ export class AttendancePerScholarComponent implements OnInit, OnDestroy {
       this.totalSelectedLunchCost + this.totalSelectedTransportCost;
   }
 
-  syncSelection(
-    record: AttendanceDisplayRecord,
-    type: 'lunch' | 'transport' | 'both',
-    event?: Event,
-  ): void {
-    if (type === 'both' && event) {
-      const isChecked = (event.target as HTMLInputElement).checked;
-      record.selectedLunch = isChecked;
-      record.selectedTransport = isChecked;
-    } else if (type === 'lunch') {
-      record.selectedLunch = !record.selectedLunch; // Toggle the state
-      // If lunch is unchecked, and both were checked, uncheck transport too (optional logic)
-      if (!record.selectedLunch && record.selectedTransport) {
-        record.selectedTransport = false;
-      }
-    } else if (type === 'transport') {
-      record.selectedTransport = !record.selectedTransport; // Toggle the state
-      // If transport is unchecked, and both were checked, uncheck lunch too (optional logic)
-      if (!record.selectedTransport && record.selectedLunch) {
-        record.selectedLunch = false;
-      }
+  // Adds a day's record to the list that actually gets saved, the first time
+  // it's touched. A no-op if it's already in there.
+  private ensurePersisted(row: AttendanceDayRow): void {
+    if (!row.isPersisted) {
+      this.allAttendanceRecords.push(row.record);
+      row.isPersisted = true;
     }
+  }
+
+  // Called after [(ngModel)] has already written the new checked state onto
+  // the record — only cross-field cascade + first-time cost seeding happens
+  // here, never a toggle of the field itself.
+  onLunchChange(row: AttendanceDayRow): void {
+    if (row.record.lunchSelected) {
+      if (row.record.lunchCost === 0) {
+        row.record.lunchCost = this.lunchPrice;
+      }
+      this.ensurePersisted(row);
+    } else if (row.record.transportSelected) {
+      // Transport implies lunch (e.g. school pickup includes the lunch
+      // service) — turning lunch off turns transport off too.
+      row.record.transportSelected = false;
+    }
+    this.hasUnsavedChanges = true;
     this.updateTotals();
   }
 
-  trackByAttendanceRecord(
-    index: number,
-    record: AttendanceDisplayRecord,
-  ): string {
-    return record.date;
+  onTransportChange(row: AttendanceDayRow): void {
+    if (row.record.transportSelected) {
+      if (row.record.transportCost === 0) {
+        row.record.transportCost = this.transportPrice;
+      }
+      this.ensurePersisted(row);
+    } else if (row.record.lunchSelected) {
+      row.record.lunchSelected = false;
+    }
+    this.hasUnsavedChanges = true;
+    this.updateTotals();
+  }
+
+  onBothChange(row: AttendanceDayRow, event: Event): void {
+    const isChecked = (event.target as HTMLInputElement).checked;
+    row.record.lunchSelected = isChecked;
+    row.record.transportSelected = isChecked;
+    if (isChecked) {
+      if (row.record.lunchCost === 0) row.record.lunchCost = this.lunchPrice;
+      if (row.record.transportCost === 0)
+        row.record.transportCost = this.transportPrice;
+      this.ensurePersisted(row);
+    }
+    this.hasUnsavedChanges = true;
+    this.updateTotals();
+  }
+
+  save(): void {
+    if (!this.scholarId || this.isSaving) return;
+
+    this.isSaving = true;
+    this.attendanceService
+      .saveAttendance(this.scholarId, this.allAttendanceRecords)
+      .subscribe({
+        next: () => {
+          this.isSaving = false;
+          this.hasUnsavedChanges = false;
+          alert('Attendance saved successfully!');
+        },
+        error: (err) => {
+          this.isSaving = false;
+          console.error('Failed to save attendance:', err);
+          alert('Failed to save attendance. Check console for details.');
+        },
+      });
+  }
+
+  trackByDayRow(index: number, row: AttendanceDayRow): string {
+    return row.date;
   }
 }

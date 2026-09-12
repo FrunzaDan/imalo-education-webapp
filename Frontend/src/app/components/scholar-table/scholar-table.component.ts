@@ -13,7 +13,7 @@ interface TransformedScholarData {
   id: string;
   name: string;
   schoolName: string;
-  grade: number;
+  grade: number | null;
   schoolColor: string;
   birthDate: string;
   textColor: string;
@@ -55,7 +55,7 @@ export class ScholarTableComponent implements OnInit {
           );
 
           return scholars.map((scholar) => {
-            const school = schoolsMap.get(scholar.schoolId.toString());
+            const school = schoolsMap.get(scholar.schoolId?.toString() ?? '');
             const schoolName = school ? school.name : 'Unknown';
             const schoolColor = school ? school.color : '#FFFFFF';
             const textColor = this.getTextColor(schoolColor);

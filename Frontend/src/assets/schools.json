@@ -2,21 +2,29 @@
   {
     "id": 1,
     "name": "Sc. O. Ghibu",
-    "color": "#4CAF50"
+    "color": "#4CAF50",
+    "lunchPrice": 15,
+    "transportPrice": 5
   },
   {
     "id": 2,
     "name": "Sc. 18",
-    "color": "#2196F3"
+    "color": "#2196F3",
+    "lunchPrice": 15,
+    "transportPrice": 5
   },
   {
     "id": 3,
     "name": "Sc. 2",
-    "color": "#D2B55B"
+    "color": "#D2B55B",
+    "lunchPrice": 15,
+    "transportPrice": 5
   },
   {
     "id": 4,
     "name": "Sc. O. Goga",
-    "color": "#2196A0"
+    "color": "#2196A0",
+    "lunchPrice": 15,
+    "transportPrice": 5
   }
 ]

@@ -1,6 +1,6 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
-import { Observable, shareReplay, map } from 'rxjs';
+import { Observable } from 'rxjs';
 import { AttendanceRecord } from '../interfaces/attendance-record';
 import { ScholarAttendance } from '../interfaces/scholar-attendance';
 import { environment } from '../../environments/environment';
@@ -12,21 +12,16 @@ export class AttendanceService {
   // Base API endpoint
   private baseUrl = environment.baseUrlScholars;
 
-  // Optional cache for all attendance data
-  private attendanceCache$: Observable<ScholarAttendance[]> | null = null;
-
   constructor(private http: HttpClient) {}
 
   // ----------------------------
   // Fetch all scholars' attendance
   // ----------------------------
+  // No caching here: this list is read by the attendance dashboard right after
+  // per-scholar edits get saved elsewhere, so a stale cached copy would show
+  // pre-edit data. It's a small local dataset — refetching is cheap.
   getAllScholarAttendance(): Observable<ScholarAttendance[]> {
-    if (!this.attendanceCache$) {
-      this.attendanceCache$ = this.http
-        .get<ScholarAttendance[]>(`${this.baseUrl}/attendance`)
-        .pipe(shareReplay(1)); // cache for all subscribers
-    }
-    return this.attendanceCache$;
+    return this.http.get<ScholarAttendance[]>(`${this.baseUrl}/attendance`);
   }
 
   // ----------------------------
@@ -56,16 +51,5 @@ export class AttendanceService {
   // ----------------------------
   deleteAttendance(scholarId: string): Observable<any> {
     return this.http.delete(`${this.baseUrl}/${scholarId}/attendance`);
-  }
-
-  // ----------------------------
-  // Optional: get only present days
-  // ----------------------------
-  getPresentDaysByScholarId(scholarId: string): Observable<AttendanceRecord[]> {
-    return this.getAttendanceByScholarId(scholarId).pipe(
-      map((records) =>
-        records.filter((r) => r.lunchCost > 0 || r.transportCost > 0),
-      ),
-    );
   }
 }

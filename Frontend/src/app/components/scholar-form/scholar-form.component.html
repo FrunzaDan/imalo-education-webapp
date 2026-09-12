@@ -1,5 +1,5 @@
 <div class="create-update-scholar-page">
-  <h2>Update Scholar</h2>
+  <h2>{{ isEditMode ? 'Update Scholar' : 'Create New Scholar' }}</h2>
 
   <form [formGroup]="scholarForm" (ngSubmit)="onSubmit()" class="space-y-6">
     <!-- First Name -->
@@ -20,7 +20,13 @@
       @if (scholarForm.get('firstName')?.invalid &&
       (scholarForm.get('firstName')?.dirty ||
       scholarForm.get('firstName')?.touched)) {
-      <div class="app-error-message">First Name is required.</div>
+      <div class="app-error-message">
+        @if (scholarForm.get('firstName')?.errors?.['required']) {
+        <span>First Name is required.</span>
+        } @if (scholarForm.get('firstName')?.errors?.['maxlength']) {
+        <span>First Name can't exceed 100 characters.</span>
+        }
+      </div>
       }
     </div>
 
@@ -42,15 +48,20 @@
       @if (scholarForm.get('lastName')?.invalid &&
       (scholarForm.get('lastName')?.dirty ||
       scholarForm.get('lastName')?.touched)) {
-      <div class="app-error-message">Last Name is required.</div>
+      <div class="app-error-message">
+        @if (scholarForm.get('lastName')?.errors?.['required']) {
+        <span>Last Name is required.</span>
+        } @if (scholarForm.get('lastName')?.errors?.['maxlength']) {
+        <span>Last Name can't exceed 100 characters.</span>
+        }
+      </div>
       }
     </div>
 
-    <!-- School ID -->
+    <!-- School -->
     <div class="create-update-scholar-entry">
-      <label for="schoolId" class="app-label">School ID</label>
-      <input
-        type="text"
+      <label for="schoolId" class="app-label">School</label>
+      <select
         id="schoolId"
         formControlName="schoolId"
         class="app-input"
@@ -59,12 +70,16 @@
           (scholarForm.get('schoolId')?.dirty ||
             scholarForm.get('schoolId')?.touched)
         "
-        placeholder="Enter school ID"
-      />
+      >
+        <option [ngValue]="null" disabled>Select a school</option>
+        @for (school of schools; track school.id) {
+        <option [ngValue]="school.id">{{ school.name }}</option>
+        }
+      </select>
       @if (scholarForm.get('schoolId')?.invalid &&
       (scholarForm.get('schoolId')?.dirty ||
       scholarForm.get('schoolId')?.touched)) {
-      <div class="app-error-message">School ID is required.</div>
+      <div class="app-error-message">School is required.</div>
       }
     </div>
 
@@ -179,9 +194,14 @@
       </div>
     </div>
 
+    <!-- Submit Button -->
     <div>
-      <button type="submit" [disabled]="scholarForm.invalid" class="app-button">
-        Update Scholar
+      <button
+        type="submit"
+        [disabled]="scholarForm.invalid || isSubmitting"
+        class="app-button"
+      >
+        {{ isSubmitting ? 'Saving...' : (isEditMode ? 'Update Scholar' : 'Create Scholar') }}
       </button>
     </div>
   </form>

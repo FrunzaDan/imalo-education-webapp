@@ -1,1 +1,63 @@
-<p>attendance works!</p>
+@if (loading) {
+<div class="loading-message">Loading attendance...</div>
+} @else {
+<table class="app-table">
+  <thead>
+    <tr>
+      <th class="table-header sortable" (click)="sortData('scholarName', 'string')">
+        Scholar
+        <span class="sort-icon">
+          <span [class.active]="currentSortColumn === 'scholarName' && isAscending">↑</span>
+          <span [class.active]="currentSortColumn === 'scholarName' && !isAscending">↓</span>
+        </span>
+      </th>
+      <th class="table-header sortable" (click)="sortData('date', 'date')">
+        Date
+        <span class="sort-icon">
+          <span [class.active]="currentSortColumn === 'date' && isAscending">↑</span>
+          <span [class.active]="currentSortColumn === 'date' && !isAscending">↓</span>
+        </span>
+      </th>
+      <th class="table-header sortable" (click)="sortData('lunchCost', 'number')">
+        Lunch Cost
+        <span class="sort-icon">
+          <span [class.active]="currentSortColumn === 'lunchCost' && isAscending">↑</span>
+          <span [class.active]="currentSortColumn === 'lunchCost' && !isAscending">↓</span>
+        </span>
+      </th>
+      <th class="table-header sortable" (click)="sortData('transportCost', 'number')">
+        Transport Cost
+        <span class="sort-icon">
+          <span [class.active]="currentSortColumn === 'transportCost' && isAscending">↑</span>
+          <span [class.active]="currentSortColumn === 'transportCost' && !isAscending">↓</span>
+        </span>
+      </th>
+      <th class="table-header">Selected</th>
+    </tr>
+  </thead>
+  <tbody>
+    @for (row of rows; track row.scholarId + row.date) {
+    <tr
+      class="table-row"
+      [routerLink]="['/attendance', row.scholarId]"
+      style="cursor: pointer"
+    >
+      <td class="table-cell">{{ row.scholarName }}</td>
+      <td class="table-cell">{{ row.date | date : 'longDate' }}</td>
+      <td class="table-cell">{{ row.lunchCost | currency : 'RON' : 'symbol' : '1.2-2' }}</td>
+      <td class="table-cell">{{ row.transportCost | currency : 'RON' : 'symbol' : '1.2-2' }}</td>
+      <td class="table-cell">
+        @if (row.lunchSelected && row.transportSelected) { Both }
+        @else if (row.lunchSelected) { Lunch only }
+        @else if (row.transportSelected) { Transport only }
+        @else { None }
+      </td>
+    </tr>
+    } @empty {
+    <tr class="table-row">
+      <td colspan="5" class="table-cell">No attendance records found.</td>
+    </tr>
+    }
+  </tbody>
+</table>
+}

@@ -5,66 +5,73 @@
   </h2>
 
   <div class="attendance-container__controls controls">
-    <label for="monthSelect" class="controls__label">Select Month:</label>
-    <select
-      id="monthSelect"
+    <label for="monthPicker" class="controls__label">Month:</label>
+    <input
+      id="monthPicker"
+      type="month"
       [(ngModel)]="selectedMonth"
-      (ngModelChange)="filterAndCalculateTotals()"
-      class="controls__select"
-    >
-      @for (month of availableMonths; track month) {
-      <option [value]="month">{{ month }}</option>
-      }
-    </select>
+      (ngModelChange)="onMonthChange()"
+      class="controls__month-input"
+    />
   </div>
 
   <table class="attendance-container__table attendance-table">
     <thead class="attendance-table__header">
       <tr>
+        <th class="attendance-table__header-cell">Date</th>
         <th class="attendance-table__header-cell">Lunch</th>
         <th class="attendance-table__header-cell">Transport</th>
         <th class="attendance-table__header-cell">Both</th>
-        <th class="attendance-table__header-cell">Date</th>
         <th class="attendance-table__header-cell">Lunch Cost</th>
         <th class="attendance-table__header-cell">Transport Cost</th>
       </tr>
     </thead>
     <tbody class="attendance-table__body">
-      @for (record of filteredMonthAttendance; track
-      trackByAttendanceRecord($index, record)) {
-      <tr class="attendance-table__row">
+      @for (row of dayRows; track trackByDayRow($index, row)) {
+      <tr
+        class="attendance-table__row"
+        [class.attendance-table__row--unsaved]="!row.isPersisted && (row.record.lunchSelected || row.record.transportSelected)"
+      >
+        <td class="attendance-table__data-cell">
+          {{ row.date | date : 'EEE, mediumDate' }}
+        </td>
         <td class="attendance-table__data-cell">
           <input
             type="checkbox"
-            [(ngModel)]="record.selectedLunch"
-            (change)="syncSelection(record, 'lunch')"
+            [(ngModel)]="row.record.lunchSelected"
+            (ngModelChange)="onLunchChange(row)"
             class="attendance-table__checkbox"
           />
         </td>
         <td class="attendance-table__data-cell">
           <input
             type="checkbox"
-            [(ngModel)]="record.selectedTransport"
-            (change)="syncSelection(record, 'transport')"
+            [(ngModel)]="row.record.transportSelected"
+            (ngModelChange)="onTransportChange(row)"
             class="attendance-table__checkbox"
           />
         </td>
         <td class="attendance-table__data-cell">
           <input
             type="checkbox"
-            [checked]="record.selectedLunch && record.selectedTransport"
-            (change)="syncSelection(record, 'both', $event)"
+            [checked]="row.record.lunchSelected && row.record.transportSelected"
+            (change)="onBothChange(row, $event)"
             class="attendance-table__checkbox"
           />
         </td>
         <td class="attendance-table__data-cell">
-          {{ record.date | date : 'longDate' }}
+          @if (row.record.lunchSelected) {
+          {{ row.record.lunchCost | currency : 'RON' : 'symbol' : '1.2-2' }}
+          } @else {
+          <span class="attendance-table__muted">&mdash;</span>
+          }
         </td>
         <td class="attendance-table__data-cell">
-          {{ record.lunchCost | currency : 'RON' : 'symbol' : '1.2-2' }}
-        </td>
-        <td class="attendance-table__data-cell">
-          {{ record.transportCost | currency : 'RON' : 'symbol' : '1.2-2' }}
+          @if (row.record.transportSelected) {
+          {{ row.record.transportCost | currency : 'RON' : 'symbol' : '1.2-2' }}
+          } @else {
+          <span class="attendance-table__muted">&mdash;</span>
+          }
         </td>
       </tr>
       } @empty {
@@ -73,7 +80,7 @@
           colspan="6"
           class="attendance-table__data-cell attendance-table__data-cell--empty"
         >
-          No attendance records for the selected month.
+          No weekdays in this month.
         </td>
       </tr>
       }
@@ -84,7 +91,7 @@
           colspan="4"
           class="attendance-table__data-cell attendance-table__data-cell--total-label"
         >
-          <strong>Total (Selected)</strong>
+          <strong>Total for the month</strong>
         </td>
         <td
           class="attendance-table__data-cell attendance-table__data-cell--total-value"
@@ -101,8 +108,36 @@
           }}</strong>
         </td>
       </tr>
+      <tr class="attendance-table__total-row attendance-table__total-row--grand">
+        <td
+          colspan="4"
+          class="attendance-table__data-cell attendance-table__data-cell--total-label"
+        >
+          <strong>Grand total</strong>
+        </td>
+        <td
+          colspan="2"
+          class="attendance-table__data-cell attendance-table__data-cell--total-value"
+        >
+          <strong>{{ grandTotal | currency : 'RON' : 'symbol' : '1.2-2' }}</strong>
+        </td>
+      </tr>
     </tfoot>
   </table>
+
+  <div class="attendance-container__save-bar">
+    <button
+      type="button"
+      class="app-button"
+      [disabled]="isSaving"
+      (click)="save()"
+    >
+      {{ isSaving ? 'Saving...' : 'Save Changes' }}
+    </button>
+    @if (hasUnsavedChanges && !isSaving) {
+    <span class="attendance-container__unsaved-note">Unsaved changes</span>
+    }
+  </div>
 </div>
 } @if (!scholar) {
 <div class="loading-message">Loading attendance...</div>

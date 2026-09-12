@@ -1,7 +1,9 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpResponse } from '@angular/common/http';
-import { catchError, map, Observable, of } from 'rxjs';
+import { catchError, map, Observable, of, switchMap, timer } from 'rxjs';
 import { environment } from '../../environments/environment';
+
+const POLL_INTERVAL_MS = 15000;
 
 @Injectable({
   providedIn: 'root',
@@ -22,6 +24,17 @@ export class HealthService {
         this.logHealthError(error);
         return of(false);
       }),
+    );
+  }
+
+  /**
+   * Re-checks API health every POLL_INTERVAL_MS (starting immediately), so a
+   * status shown in the UI reflects the API coming up or going down after the
+   * initial load, not just its state at app startup.
+   */
+  pollApiHealth(): Observable<boolean> {
+    return timer(0, POLL_INTERVAL_MS).pipe(
+      switchMap(() => this.checkApiHealth()),
     );
   }
 

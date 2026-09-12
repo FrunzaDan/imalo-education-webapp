@@ -121,7 +121,7 @@ export class GanttChartComponent implements OnInit {
     day: keyof PickUpSchedule, // Use keyof PickUpSchedule for 'day'
   ): Record<string, string> {
     if (this.isSlotScheduled(scholar, slot, day)) {
-      const school = this.schools.get(scholar.schoolId.toString());
+      const school = this.schools.get(scholar.schoolId?.toString() ?? '');
       // Calculate column span based on SLOT_DURATION and interval (assuming 15min interval for display)
       const columnsSpan = Math.ceil(this.SLOT_DURATION / 15);
 
@@ -140,8 +140,8 @@ export class GanttChartComponent implements OnInit {
   ): string {
     if (this.isSlotScheduled(scholar, slot, day)) {
       // We already know pickUpSchedule is not null and has 'day' property due to isSlotScheduled check
-      const pickupTime = scholar.pickUpSchedule![day]; // Use non-null assertion as it's checked by isSlotScheduled
-      const school = this.schools.get(scholar.schoolId.toString());
+      const pickupTime = scholar.pickUpSchedule![day]!; // Non-null: checked by isSlotScheduled (typeof === 'string')
+      const school = this.schools.get(scholar.schoolId?.toString() ?? '');
       return `${pickupTime} - ${this.calculateEndTime(pickupTime)}\n${
         school?.name || 'Unknown School'
       }`;
