@@ -11,6 +11,7 @@ import { map } from 'rxjs/operators';
 import { ScholarsService } from '../../services/scholars.service';
 import { AttendanceService } from '../../services/attendance.service';
 import { SortingService } from '../../services/sorting.service';
+import { CsvExportService } from '../../services/csv-export.service';
 
 interface AttendanceRow {
   scholarId: string;
@@ -41,6 +42,7 @@ export class AttendanceComponent implements OnInit {
     private readonly scholarsService: ScholarsService,
     private readonly attendanceService: AttendanceService,
     private readonly sortingService: SortingService,
+    private readonly csvExportService: CsvExportService,
   ) {}
 
   ngOnInit(): void {
@@ -99,6 +101,21 @@ export class AttendanceComponent implements OnInit {
         type,
         this.isAscending,
       ),
+    );
+  }
+
+  exportCsv(): void {
+    this.csvExportService.export(
+      'attendance',
+      [
+        { header: 'Scholar', value: (r: AttendanceRow) => r.scholarName },
+        { header: 'Date', value: (r: AttendanceRow) => r.date },
+        { header: 'Lunch Cost', value: (r: AttendanceRow) => r.lunchCost },
+        { header: 'Transport Cost', value: (r: AttendanceRow) => r.transportCost },
+        { header: 'Lunch Selected', value: (r: AttendanceRow) => (r.lunchSelected ? 'Yes' : 'No') },
+        { header: 'Transport Selected', value: (r: AttendanceRow) => (r.transportSelected ? 'Yes' : 'No') },
+      ],
+      this.rows(),
     );
   }
 }

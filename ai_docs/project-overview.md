@@ -32,8 +32,9 @@ ImaloEducationWebapp/
     └── src/app/
         ├── components/          # scholar-table, scholar-detail, scholar-form (create+edit),
         │                        # attendance (dashboard), attendance-per-scholar, gantt-chart,
-        │                        # navbar, not-found, about
-        ├── services/            # scholars, attendance, schools, sorting, health, api-logger
+        │                        # navbar, not-found, about, notification (global toast host)
+        ├── services/            # scholars, attendance, schools, sorting, health, api-logger,
+        │                        # csv-export, notification
         ├── utils/                # weekday-dates (shared by attendance + the About page's test-data generator)
         └── interfaces/
 ```
@@ -46,6 +47,8 @@ ImaloEducationWebapp/
 - `PickUpSchedule` and `Attendance` are stored as JSON blobs (`ScheduleJson`, `AttendanceJson` columns) keyed by `ScholarId`, serialized/deserialized in `ScholarDataAccess` — not normalized relational tables.
 - `Parents` is a genuinely relational table instead: up to one `Mother` row and one `Father` row per scholar (`UNIQUE (ScholarId, Role)`, `CHECK (Role IN ('Mother','Father'))`, `CHECK` that at least one of `FirstName`/`LastName`/`PhoneNumber` is non-null), `ON DELETE CASCADE` from `Scholars`. The API exposes each role as three optional fields on `Scholar` (`MotherFirstName`/`MotherLastName`/`MotherPhoneNumber`, and the `Father*` equivalents), fetched via two `OUTER APPLY` subqueries — one per role, each pulling all three columns without duplicating the scholar row (a `LEFT JOIN` would duplicate it when both parents exist; a scalar subquery could only return one column). On create/update, a role's row is upserted only if at least one of its three fields is non-blank, and deleted otherwise.
 - The API is **plain HTTP only** (`http://localhost:5244`, see `Properties/launchSettings.json`) — no HTTPS profile, so none of the dev-cert/TLS-trust issues that HTTPS-based sibling projects have apply here.
+- User-facing feedback goes through `NotificationService` (a signal-backed list of toasts) rendered by the single `<app-notification>` host in `app.html`, not `alert()` — every component that used to call `alert()` (scholar create/edit/delete, attendance save) now calls `notificationService.show(message, 'success' | 'error')`. Each toast self-dismisses after 3s, or can be dismissed early via its own close button.
+- CSV export (scholar table, attendance dashboard, per-scholar attendance) is done entirely client-side via `CsvExportService` — it serializes whatever rows are already loaded/filtered/sorted in the component and triggers a `Blob` download; there's no export endpoint on the API, unlike sibling projects whose lists are server-paginated.
 
 ## Gotchas / conventions
 

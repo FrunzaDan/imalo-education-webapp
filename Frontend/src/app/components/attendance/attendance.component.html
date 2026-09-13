@@ -1,6 +1,11 @@
 @if (loading()) {
 <div class="loading-message">Loading attendance...</div>
 } @else {
+<div class="attendance-toolbar">
+  <button type="button" class="app-button" (click)="exportCsv()">
+    Export CSV
+  </button>
+</div>
 <table class="app-table">
   <thead>
     <tr>

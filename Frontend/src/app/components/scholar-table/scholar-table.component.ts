@@ -7,6 +7,8 @@ import {
 import { ScholarsService } from '../../services/scholars.service';
 import { SchoolsService } from '../../services/schools.service';
 import { SortingService } from '../../services/sorting.service';
+import { CsvExportService } from '../../services/csv-export.service';
+import { NotificationService } from '../../services/notification.service';
 import { Scholar } from '../../interfaces/scholar';
 import { School } from '../../interfaces/school';
 import { CommonModule } from '@angular/common';
@@ -48,6 +50,8 @@ export class ScholarTableComponent implements OnInit {
     private scholarsService: ScholarsService,
     private schoolsService: SchoolsService,
     private sortingService: SortingService,
+    private csvExportService: CsvExportService,
+    private notificationService: NotificationService,
   ) {}
 
   ngOnInit(): void {
@@ -207,12 +211,28 @@ export class ScholarTableComponent implements OnInit {
         this.bulkDeleteInProgress.set(false);
         const succeeded = results.filter(Boolean).length;
         const failed = results.length - succeeded;
-        alert(
+        this.notificationService.show(
           failed === 0
             ? `Deleted ${succeeded} scholar${succeeded === 1 ? '' : 's'}.`
             : `Deleted ${succeeded} scholar${succeeded === 1 ? '' : 's'} (${failed} failed — check console).`,
+          failed === 0 ? 'success' : 'error',
         );
         this.loadData();
       });
+  }
+
+  // Exports whatever is currently visible (matching the search filter), in
+  // the currently sorted order — not just the selected rows.
+  exportCsv(): void {
+    this.csvExportService.export(
+      'scholars',
+      [
+        { header: 'Name', value: (s: TransformedScholarData) => s.name },
+        { header: 'School', value: (s: TransformedScholarData) => s.schoolName },
+        { header: 'Grade', value: (s: TransformedScholarData) => s.grade },
+        { header: 'Birth Date', value: (s: TransformedScholarData) => s.birthDate },
+      ],
+      this.displayedScholarData,
+    );
   }
 }

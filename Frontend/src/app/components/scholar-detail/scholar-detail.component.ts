@@ -9,6 +9,7 @@ import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { ScholarsService } from '../../services/scholars.service';
 import { SchoolsService } from '../../services/schools.service';
+import { NotificationService } from '../../services/notification.service';
 import { Scholar } from '../../interfaces/scholar';
 import { School } from '../../interfaces/school';
 import { WeekDays } from '../../constants/week-days';
@@ -30,6 +31,7 @@ export class ScholarDetailComponent implements OnInit {
   private readonly schoolsService = inject(SchoolsService);
   private readonly router = inject(Router);
   private readonly cdr = inject(ChangeDetectorRef);
+  private readonly notificationService = inject(NotificationService);
 
   scholar: Scholar | null = null;
   school: School | null = null;
@@ -109,12 +111,17 @@ export class ScholarDetailComponent implements OnInit {
 
     this.scholarsService.deleteScholar(this.scholar.id).subscribe({
       next: () => {
-        console.log(`Scholar ${this.scholar?.id} deleted successfully.`);
+        this.notificationService.show(
+          `Scholar ${this.scholar?.firstName} ${this.scholar?.lastName} deleted successfully.`,
+        );
         this.router.navigate(['/scholars']);
       },
       error: (err) => {
         console.error('Failed to delete scholar:', err.message);
-        alert('Failed to delete scholar. See console for details.');
+        this.notificationService.show(
+          'Failed to delete scholar. See console for details.',
+          'error',
+        );
       },
     });
   }

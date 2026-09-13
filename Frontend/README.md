@@ -1,6 +1,6 @@
 # ImaloEducationWebapp
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 19.0.6.
+This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 19.0.6, and has since been upgraded to Angular 22 (see `ai_docs/known-gaps.md`).
 
 ## Development server
 

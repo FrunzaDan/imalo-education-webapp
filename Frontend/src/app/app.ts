@@ -12,11 +12,12 @@ import { RouterOutlet } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { environment } from '../environments/environment';
 import { NavbarComponent } from './components/navbar/navbar.component';
+import { NotificationComponent } from './components/notification/notification.component';
 import { HealthService } from './services/health.service';
 
 @Component({
   selector: 'app-root',
-  imports: [NavbarComponent, RouterOutlet],
+  imports: [NavbarComponent, NotificationComponent, RouterOutlet],
   templateUrl: './app.html',
   changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './app.css',

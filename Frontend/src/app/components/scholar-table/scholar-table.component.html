@@ -10,6 +10,9 @@
   <button [routerLink]="['/create-scholar']" class="app-button">
     Create Scholar
   </button>
+  <button type="button" class="app-button" (click)="exportCsv()">
+    Export CSV
+  </button>
   <button
     type="button"
     class="app-button scholar-table-toolbar__delete"

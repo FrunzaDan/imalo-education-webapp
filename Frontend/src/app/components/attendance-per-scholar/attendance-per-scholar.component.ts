@@ -14,6 +14,8 @@ import { Subscription } from 'rxjs';
 import { ScholarsService } from '../../services/scholars.service';
 import { SchoolsService } from '../../services/schools.service';
 import { AttendanceService } from '../../services/attendance.service';
+import { CsvExportService } from '../../services/csv-export.service';
+import { NotificationService } from '../../services/notification.service';
 import { Scholar } from '../../interfaces/scholar';
 import { AttendanceRecord } from '../../interfaces/attendance-record';
 import { getWeekdayDatesInMonth } from '../../utils/weekday-dates';
@@ -42,6 +44,8 @@ export class AttendancePerScholarComponent implements OnInit, OnDestroy {
   private readonly scholarsService = inject(ScholarsService);
   private readonly schoolsService = inject(SchoolsService);
   private readonly attendanceService = inject(AttendanceService);
+  private readonly csvExportService = inject(CsvExportService);
+  private readonly notificationService = inject(NotificationService);
   private readonly cdr = inject(ChangeDetectorRef);
 
   private scholarSubscription: Subscription | undefined;
@@ -272,18 +276,45 @@ export class AttendancePerScholarComponent implements OnInit, OnDestroy {
           this.isSaving = false;
           this.hasUnsavedChanges = false;
           this.cdr.markForCheck();
-          alert('Attendance saved successfully!');
+          this.notificationService.show('Attendance saved successfully!');
         },
         error: (err) => {
           this.isSaving = false;
           this.cdr.markForCheck();
           console.error('Failed to save attendance:', err);
-          alert('Failed to save attendance. Check console for details.');
+          this.notificationService.show(
+            'Failed to save attendance. Check console for details.',
+            'error',
+          );
         },
       });
   }
 
   trackByDayRow(index: number, row: AttendanceDayRow): string {
     return row.date;
+  }
+
+  exportCsv(): void {
+    const scholarName = this.scholar
+      ? `${this.scholar.firstName}_${this.scholar.lastName}`
+      : this.scholarId;
+
+    this.csvExportService.export(
+      `attendance_${scholarName}_${this.selectedMonth}`,
+      [
+        { header: 'Date', value: (r: AttendanceDayRow) => r.date },
+        {
+          header: 'Lunch Selected',
+          value: (r: AttendanceDayRow) => (r.record.lunchSelected ? 'Yes' : 'No'),
+        },
+        {
+          header: 'Transport Selected',
+          value: (r: AttendanceDayRow) => (r.record.transportSelected ? 'Yes' : 'No'),
+        },
+        { header: 'Lunch Cost', value: (r: AttendanceDayRow) => r.record.lunchCost },
+        { header: 'Transport Cost', value: (r: AttendanceDayRow) => r.record.transportCost },
+      ],
+      this.dayRows,
+    );
   }
 }

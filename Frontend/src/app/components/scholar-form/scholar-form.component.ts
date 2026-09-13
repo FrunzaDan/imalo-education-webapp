@@ -17,6 +17,7 @@ import { Scholar } from '../../interfaces/scholar';
 import { School } from '../../interfaces/school';
 import { ScholarsService } from '../../services/scholars.service';
 import { SchoolsService } from '../../services/schools.service';
+import { NotificationService } from '../../services/notification.service';
 
 // Handles both "create a scholar" (no :id in the route) and "edit a scholar"
 // (:id present) — the two forms were previously two near-identical
@@ -36,6 +37,7 @@ export class ScholarFormComponent implements OnInit {
   private readonly fb = inject(FormBuilder);
   private readonly scholarsService = inject(ScholarsService);
   private readonly schoolsService = inject(SchoolsService);
+  private readonly notificationService = inject(NotificationService);
 
   scholarForm!: FormGroup;
   schools = signal<School[]>([]);
@@ -63,7 +65,10 @@ export class ScholarFormComponent implements OnInit {
         next: (scholar) => this.populateForm(scholar),
         error: (err) => {
           console.error('Failed to load scholar:', err.message);
-          alert('Failed to load scholar. Check console for details.');
+          this.notificationService.show(
+            'Failed to load scholar. Check console for details.',
+            'error',
+          );
         },
       });
     }
@@ -154,7 +159,7 @@ export class ScholarFormComponent implements OnInit {
     save$.subscribe({
       next: (savedScholar) => {
         this.isSubmitting.set(false);
-        alert(
+        this.notificationService.show(
           this.isEditMode
             ? 'Scholar updated successfully!'
             : 'Scholar created successfully!',
@@ -167,8 +172,9 @@ export class ScholarFormComponent implements OnInit {
           `Error ${this.isEditMode ? 'updating' : 'creating'} scholar:`,
           err.message,
         );
-        alert(
+        this.notificationService.show(
           `Failed to ${this.isEditMode ? 'update' : 'create'} scholar. ${err.message}`,
+          'error',
         );
       },
     });
