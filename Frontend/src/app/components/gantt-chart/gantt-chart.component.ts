@@ -1,5 +1,10 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit, ChangeDetectionStrategy } from '@angular/core';
+import {
+  Component,
+  OnInit,
+  ChangeDetectionStrategy,
+  signal,
+} from '@angular/core';
 import { TimeSlot } from '../../interfaces/time-slot';
 import { Scholar } from '../../interfaces/scholar';
 import { School } from '../../interfaces/school';
@@ -19,8 +24,8 @@ import { PickUpSchedule } from '../../interfaces/pick-up-schedule';
   styleUrls: ['./gantt-chart.component.css'],
 })
 export class GanttChartComponent implements OnInit {
-  scholars: Scholar[] = [];
-  schools: Map<string, School> = new Map();
+  scholars = signal<Scholar[]>([]);
+  schools = new Map<string, School>();
   timeSlots: TimeSlot[] = [];
   weekDays: (keyof PickUpSchedule)[] = Object.values(
     WeekDays,
@@ -58,7 +63,7 @@ export class GanttChartComponent implements OnInit {
         }),
       )
       // Subscribe to the final observable to get the scholars data
-      .subscribe((scholars) => (this.scholars = scholars));
+      .subscribe((scholars) => this.scholars.set(scholars));
   }
 
   private generateTimeSlots(

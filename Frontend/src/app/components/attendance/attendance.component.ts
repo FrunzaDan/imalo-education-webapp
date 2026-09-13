@@ -1,4 +1,9 @@
-import { Component, OnInit, ChangeDetectionStrategy } from '@angular/core';
+import {
+  Component,
+  OnInit,
+  ChangeDetectionStrategy,
+  signal,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { forkJoin } from 'rxjs';
@@ -26,8 +31,8 @@ interface AttendanceRow {
   styleUrl: './attendance.component.css',
 })
 export class AttendanceComponent implements OnInit {
-  rows: AttendanceRow[] = [];
-  loading = true;
+  rows = signal<AttendanceRow[]>([]);
+  loading = signal(true);
 
   currentSortColumn: string = '';
   isAscending: boolean = true;
@@ -69,12 +74,12 @@ export class AttendanceComponent implements OnInit {
       )
       .subscribe({
         next: (rows) => {
-          this.rows = rows;
-          this.loading = false;
+          this.rows.set(rows);
+          this.loading.set(false);
         },
         error: (err) => {
           console.error('Failed to load attendance overview:', err);
-          this.loading = false;
+          this.loading.set(false);
         },
       });
   }
@@ -87,11 +92,13 @@ export class AttendanceComponent implements OnInit {
       this.isAscending = true;
     }
 
-    this.rows = this.sortingService.sort(
-      this.rows,
-      column as keyof AttendanceRow,
-      type,
-      this.isAscending,
+    this.rows.set(
+      this.sortingService.sort(
+        this.rows(),
+        column as keyof AttendanceRow,
+        type,
+        this.isAscending,
+      ),
     );
   }
 }

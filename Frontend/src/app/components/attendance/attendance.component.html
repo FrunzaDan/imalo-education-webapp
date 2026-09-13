@@ -1,4 +1,4 @@
-@if (loading) {
+@if (loading()) {
 <div class="loading-message">Loading attendance...</div>
 } @else {
 <table class="app-table">
@@ -36,7 +36,7 @@
     </tr>
   </thead>
   <tbody>
-    @for (row of rows; track row.scholarId + row.date) {
+    @for (row of rows(); track row.scholarId + row.date) {
     <tr
       class="table-row"
       [routerLink]="['/attendance', row.scholarId]"

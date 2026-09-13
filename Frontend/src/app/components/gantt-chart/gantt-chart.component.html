@@ -12,7 +12,7 @@
         }
       </div>
       <!-- Rows -->
-      @for (scholar of scholars; track scholar) {
+      @for (scholar of scholars(); track scholar) {
         <div class="gantt-row">
           <div class="name-cell">{{ scholar.firstName }}</div>
           @for (slot of timeSlots; track slot) {
