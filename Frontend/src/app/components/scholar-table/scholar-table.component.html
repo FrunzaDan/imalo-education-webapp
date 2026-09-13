@@ -13,13 +13,13 @@
   <button
     type="button"
     class="app-button scholar-table-toolbar__delete"
-    [disabled]="selectedIds.size === 0 || bulkDeleteInProgress"
+    [disabled]="selectedIds().size === 0 || bulkDeleteInProgress()"
     (click)="bulkDeleteSelected()"
   >
     {{
-      bulkDeleteInProgress
+      bulkDeleteInProgress()
         ? 'Deleting...'
-        : 'Delete selected (' + selectedIds.size + ')'
+        : 'Delete selected (' + selectedIds().size + ')'
     }}
   </button>
 </div>

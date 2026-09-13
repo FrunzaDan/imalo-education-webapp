@@ -72,7 +72,7 @@
         "
       >
         <option [ngValue]="null" disabled>Select a school</option>
-        @for (school of schools; track school.id) {
+        @for (school of schools(); track school.id) {
         <option [ngValue]="school.id">{{ school.name }}</option>
         }
       </select>
@@ -292,10 +292,10 @@
     <div>
       <button
         type="submit"
-        [disabled]="scholarForm.invalid || isSubmitting"
+        [disabled]="scholarForm.invalid || isSubmitting()"
         class="app-button"
       >
-        {{ isSubmitting ? 'Saving...' : (isEditMode ? 'Update Scholar' : 'Create Scholar') }}
+        {{ isSubmitting() ? 'Saving...' : (isEditMode ? 'Update Scholar' : 'Create Scholar') }}
       </button>
     </div>
   </form>

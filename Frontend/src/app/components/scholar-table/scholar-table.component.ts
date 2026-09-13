@@ -1,4 +1,9 @@
-import { Component, OnInit, ChangeDetectionStrategy } from '@angular/core';
+import {
+  Component,
+  OnInit,
+  ChangeDetectionStrategy,
+  signal,
+} from '@angular/core';
 import { ScholarsService } from '../../services/scholars.service';
 import { SchoolsService } from '../../services/schools.service';
 import { SortingService } from '../../services/sorting.service';
@@ -29,15 +34,15 @@ interface TransformedScholarData {
 export class ScholarTableComponent implements OnInit {
   scholars: Scholar[] = [];
   schools: Map<string, School> = new Map();
-  scholarData: TransformedScholarData[] = [];
+  scholarData = signal<TransformedScholarData[]>([]);
 
   currentSortColumn: string = '';
   isAscending: boolean = true;
 
   searchTerm: string = '';
 
-  selectedIds: Set<string> = new Set();
-  bulkDeleteInProgress: boolean = false;
+  selectedIds = signal<Set<string>>(new Set());
+  bulkDeleteInProgress = signal(false);
 
   constructor(
     private scholarsService: ScholarsService,
@@ -86,10 +91,10 @@ export class ScholarTableComponent implements OnInit {
         }),
       )
       .subscribe((transformedData: TransformedScholarData[]) => {
-        this.scholarData = transformedData;
+        this.scholarData.set(transformedData);
         // Stale selections (from before a reload) would otherwise reference
         // rows that may no longer exist or may have shifted.
-        this.selectedIds = new Set();
+        this.selectedIds.set(new Set());
       });
   }
 
@@ -110,11 +115,13 @@ export class ScholarTableComponent implements OnInit {
       this.isAscending = true;
     }
 
-    this.scholarData = this.sortingService.sort(
-      this.scholarData,
-      column as keyof TransformedScholarData,
-      type,
-      this.isAscending,
+    this.scholarData.set(
+      this.sortingService.sort(
+        this.scholarData(),
+        column as keyof TransformedScholarData,
+        type,
+        this.isAscending,
+      ),
     );
   }
 
@@ -124,8 +131,9 @@ export class ScholarTableComponent implements OnInit {
   // pagination) would just be unnecessary latency here.
   get displayedScholarData(): TransformedScholarData[] {
     const term = this.searchTerm.trim().toLowerCase();
-    if (!term) return this.scholarData;
-    return this.scholarData.filter((s) => s.name.toLowerCase().includes(term));
+    const scholarData = this.scholarData();
+    if (!term) return scholarData;
+    return scholarData.filter((s) => s.name.toLowerCase().includes(term));
   }
 
   onSearchTermChange(value: string): void {
@@ -135,28 +143,28 @@ export class ScholarTableComponent implements OnInit {
   get allSelected(): boolean {
     return (
       this.displayedScholarData.length > 0 &&
-      this.displayedScholarData.every((s) => this.selectedIds.has(s.id))
+      this.displayedScholarData.every((s) => this.selectedIds().has(s.id))
     );
   }
 
   isSelected(id: string): boolean {
-    return this.selectedIds.has(id);
+    return this.selectedIds().has(id);
   }
 
   toggleSelection(id: string, checked: boolean): void {
-    const next = new Set(this.selectedIds);
+    const next = new Set(this.selectedIds());
     if (checked) {
       next.add(id);
     } else {
       next.delete(id);
     }
-    this.selectedIds = next;
+    this.selectedIds.set(next);
   }
 
   // Scoped to whatever's currently visible (matching the search filter), so
   // selections made under a different search term aren't silently touched.
   toggleSelectAll(checked: boolean): void {
-    const next = new Set(this.selectedIds);
+    const next = new Set(this.selectedIds());
     for (const s of this.displayedScholarData) {
       if (checked) {
         next.add(s.id);
@@ -164,13 +172,13 @@ export class ScholarTableComponent implements OnInit {
         next.delete(s.id);
       }
     }
-    this.selectedIds = next;
+    this.selectedIds.set(next);
   }
 
   bulkDeleteSelected(): void {
-    if (this.selectedIds.size === 0 || this.bulkDeleteInProgress) return;
+    if (this.selectedIds().size === 0 || this.bulkDeleteInProgress()) return;
 
-    const ids = Array.from(this.selectedIds);
+    const ids = Array.from(this.selectedIds());
     if (
       !confirm(
         `Are you sure you want to delete ${ids.length} scholar${ids.length === 1 ? '' : 's'}? ` +
@@ -180,7 +188,7 @@ export class ScholarTableComponent implements OnInit {
       return;
     }
 
-    this.bulkDeleteInProgress = true;
+    this.bulkDeleteInProgress.set(true);
 
     from(ids)
       .pipe(
@@ -196,7 +204,7 @@ export class ScholarTableComponent implements OnInit {
         toArray(),
       )
       .subscribe((results) => {
-        this.bulkDeleteInProgress = false;
+        this.bulkDeleteInProgress.set(false);
         const succeeded = results.filter(Boolean).length;
         const failed = results.length - succeeded;
         alert(

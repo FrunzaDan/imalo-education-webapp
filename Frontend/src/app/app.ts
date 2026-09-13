@@ -5,6 +5,7 @@ import {
   OnInit,
   PLATFORM_ID,
   ChangeDetectionStrategy,
+  signal,
 } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import { RouterOutlet } from '@angular/router';
@@ -23,7 +24,7 @@ import { HealthService } from './services/health.service';
 export class App implements OnInit, OnDestroy {
   title = 'ImaloEducationWebapp';
   environment = environment;
-  apiAvailable = true;
+  apiAvailable = signal(true);
 
   private healthSubscription?: Subscription;
 
@@ -41,7 +42,7 @@ export class App implements OnInit, OnDestroy {
     this.healthSubscription = this.healthService
       .pollApiHealth()
       .subscribe((status) => {
-        this.apiAvailable = status;
+        this.apiAvailable.set(status);
       });
   }
 

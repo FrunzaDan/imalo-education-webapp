@@ -1,4 +1,10 @@
-import { Component, OnInit, inject, ChangeDetectionStrategy } from '@angular/core';
+import {
+  Component,
+  OnInit,
+  inject,
+  ChangeDetectionStrategy,
+  signal,
+} from '@angular/core';
 import {
   FormBuilder,
   FormGroup,
@@ -32,10 +38,10 @@ export class ScholarFormComponent implements OnInit {
   private readonly schoolsService = inject(SchoolsService);
 
   scholarForm!: FormGroup;
-  schools: School[] = [];
+  schools = signal<School[]>([]);
   isEditMode = false;
   scholarId: string | null = null;
-  isSubmitting = false;
+  isSubmitting = signal(false);
 
   // Matches the backend's ValidatePhoneNumber — loose on purpose (no
   // country-specific format assumed), just enough to catch obviously wrong
@@ -46,7 +52,7 @@ export class ScholarFormComponent implements OnInit {
     this.initForm();
 
     this.schoolsService.getSchools().subscribe((schools) => {
-      this.schools = schools;
+      this.schools.set(schools);
     });
 
     this.scholarId = this.route.snapshot.paramMap.get('id');
@@ -140,14 +146,14 @@ export class ScholarFormComponent implements OnInit {
       pickUpSchedule: formValue.pickUpSchedule,
     };
 
-    this.isSubmitting = true;
+    this.isSubmitting.set(true);
     const save$ = this.isEditMode
       ? this.scholarsService.updateScholar(scholar)
       : this.scholarsService.createScholar(scholar);
 
     save$.subscribe({
       next: (savedScholar) => {
-        this.isSubmitting = false;
+        this.isSubmitting.set(false);
         alert(
           this.isEditMode
             ? 'Scholar updated successfully!'
@@ -156,7 +162,7 @@ export class ScholarFormComponent implements OnInit {
         this.router.navigate(['/scholars', savedScholar.id]);
       },
       error: (err) => {
-        this.isSubmitting = false;
+        this.isSubmitting.set(false);
         console.error(
           `Error ${this.isEditMode ? 'updating' : 'creating'} scholar:`,
           err.message,

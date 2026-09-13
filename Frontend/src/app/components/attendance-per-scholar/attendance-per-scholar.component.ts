@@ -1,4 +1,11 @@
-import { Component, OnInit, inject, OnDestroy, ChangeDetectionStrategy } from '@angular/core';
+import {
+  Component,
+  OnInit,
+  inject,
+  OnDestroy,
+  ChangeDetectionStrategy,
+  ChangeDetectorRef,
+} from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { CommonModule, CurrencyPipe, DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -35,6 +42,7 @@ export class AttendancePerScholarComponent implements OnInit, OnDestroy {
   private readonly scholarsService = inject(ScholarsService);
   private readonly schoolsService = inject(SchoolsService);
   private readonly attendanceService = inject(AttendanceService);
+  private readonly cdr = inject(ChangeDetectorRef);
 
   private scholarSubscription: Subscription | undefined;
   private attendanceSubscription: Subscription | undefined;
@@ -78,6 +86,7 @@ export class AttendancePerScholarComponent implements OnInit, OnDestroy {
 
         if (!this.scholar) {
           console.warn(`Scholar with ID ${scholarId} not found.`);
+          this.cdr.markForCheck();
           return;
         }
 
@@ -86,6 +95,7 @@ export class AttendancePerScholarComponent implements OnInit, OnDestroy {
             next: (school) => {
               this.lunchPrice = school?.lunchPrice ?? 0;
               this.transportPrice = school?.transportPrice ?? 0;
+              this.cdr.markForCheck();
             },
           });
         }
@@ -97,18 +107,23 @@ export class AttendancePerScholarComponent implements OnInit, OnDestroy {
               this.allAttendanceRecords = attendanceData ?? [];
               this.selectedMonth = this.pickDefaultMonth();
               this.rebuildDayRows();
+              this.cdr.markForCheck();
             },
             error: (err) => {
               console.error('Error fetching attendance data:', err);
               this.allAttendanceRecords = [];
               this.selectedMonth = this.pickDefaultMonth();
               this.rebuildDayRows();
+              this.cdr.markForCheck();
             },
           });
+
+        this.cdr.markForCheck();
       },
       error: (err) => {
         console.error('Error fetching scholars:', err);
         this.scholar = null;
+        this.cdr.markForCheck();
       },
     });
   }
@@ -256,10 +271,12 @@ export class AttendancePerScholarComponent implements OnInit, OnDestroy {
         next: () => {
           this.isSaving = false;
           this.hasUnsavedChanges = false;
+          this.cdr.markForCheck();
           alert('Attendance saved successfully!');
         },
         error: (err) => {
           this.isSaving = false;
+          this.cdr.markForCheck();
           console.error('Failed to save attendance:', err);
           alert('Failed to save attendance. Check console for details.');
         },

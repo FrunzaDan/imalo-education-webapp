@@ -1,4 +1,10 @@
-import { Component, OnInit, inject, ChangeDetectionStrategy } from '@angular/core';
+import {
+  Component,
+  OnInit,
+  inject,
+  ChangeDetectionStrategy,
+  ChangeDetectorRef,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { ScholarsService } from '../../services/scholars.service';
@@ -23,6 +29,7 @@ export class ScholarDetailComponent implements OnInit {
   private readonly scholarsService = inject(ScholarsService);
   private readonly schoolsService = inject(SchoolsService);
   private readonly router = inject(Router);
+  private readonly cdr = inject(ChangeDetectorRef);
 
   scholar: Scholar | null = null;
   school: School | null = null;
@@ -47,6 +54,7 @@ export class ScholarDetailComponent implements OnInit {
           if (!fetchedScholar) {
             console.warn('Scholar not found for the given ID.');
           }
+          this.cdr.markForCheck();
         }),
         // Second switchMap: If scholar found, fetch their school using getSchoolById
         switchMap((scholar) => {
@@ -64,6 +72,7 @@ export class ScholarDetailComponent implements OnInit {
               `School with ID ${this.scholar.schoolId} not found for scholar ${this.scholar.firstName} ${this.scholar.lastName}.`,
             );
           }
+          this.cdr.markForCheck();
         }),
       )
       .subscribe();

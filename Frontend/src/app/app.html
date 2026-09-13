@@ -1,6 +1,6 @@
 <app-navbar></app-navbar>
 
-@if (apiAvailable) {
+@if (apiAvailable()) {
 <router-outlet />
 } @else {
 <div class="api-down-card">

@@ -18,13 +18,15 @@ export class HealthService {
    * @returns Observable<boolean> - true if API is healthy, false otherwise
    */
   checkApiHealth(): Observable<boolean> {
-    return this.http.get<void>(this.healthUrl, { observe: 'response' }).pipe(
-      map((response: HttpResponse<void>) => response.ok), // cleaner than status check
-      catchError((error) => {
-        this.logHealthError(error);
-        return of(false);
-      }),
-    );
+    return this.http
+      .get(this.healthUrl, { observe: 'response', responseType: 'text' })
+      .pipe(
+        map((response: HttpResponse<string>) => response.ok), // cleaner than status check
+        catchError((error) => {
+          this.logHealthError(error);
+          return of(false);
+        }),
+      );
   }
 
   /**
