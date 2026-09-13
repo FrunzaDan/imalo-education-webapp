@@ -18,7 +18,7 @@ public class ScholarsController : ControllerBase
     }
 
     [HttpPost]
-    public async Task<ActionResult<Scholar>> CreateScholar([FromBody] Scholar scholar)
+    public async Task<ActionResult<Scholar>> CreateScholar([FromBody] Scholar scholar, CancellationToken cancellationToken)
     {
         if (!ModelState.IsValid)
         {
@@ -40,7 +40,7 @@ public class ScholarsController : ControllerBase
 
         try
         {
-            var createdScholar = await _scholarDataAccess.CreateScholarAsync(scholar);
+            var createdScholar = await _scholarDataAccess.CreateScholarAsync(scholar, cancellationToken);
             _logger.LogInformation("Scholar created with ID: {ScholarId}", createdScholar.Id);
             return CreatedAtAction(nameof(GetScholarById), new { id = createdScholar.Id }, createdScholar);
         }
@@ -65,11 +65,11 @@ public class ScholarsController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<Scholar>>> GetScholars()
+    public async Task<ActionResult<IEnumerable<Scholar>>> GetScholars(CancellationToken cancellationToken)
     {
         try
         {
-            var scholars = (await _scholarDataAccess.GetScholarsAsync()).ToList();
+            var scholars = (await _scholarDataAccess.GetScholarsAsync(cancellationToken)).ToList();
 
             _logger.LogInformation("Retrieved {Count} scholars.", scholars.Count);
             return Ok(scholars);
@@ -86,11 +86,11 @@ public class ScholarsController : ControllerBase
     }
 
     [HttpGet("{id:guid}")]
-    public async Task<ActionResult<Scholar>> GetScholarById(Guid id)
+    public async Task<ActionResult<Scholar>> GetScholarById(Guid id, CancellationToken cancellationToken)
     {
         try
         {
-            var scholar = await _scholarDataAccess.GetScholarByIdAsync(id);
+            var scholar = await _scholarDataAccess.GetScholarByIdAsync(id, cancellationToken);
 
             if (scholar is null)
             {
@@ -113,7 +113,7 @@ public class ScholarsController : ControllerBase
     }
 
     [HttpPut("{id:guid}")]
-    public async Task<IActionResult> UpdateScholar(Guid id, [FromBody] Scholar scholar)
+    public async Task<IActionResult> UpdateScholar(Guid id, [FromBody] Scholar scholar, CancellationToken cancellationToken)
     {
         if (id != scholar.Id) return BadRequest(new { message = "ID in URL does not match ID in request body." });
 
@@ -137,7 +137,7 @@ public class ScholarsController : ControllerBase
 
         try
         {
-            var updatedScholar = await _scholarDataAccess.UpdateScholarAsync(scholar);
+            var updatedScholar = await _scholarDataAccess.UpdateScholarAsync(scholar, cancellationToken);
             if (updatedScholar == null) return NotFound(new { message = $"Scholar with ID {id} not found." });
 
             return Ok(updatedScholar);
@@ -154,11 +154,11 @@ public class ScholarsController : ControllerBase
     }
 
     [HttpDelete("{id:guid}")]
-    public async Task<IActionResult> DeleteScholar(Guid id)
+    public async Task<IActionResult> DeleteScholar(Guid id, CancellationToken cancellationToken)
     {
         try
         {
-            var deleted = await _scholarDataAccess.DeleteScholarAsync(id);
+            var deleted = await _scholarDataAccess.DeleteScholarAsync(id, cancellationToken);
             if (!deleted) return NotFound(new { message = $"Scholar with ID {id} not found." });
 
             return NoContent(); // 204 No Content is standard for successful DELETE
@@ -179,11 +179,11 @@ public class ScholarsController : ControllerBase
     // ---------------------------------------
 
     [HttpGet("{id:guid}/auditLog")]
-    public async Task<ActionResult<IEnumerable<AuditLogEntry>>> GetScholarAuditLog(Guid id)
+    public async Task<ActionResult<IEnumerable<AuditLogEntry>>> GetScholarAuditLog(Guid id, CancellationToken cancellationToken)
     {
         try
         {
-            var entries = await _scholarDataAccess.GetAuditLogByScholarIdAsync(id);
+            var entries = await _scholarDataAccess.GetAuditLogByScholarIdAsync(id, cancellationToken);
             return Ok(entries);
         }
         catch (Exception ex)
@@ -199,7 +199,7 @@ public class ScholarsController : ControllerBase
 
     [HttpGet("auditLog/all")]
     public async Task<ActionResult<PagedResult<GlobalAuditLogEntry>>> GetAllAuditLog(
-        [FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 20)
+        [FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 20, CancellationToken cancellationToken = default)
     {
         if (pageNumber < 1)
             return BadRequest(new { message = "Page number must be 1 or greater." });
@@ -209,7 +209,7 @@ public class ScholarsController : ControllerBase
 
         try
         {
-            var result = await _scholarDataAccess.GetAllAuditLogAsync(pageNumber, pageSize);
+            var result = await _scholarDataAccess.GetAllAuditLogAsync(pageNumber, pageSize, cancellationToken);
             return Ok(result);
         }
         catch (Exception ex)
@@ -224,11 +224,11 @@ public class ScholarsController : ControllerBase
     }
 
     [HttpDelete("auditLog/all")]
-    public async Task<IActionResult> DeleteAllAuditLog()
+    public async Task<IActionResult> DeleteAllAuditLog(CancellationToken cancellationToken)
     {
         try
         {
-            await _scholarDataAccess.DeleteAllAuditLogAsync();
+            await _scholarDataAccess.DeleteAllAuditLogAsync(cancellationToken);
             return NoContent();
         }
         catch (Exception ex)
@@ -247,7 +247,7 @@ public class ScholarsController : ControllerBase
     // ---------------------------------------
 
     [HttpPost("{id:guid}/attendance")]
-    public async Task<IActionResult> CreateOrUpdateAttendance(Guid id, [FromBody] List<AttendanceRecord> attendance)
+    public async Task<IActionResult> CreateOrUpdateAttendance(Guid id, [FromBody] List<AttendanceRecord> attendance, CancellationToken cancellationToken)
     {
         if (id == Guid.Empty)
             return BadRequest(new { message = "Invalid scholar ID." });
@@ -257,7 +257,7 @@ public class ScholarsController : ControllerBase
 
         try
         {
-            var result = await _scholarDataAccess.CreateOrUpdateAttendanceAsync(id, attendance);
+            var result = await _scholarDataAccess.CreateOrUpdateAttendanceAsync(id, attendance, cancellationToken);
             if (result)
             {
                 _logger.LogInformation("Attendance created/updated for scholar {ScholarId}", id);
@@ -278,21 +278,18 @@ public class ScholarsController : ControllerBase
     }
 
     [HttpGet("{id:guid}/attendance")]
-    public async Task<ActionResult<IEnumerable<AttendanceRecord>>> GetAttendance(Guid id)
+    public async Task<ActionResult<IEnumerable<AttendanceRecord>>> GetAttendance(Guid id, CancellationToken cancellationToken)
     {
         if (id == Guid.Empty)
             return BadRequest(new { message = "Invalid scholar ID." });
 
         try
         {
-            var attendance = await _scholarDataAccess.GetAttendanceByScholarIdAsync(id);
-            if (attendance == null || !attendance.Any())
-            {
-                _logger.LogInformation("No attendance found for scholar {ScholarId}", id);
-                return NotFound(new { message = $"No attendance data found for scholar {id}." });
-            }
+            // No records yet is a normal state for a scholar (e.g. a brand-new one),
+            // not an error — return 200 with an empty list rather than 404.
+            var attendance = await _scholarDataAccess.GetAttendanceByScholarIdAsync(id, cancellationToken);
 
-            _logger.LogInformation("Fetched attendance for scholar {ScholarId}", id);
+            _logger.LogInformation("Fetched attendance for scholar {ScholarId} ({Count} records)", id, attendance.Count);
             return Ok(attendance);
         }
         catch (Exception ex)
@@ -307,14 +304,14 @@ public class ScholarsController : ControllerBase
     }
 
     [HttpDelete("{id:guid}/attendance")]
-    public async Task<IActionResult> DeleteAttendance(Guid id)
+    public async Task<IActionResult> DeleteAttendance(Guid id, CancellationToken cancellationToken)
     {
         if (id == Guid.Empty)
             return BadRequest(new { message = "Invalid scholar ID." });
 
         try
         {
-            var deleted = await _scholarDataAccess.DeleteAttendanceAsync(id);
+            var deleted = await _scholarDataAccess.DeleteAttendanceAsync(id, cancellationToken);
             if (!deleted)
             {
                 _logger.LogWarning("No attendance record found to delete for scholar {ScholarId}", id);
@@ -336,11 +333,11 @@ public class ScholarsController : ControllerBase
     }
 
     [HttpGet("attendance")]
-    public async Task<ActionResult<IEnumerable<object>>> GetAllAttendance()
+    public async Task<ActionResult<IEnumerable<object>>> GetAllAttendance(CancellationToken cancellationToken)
     {
         try
         {
-            var allAttendance = await _scholarDataAccess.GetAllAttendanceAsync();
+            var allAttendance = await _scholarDataAccess.GetAllAttendanceAsync(cancellationToken);
 
             var result = allAttendance.Select(a => new
             {

@@ -1,3 +1,4 @@
+using System.Data;
 using System.Text.Json;
 using ImaloEducationApi.Models;
 using Microsoft.Data.SqlClient;
@@ -19,12 +20,18 @@ public class ScholarDataAccess
     private static object ToDbValue(string? value) =>
         string.IsNullOrWhiteSpace(value) ? DBNull.Value : value;
 
-    public async Task<Scholar> CreateScholarAsync(Scholar scholar)
+    private static void AddParam(SqlCommand cmd, string name, SqlDbType type, object value, int size = 0)
+    {
+        var param = size > 0 ? cmd.Parameters.Add(name, type, size) : cmd.Parameters.Add(name, type);
+        param.Value = value;
+    }
+
+    public async Task<Scholar> CreateScholarAsync(Scholar scholar, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(scholar);
 
         const string insertScholarSql = """
-                                        
+
                                                 INSERT INTO Scholars (FirstName, LastName, DateOfBirth, Grade, SchoolId)
                                                 OUTPUT INSERTED.Id
                                                 VALUES (@FirstName, @LastName, @DateOfBirth, @Grade, @SchoolId);
@@ -42,78 +49,84 @@ public class ScholarDataAccess
                                         """;
 
         await using var connection = new SqlConnection(_connectionString);
-        await using var insertScholarCmd = new SqlCommand(insertScholarSql, connection);
-
-        insertScholarCmd.Parameters.AddWithValue("@FirstName", scholar.FirstName);
-        insertScholarCmd.Parameters.AddWithValue("@LastName", scholar.LastName ?? string.Empty);
-        insertScholarCmd.Parameters.AddWithValue("@DateOfBirth", scholar.DateOfBirth);
-        insertScholarCmd.Parameters.AddWithValue("@Grade", (object?)scholar.Grade ?? DBNull.Value);
-        insertScholarCmd.Parameters.AddWithValue("@SchoolId", (object?)scholar.SchoolId ?? DBNull.Value);
+        await connection.OpenAsync(cancellationToken);
+        await using var transaction = (SqlTransaction)await connection.BeginTransactionAsync(cancellationToken);
 
         try
         {
-            await connection.OpenAsync();
+            await using var insertScholarCmd = new SqlCommand(insertScholarSql, connection, transaction);
+            AddParam(insertScholarCmd, "@FirstName", SqlDbType.NVarChar, scholar.FirstName, 100);
+            AddParam(insertScholarCmd, "@LastName", SqlDbType.NVarChar, scholar.LastName ?? string.Empty, 100);
+            AddParam(insertScholarCmd, "@DateOfBirth", SqlDbType.DateTime2, scholar.DateOfBirth);
+            AddParam(insertScholarCmd, "@Grade", SqlDbType.Int, (object?)scholar.Grade ?? DBNull.Value);
+            AddParam(insertScholarCmd, "@SchoolId", SqlDbType.Int, (object?)scholar.SchoolId ?? DBNull.Value);
 
-            var insertedIdObj = await insertScholarCmd.ExecuteScalarAsync();
-            if (insertedIdObj is Guid insertedId)
+            var insertedIdObj = await insertScholarCmd.ExecuteScalarAsync(cancellationToken);
+            if (insertedIdObj is not Guid insertedId)
             {
-                scholar.Id = insertedId;
-                _logger.LogInformation("Scholar created with ID: {ScholarId}", insertedId);
-
-                // Insert pickup schedule if provided
-                if (scholar.PickUpSchedule != null && scholar.PickUpSchedule.Count > 0)
-                {
-                    await using var insertScheduleCmd = new SqlCommand(insertScheduleSql, connection);
-                    insertScheduleCmd.Parameters.AddWithValue("@ScholarId", insertedId);
-                    insertScheduleCmd.Parameters.AddWithValue("@ScheduleJson",
-                        JsonSerializer.Serialize(scholar.PickUpSchedule));
-
-                    await insertScheduleCmd.ExecuteNonQueryAsync();
-                    _logger.LogInformation("Pickup schedule inserted for scholar ID: {ScholarId}", insertedId);
-                }
-
-                // Insert parent rows for whichever of Mother/Father has at least one field
-                // set — every field of a parent is independently optional, so a row is only
-                // created once there's actually something to store.
-                foreach (var (role, firstName, lastName, phoneNumber) in new[]
-                         {
-                             ("Mother", scholar.MotherFirstName, scholar.MotherLastName, scholar.MotherPhoneNumber),
-                             ("Father", scholar.FatherFirstName, scholar.FatherLastName, scholar.FatherPhoneNumber),
-                         })
-                {
-                    if (string.IsNullOrWhiteSpace(firstName) && string.IsNullOrWhiteSpace(lastName) &&
-                        string.IsNullOrWhiteSpace(phoneNumber)) continue;
-
-                    await using var insertParentCmd = new SqlCommand(insertParentSql, connection);
-                    insertParentCmd.Parameters.AddWithValue("@ScholarId", insertedId);
-                    insertParentCmd.Parameters.AddWithValue("@Role", role);
-                    insertParentCmd.Parameters.AddWithValue("@FirstName", ToDbValue(firstName));
-                    insertParentCmd.Parameters.AddWithValue("@LastName", ToDbValue(lastName));
-                    insertParentCmd.Parameters.AddWithValue("@PhoneNumber", ToDbValue(phoneNumber));
-                    await insertParentCmd.ExecuteNonQueryAsync();
-                }
-
-                await LogAuditAsync(insertedId, "Created");
-
-                return scholar;
+                await transaction.RollbackAsync(cancellationToken);
+                _logger.LogError("Failed to get the inserted scholar ID.");
+                throw new InvalidOperationException("Scholar was inserted, but no ID was returned.");
             }
 
-            _logger.LogError("Failed to get the inserted scholar ID.");
-            throw new InvalidOperationException("Scholar was inserted, but no ID was returned.");
+            scholar.Id = insertedId;
+            _logger.LogInformation("Scholar created with ID: {ScholarId}", insertedId);
+
+            // Insert pickup schedule if provided
+            if (scholar.PickUpSchedule != null && scholar.PickUpSchedule.Count > 0)
+            {
+                await using var insertScheduleCmd = new SqlCommand(insertScheduleSql, connection, transaction);
+                AddParam(insertScheduleCmd, "@ScholarId", SqlDbType.UniqueIdentifier, insertedId);
+                AddParam(insertScheduleCmd, "@ScheduleJson", SqlDbType.NVarChar,
+                    JsonSerializer.Serialize(scholar.PickUpSchedule), -1);
+
+                await insertScheduleCmd.ExecuteNonQueryAsync(cancellationToken);
+                _logger.LogInformation("Pickup schedule inserted for scholar ID: {ScholarId}", insertedId);
+            }
+
+            // Insert parent rows for whichever of Mother/Father has at least one field
+            // set — every field of a parent is independently optional, so a row is only
+            // created once there's actually something to store.
+            foreach (var (role, firstName, lastName, phoneNumber) in new[]
+                     {
+                         ("Mother", scholar.MotherFirstName, scholar.MotherLastName, scholar.MotherPhoneNumber),
+                         ("Father", scholar.FatherFirstName, scholar.FatherLastName, scholar.FatherPhoneNumber),
+                     })
+            {
+                if (string.IsNullOrWhiteSpace(firstName) && string.IsNullOrWhiteSpace(lastName) &&
+                    string.IsNullOrWhiteSpace(phoneNumber)) continue;
+
+                await using var insertParentCmd = new SqlCommand(insertParentSql, connection, transaction);
+                AddParam(insertParentCmd, "@ScholarId", SqlDbType.UniqueIdentifier, insertedId);
+                AddParam(insertParentCmd, "@Role", SqlDbType.NVarChar, role, 10);
+                AddParam(insertParentCmd, "@FirstName", SqlDbType.NVarChar, ToDbValue(firstName), 100);
+                AddParam(insertParentCmd, "@LastName", SqlDbType.NVarChar, ToDbValue(lastName), 100);
+                AddParam(insertParentCmd, "@PhoneNumber", SqlDbType.NVarChar, ToDbValue(phoneNumber), 20);
+                await insertParentCmd.ExecuteNonQueryAsync(cancellationToken);
+            }
+
+            await transaction.CommitAsync(cancellationToken);
+
+            // Best-effort: runs after the transaction has committed, on its own
+            // connection, so a logging failure can never roll back a successful create.
+            await LogAuditAsync(insertedId, "Created", null, cancellationToken);
+
+            return scholar;
         }
         catch (SqlException ex)
         {
+            await transaction.RollbackAsync(cancellationToken);
             _logger.LogError(ex, "SQL error occurred while inserting scholar or pickup schedule.");
             throw new Exception("A database error occurred while creating the scholar.", ex);
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            _logger.LogError(ex, "Unexpected error during scholar creation.");
+            await transaction.RollbackAsync(cancellationToken);
             throw;
         }
     }
 
-    public async Task<IEnumerable<Scholar>> GetScholarsAsync()
+    public async Task<IEnumerable<Scholar>> GetScholarsAsync(CancellationToken cancellationToken)
     {
         // Parents is joined via OUTER APPLY, not a plain LEFT JOIN — a LEFT JOIN straight
         // to Parents would duplicate the scholar row when both a Mother and a Father row
@@ -136,10 +149,10 @@ public class ScholarDataAccess
 
         try
         {
-            await connection.OpenAsync();
-            await using var reader = await command.ExecuteReaderAsync();
+            await connection.OpenAsync(cancellationToken);
+            await using var reader = await command.ExecuteReaderAsync(cancellationToken);
 
-            while (await reader.ReadAsync())
+            while (await reader.ReadAsync(cancellationToken))
             {
                 var scholar = TryMapScholarFromReader(reader);
                 if (scholar != null)
@@ -166,7 +179,7 @@ public class ScholarDataAccess
         }
     }
 
-    public async Task<Scholar?> GetScholarByIdAsync(Guid id)
+    public async Task<Scholar?> GetScholarByIdAsync(Guid id, CancellationToken cancellationToken)
     {
         if (id == Guid.Empty)
             throw new ArgumentException("Scholar ID must not be empty.", nameof(id));
@@ -185,14 +198,14 @@ public class ScholarDataAccess
 
         await using var connection = new SqlConnection(_connectionString);
         await using var command = new SqlCommand(sql, connection);
-        command.Parameters.AddWithValue("@Id", id);
+        AddParam(command, "@Id", SqlDbType.UniqueIdentifier, id);
 
         try
         {
-            await connection.OpenAsync();
-            await using var reader = await command.ExecuteReaderAsync();
+            await connection.OpenAsync(cancellationToken);
+            await using var reader = await command.ExecuteReaderAsync(cancellationToken);
 
-            if (await reader.ReadAsync())
+            if (await reader.ReadAsync(cancellationToken))
             {
                 var scholar = TryMapScholarFromReader(reader);
                 _logger.LogInformation("Retrieved scholar with ID: {ScholarId}", id);
@@ -219,14 +232,14 @@ public class ScholarDataAccess
         }
     }
 
-    public async Task<Scholar?> UpdateScholarAsync(Scholar scholar)
+    public async Task<Scholar?> UpdateScholarAsync(Scholar scholar, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(scholar);
         if (scholar.Id == Guid.Empty)
             throw new ArgumentException("Scholar ID must not be empty.", nameof(scholar));
 
         const string updateScholarSql = """
-                                        
+
                                                 UPDATE Scholars
                                                 SET FirstName = @FirstName,
                                                     LastName = @LastName,
@@ -260,23 +273,23 @@ public class ScholarDataAccess
         const string deleteParentSql = "DELETE FROM Parents WHERE ScholarId = @Id AND Role = @Role;";
 
         await using var connection = new SqlConnection(_connectionString);
-        await using var updateScholarCmd = new SqlCommand(updateScholarSql, connection);
-        await using var updateScheduleCmd = new SqlCommand(updateScheduleSql, connection);
-
-        updateScholarCmd.Parameters.AddWithValue("@Id", scholar.Id);
-        updateScholarCmd.Parameters.AddWithValue("@FirstName", scholar.FirstName ?? string.Empty);
-        updateScholarCmd.Parameters.AddWithValue("@LastName", scholar.LastName ?? string.Empty);
-        updateScholarCmd.Parameters.AddWithValue("@DateOfBirth", scholar.DateOfBirth);
-        updateScholarCmd.Parameters.AddWithValue("@Grade", (object?)scholar.Grade ?? DBNull.Value);
-        updateScholarCmd.Parameters.AddWithValue("@SchoolId", (object?)scholar.SchoolId ?? DBNull.Value);
+        await connection.OpenAsync(cancellationToken);
+        await using var transaction = (SqlTransaction)await connection.BeginTransactionAsync(cancellationToken);
 
         try
         {
-            await connection.OpenAsync();
+            await using var updateScholarCmd = new SqlCommand(updateScholarSql, connection, transaction);
+            AddParam(updateScholarCmd, "@Id", SqlDbType.UniqueIdentifier, scholar.Id);
+            AddParam(updateScholarCmd, "@FirstName", SqlDbType.NVarChar, scholar.FirstName ?? string.Empty, 100);
+            AddParam(updateScholarCmd, "@LastName", SqlDbType.NVarChar, scholar.LastName ?? string.Empty, 100);
+            AddParam(updateScholarCmd, "@DateOfBirth", SqlDbType.DateTime2, scholar.DateOfBirth);
+            AddParam(updateScholarCmd, "@Grade", SqlDbType.Int, (object?)scholar.Grade ?? DBNull.Value);
+            AddParam(updateScholarCmd, "@SchoolId", SqlDbType.Int, (object?)scholar.SchoolId ?? DBNull.Value);
 
-            var rowsAffected = await updateScholarCmd.ExecuteNonQueryAsync();
+            var rowsAffected = await updateScholarCmd.ExecuteNonQueryAsync(cancellationToken);
             if (rowsAffected == 0)
             {
+                await transaction.RollbackAsync(cancellationToken);
                 _logger.LogWarning("No scholar found to update with ID: {ScholarId}", scholar.Id);
                 return null; // Scholar not found
             }
@@ -284,10 +297,11 @@ public class ScholarDataAccess
             // Update or insert pickup schedule if provided
             if (scholar.PickUpSchedule != null)
             {
-                updateScheduleCmd.Parameters.AddWithValue("@Id", scholar.Id);
-                updateScheduleCmd.Parameters.AddWithValue("@ScheduleJson",
-                    JsonSerializer.Serialize(scholar.PickUpSchedule));
-                await updateScheduleCmd.ExecuteNonQueryAsync();
+                await using var updateScheduleCmd = new SqlCommand(updateScheduleSql, connection, transaction);
+                AddParam(updateScheduleCmd, "@Id", SqlDbType.UniqueIdentifier, scholar.Id);
+                AddParam(updateScheduleCmd, "@ScheduleJson", SqlDbType.NVarChar,
+                    JsonSerializer.Serialize(scholar.PickUpSchedule), -1);
+                await updateScheduleCmd.ExecuteNonQueryAsync(cancellationToken);
                 _logger.LogInformation("Updated pickup schedule for scholar ID: {ScholarId}", scholar.Id);
             }
 
@@ -304,68 +318,62 @@ public class ScholarDataAccess
 
                 if (isEmpty)
                 {
-                    await using var deleteParentCmd = new SqlCommand(deleteParentSql, connection);
-                    deleteParentCmd.Parameters.AddWithValue("@Id", scholar.Id);
-                    deleteParentCmd.Parameters.AddWithValue("@Role", role);
-                    await deleteParentCmd.ExecuteNonQueryAsync();
+                    await using var deleteParentCmd = new SqlCommand(deleteParentSql, connection, transaction);
+                    AddParam(deleteParentCmd, "@Id", SqlDbType.UniqueIdentifier, scholar.Id);
+                    AddParam(deleteParentCmd, "@Role", SqlDbType.NVarChar, role, 10);
+                    await deleteParentCmd.ExecuteNonQueryAsync(cancellationToken);
                 }
                 else
                 {
-                    await using var upsertParentCmd = new SqlCommand(upsertParentSql, connection);
-                    upsertParentCmd.Parameters.AddWithValue("@Id", scholar.Id);
-                    upsertParentCmd.Parameters.AddWithValue("@Role", role);
-                    upsertParentCmd.Parameters.AddWithValue("@FirstName", ToDbValue(firstName));
-                    upsertParentCmd.Parameters.AddWithValue("@LastName", ToDbValue(lastName));
-                    upsertParentCmd.Parameters.AddWithValue("@PhoneNumber", ToDbValue(phoneNumber));
-                    await upsertParentCmd.ExecuteNonQueryAsync();
+                    await using var upsertParentCmd = new SqlCommand(upsertParentSql, connection, transaction);
+                    AddParam(upsertParentCmd, "@Id", SqlDbType.UniqueIdentifier, scholar.Id);
+                    AddParam(upsertParentCmd, "@Role", SqlDbType.NVarChar, role, 10);
+                    AddParam(upsertParentCmd, "@FirstName", SqlDbType.NVarChar, ToDbValue(firstName), 100);
+                    AddParam(upsertParentCmd, "@LastName", SqlDbType.NVarChar, ToDbValue(lastName), 100);
+                    AddParam(upsertParentCmd, "@PhoneNumber", SqlDbType.NVarChar, ToDbValue(phoneNumber), 20);
+                    await upsertParentCmd.ExecuteNonQueryAsync(cancellationToken);
                 }
             }
 
-            await LogAuditAsync(scholar.Id, "Edited");
+            await transaction.CommitAsync(cancellationToken);
+
+            await LogAuditAsync(scholar.Id, "Edited", null, cancellationToken);
 
             _logger.LogInformation("Updated scholar with ID: {ScholarId}", scholar.Id);
             return scholar;
         }
         catch (SqlException ex)
         {
+            await transaction.RollbackAsync(cancellationToken);
             _logger.LogError(ex, "SQL error occurred while updating scholar with ID: {ScholarId}", scholar.Id);
             throw;
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            _logger.LogError(ex, "Unexpected error updating scholar with ID: {ScholarId}", scholar.Id);
+            await transaction.RollbackAsync(cancellationToken);
             throw;
         }
     }
 
-    public async Task<bool> DeleteScholarAsync(Guid id)
+    public async Task<bool> DeleteScholarAsync(Guid id, CancellationToken cancellationToken)
     {
         if (id == Guid.Empty)
             throw new ArgumentException("Scholar ID must not be empty.", nameof(id));
 
-        const string deleteScheduleSql = "DELETE FROM PickUpSchedule WHERE ScholarId = @Id;";
-        const string deleteParentsSql = "DELETE FROM Parents WHERE ScholarId = @Id;";
+        // PickUpSchedule, Attendance and Parents all have ON DELETE CASCADE back to
+        // Scholars (see their .sql table definitions), so deleting the Scholars row
+        // is enough on its own — no need to delete the child rows here first.
         const string deleteScholarSql = "DELETE FROM Scholars WHERE Id = @Id;";
 
         await using var connection = new SqlConnection(_connectionString);
-        await using var deleteScheduleCmd = new SqlCommand(deleteScheduleSql, connection);
-        await using var deleteParentsCmd = new SqlCommand(deleteParentsSql, connection);
-        await using var deleteScholarCmd = new SqlCommand(deleteScholarSql, connection);
-
-        deleteScheduleCmd.Parameters.AddWithValue("@Id", id);
-        deleteParentsCmd.Parameters.AddWithValue("@Id", id);
-        deleteScholarCmd.Parameters.AddWithValue("@Id", id);
+        await using var command = new SqlCommand(deleteScholarSql, connection);
+        AddParam(command, "@Id", SqlDbType.UniqueIdentifier, id);
 
         try
         {
-            await connection.OpenAsync();
+            await connection.OpenAsync(cancellationToken);
 
-            // Remove pickup schedule and parents first
-            await deleteScheduleCmd.ExecuteNonQueryAsync();
-            await deleteParentsCmd.ExecuteNonQueryAsync();
-
-            // Delete the scholar
-            var rowsAffected = await deleteScholarCmd.ExecuteNonQueryAsync();
+            var rowsAffected = await command.ExecuteNonQueryAsync(cancellationToken);
 
             if (rowsAffected == 0)
             {
@@ -373,7 +381,7 @@ public class ScholarDataAccess
                 return false; // Scholar not found
             }
 
-            await LogAuditAsync(id, "Deleted");
+            await LogAuditAsync(id, "Deleted", null, cancellationToken);
 
             _logger.LogInformation("Deleted scholar with ID: {ScholarId}", id);
             return true;
@@ -394,7 +402,8 @@ public class ScholarDataAccess
     // Attendance management methods
     // -----------------------------
 
-    public async Task<bool> CreateOrUpdateAttendanceAsync(Guid scholarId, List<AttendanceRecord> attendanceRecords)
+    public async Task<bool> CreateOrUpdateAttendanceAsync(Guid scholarId, List<AttendanceRecord> attendanceRecords,
+        CancellationToken cancellationToken)
     {
         if (scholarId == Guid.Empty)
             throw new ArgumentException("Scholar ID must not be empty.", nameof(scholarId));
@@ -414,13 +423,13 @@ public class ScholarDataAccess
         await using var connection = new SqlConnection(_connectionString);
         await using var command = new SqlCommand(upsertAttendanceSql, connection);
 
-        command.Parameters.AddWithValue("@ScholarId", scholarId);
-        command.Parameters.AddWithValue("@AttendanceJson", JsonSerializer.Serialize(attendanceRecords));
+        AddParam(command, "@ScholarId", SqlDbType.UniqueIdentifier, scholarId);
+        AddParam(command, "@AttendanceJson", SqlDbType.NVarChar, JsonSerializer.Serialize(attendanceRecords), -1);
 
         try
         {
-            await connection.OpenAsync();
-            await command.ExecuteNonQueryAsync();
+            await connection.OpenAsync(cancellationToken);
+            await command.ExecuteNonQueryAsync(cancellationToken);
 
             _logger.LogInformation("Attendance record upserted for scholar ID: {ScholarId}", scholarId);
             return true;
@@ -437,7 +446,8 @@ public class ScholarDataAccess
         }
     }
 
-    public async Task<List<AttendanceRecord>> GetAttendanceByScholarIdAsync(Guid scholarId)
+    public async Task<List<AttendanceRecord>> GetAttendanceByScholarIdAsync(Guid scholarId,
+        CancellationToken cancellationToken)
     {
         if (scholarId == Guid.Empty)
             throw new ArgumentException("Scholar ID must not be empty.", nameof(scholarId));
@@ -446,12 +456,12 @@ public class ScholarDataAccess
 
         await using var connection = new SqlConnection(_connectionString);
         await using var command = new SqlCommand(sql, connection);
-        command.Parameters.AddWithValue("@ScholarId", scholarId);
+        AddParam(command, "@ScholarId", SqlDbType.UniqueIdentifier, scholarId);
 
         try
         {
-            await connection.OpenAsync();
-            var result = await command.ExecuteScalarAsync();
+            await connection.OpenAsync(cancellationToken);
+            var result = await command.ExecuteScalarAsync(cancellationToken);
 
             if (result == null || result == DBNull.Value)
             {
@@ -480,7 +490,8 @@ public class ScholarDataAccess
         }
     }
 
-    public async Task<IEnumerable<(Guid ScholarId, List<AttendanceRecord> Attendance)>> GetAllAttendanceAsync()
+    public async Task<IEnumerable<(Guid ScholarId, List<AttendanceRecord> Attendance)>> GetAllAttendanceAsync(
+        CancellationToken cancellationToken)
     {
         const string sql = "SELECT ScholarId, AttendanceJson FROM Attendance;";
 
@@ -491,10 +502,10 @@ public class ScholarDataAccess
 
         try
         {
-            await connection.OpenAsync();
-            await using var reader = await command.ExecuteReaderAsync();
+            await connection.OpenAsync(cancellationToken);
+            await using var reader = await command.ExecuteReaderAsync(cancellationToken);
 
-            while (await reader.ReadAsync())
+            while (await reader.ReadAsync(cancellationToken))
             {
                 var scholarId = reader.GetGuid(reader.GetOrdinal("ScholarId"));
                 var json = reader.GetString(reader.GetOrdinal("AttendanceJson"));
@@ -526,7 +537,7 @@ public class ScholarDataAccess
         }
     }
 
-    public async Task<bool> DeleteAttendanceAsync(Guid scholarId)
+    public async Task<bool> DeleteAttendanceAsync(Guid scholarId, CancellationToken cancellationToken)
     {
         if (scholarId == Guid.Empty)
             throw new ArgumentException("Scholar ID must not be empty.", nameof(scholarId));
@@ -535,12 +546,12 @@ public class ScholarDataAccess
 
         await using var connection = new SqlConnection(_connectionString);
         await using var command = new SqlCommand(sql, connection);
-        command.Parameters.AddWithValue("@ScholarId", scholarId);
+        AddParam(command, "@ScholarId", SqlDbType.UniqueIdentifier, scholarId);
 
         try
         {
-            await connection.OpenAsync();
-            var rows = await command.ExecuteNonQueryAsync();
+            await connection.OpenAsync(cancellationToken);
+            var rows = await command.ExecuteNonQueryAsync(cancellationToken);
 
             if (rows > 0)
             {
@@ -568,11 +579,12 @@ public class ScholarDataAccess
     // ---------------------------
 
     // Writing an audit entry is best-effort: it always runs after the scholar
-    // mutation it's recording has already succeeded, so a DB hiccup while writing
-    // the log must never turn an otherwise-successful request into a 500 — it's
-    // swallowed and logged instead. Uses its own connection rather than sharing
-    // the caller's, for the same reason.
-    private async Task LogAuditAsync(Guid scholarId, string action, string? details = null)
+    // mutation it's recording has already succeeded (and, for Create/Update,
+    // after that mutation's own transaction has committed), so a DB hiccup
+    // while writing the log must never turn an otherwise-successful request
+    // into a 500 — it's swallowed and logged instead. Uses its own connection
+    // rather than sharing the caller's, for the same reason.
+    private async Task LogAuditAsync(Guid scholarId, string action, string? details, CancellationToken cancellationToken)
     {
         const string sql = """
                             INSERT INTO ScholarAuditLog (ScholarId, Action, Details, ActionDate)
@@ -584,12 +596,12 @@ public class ScholarDataAccess
             await using var connection = new SqlConnection(_connectionString);
             await using var command = new SqlCommand(sql, connection);
 
-            command.Parameters.AddWithValue("@ScholarId", scholarId);
-            command.Parameters.AddWithValue("@Action", action);
-            command.Parameters.AddWithValue("@Details", ToDbValue(details));
+            AddParam(command, "@ScholarId", SqlDbType.UniqueIdentifier, scholarId);
+            AddParam(command, "@Action", SqlDbType.NVarChar, action, 50);
+            AddParam(command, "@Details", SqlDbType.NVarChar, ToDbValue(details), 500);
 
-            await connection.OpenAsync();
-            await command.ExecuteNonQueryAsync();
+            await connection.OpenAsync(cancellationToken);
+            await command.ExecuteNonQueryAsync(cancellationToken);
         }
         catch (Exception ex)
         {
@@ -598,7 +610,7 @@ public class ScholarDataAccess
         }
     }
 
-    public async Task<List<AuditLogEntry>> GetAuditLogByScholarIdAsync(Guid scholarId)
+    public async Task<List<AuditLogEntry>> GetAuditLogByScholarIdAsync(Guid scholarId, CancellationToken cancellationToken)
     {
         if (scholarId == Guid.Empty)
             throw new ArgumentException("Scholar ID must not be empty.", nameof(scholarId));
@@ -614,14 +626,14 @@ public class ScholarDataAccess
 
         await using var connection = new SqlConnection(_connectionString);
         await using var command = new SqlCommand(sql, connection);
-        command.Parameters.AddWithValue("@ScholarId", scholarId);
+        AddParam(command, "@ScholarId", SqlDbType.UniqueIdentifier, scholarId);
 
         try
         {
-            await connection.OpenAsync();
-            await using var reader = await command.ExecuteReaderAsync();
+            await connection.OpenAsync(cancellationToken);
+            await using var reader = await command.ExecuteReaderAsync(cancellationToken);
 
-            while (await reader.ReadAsync())
+            while (await reader.ReadAsync(cancellationToken))
             {
                 entries.Add(new AuditLogEntry
                 {
@@ -646,16 +658,18 @@ public class ScholarDataAccess
         }
     }
 
-    public async Task<PagedResult<GlobalAuditLogEntry>> GetAllAuditLogAsync(int pageNumber, int pageSize)
+    public async Task<PagedResult<GlobalAuditLogEntry>> GetAllAuditLogAsync(int pageNumber, int pageSize,
+        CancellationToken cancellationToken)
     {
         // LEFT JOIN, not INNER: ScholarAuditLog has no FK to Scholars (a deleted
         // scholar's history must survive the delete — see ScholarAuditLog.sql), so
         // FirstName/LastName come back NULL for a scholar that no longer exists
         // rather than dropping that row.
-        const string sql = """
+        const string countSql = "SELECT COUNT(*) FROM ScholarAuditLog;";
+
+        const string pageSql = """
                             SELECT
-                                l.AuditId, l.ScholarId, s.FirstName, s.LastName, l.Action, l.Details, l.ActionDate,
-                                COUNT(*) OVER() AS TotalCount
+                                l.AuditId, l.ScholarId, s.FirstName, s.LastName, l.Action, l.Details, l.ActionDate
                             FROM ScholarAuditLog AS l
                             LEFT JOIN Scholars AS s ON s.Id = l.ScholarId
                             ORDER BY l.ActionDate DESC, l.AuditId DESC
@@ -666,16 +680,28 @@ public class ScholarDataAccess
         var result = new PagedResult<GlobalAuditLogEntry> { PageNumber = pageNumber, PageSize = pageSize };
 
         await using var connection = new SqlConnection(_connectionString);
-        await using var command = new SqlCommand(sql, connection);
-        command.Parameters.AddWithValue("@PageNumber", pageNumber);
-        command.Parameters.AddWithValue("@PageSize", pageSize);
 
         try
         {
-            await connection.OpenAsync();
-            await using var reader = await command.ExecuteReaderAsync();
+            await connection.OpenAsync(cancellationToken);
 
-            while (await reader.ReadAsync())
+            // Fetched independently of the page query below, so TotalItems is always
+            // correct even when the requested page itself has zero rows (past the
+            // last page, or the log was just cleared) — a COUNT(*) OVER() window
+            // column on the page query only reflects the total when at least one row
+            // comes back.
+            await using (var countCmd = new SqlCommand(countSql, connection))
+            {
+                result.TotalItems = (int)(await countCmd.ExecuteScalarAsync(cancellationToken))!;
+            }
+
+            await using var pageCmd = new SqlCommand(pageSql, connection);
+            AddParam(pageCmd, "@PageNumber", SqlDbType.Int, pageNumber);
+            AddParam(pageCmd, "@PageSize", SqlDbType.Int, pageSize);
+
+            await using var reader = await pageCmd.ExecuteReaderAsync(cancellationToken);
+
+            while (await reader.ReadAsync(cancellationToken))
             {
                 result.Items.Add(new GlobalAuditLogEntry
                 {
@@ -693,7 +719,6 @@ public class ScholarDataAccess
                         : reader.GetString(reader.GetOrdinal("Details")),
                     ActionDate = reader.GetDateTime(reader.GetOrdinal("ActionDate")),
                 });
-                result.TotalItems = reader.GetInt32(reader.GetOrdinal("TotalCount"));
             }
 
             _logger.LogInformation("Fetched page {PageNumber} ({Count} of {Total}) of the global audit log.",
@@ -707,7 +732,7 @@ public class ScholarDataAccess
         }
     }
 
-    public async Task DeleteAllAuditLogAsync()
+    public async Task DeleteAllAuditLogAsync(CancellationToken cancellationToken)
     {
         const string sql = "DELETE FROM ScholarAuditLog;";
 
@@ -716,8 +741,8 @@ public class ScholarDataAccess
 
         try
         {
-            await connection.OpenAsync();
-            var rows = await command.ExecuteNonQueryAsync();
+            await connection.OpenAsync(cancellationToken);
+            var rows = await command.ExecuteNonQueryAsync(cancellationToken);
 
             _logger.LogInformation("Cleared the audit log ({Count} entries deleted).", rows);
         }
