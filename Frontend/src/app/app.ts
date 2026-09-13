@@ -1,4 +1,11 @@
-import { Component, Inject, OnDestroy, OnInit, PLATFORM_ID, ChangeDetectionStrategy } from '@angular/core';
+import {
+  Component,
+  Inject,
+  OnDestroy,
+  OnInit,
+  PLATFORM_ID,
+  ChangeDetectionStrategy,
+} from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import { RouterOutlet } from '@angular/router';
 import { Subscription } from 'rxjs';
@@ -9,11 +16,11 @@ import { HealthService } from './services/health.service';
 @Component({
   selector: 'app-root',
   imports: [NavbarComponent, RouterOutlet],
-  templateUrl: './app.component.html',
+  templateUrl: './app.html',
   changeDetection: ChangeDetectionStrategy.Eager,
-  styleUrl: './app.component.css',
+  styleUrl: './app.css',
 })
-export class AppComponent implements OnInit, OnDestroy {
+export class App implements OnInit, OnDestroy {
   title = 'ImaloEducationWebapp';
   environment = environment;
   apiAvailable = true;

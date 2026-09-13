@@ -153,16 +153,33 @@ function randomPickUpSchedule(): PickUpSchedule {
   return schedule;
 }
 
-// A plausible-looking Romanian mobile number, or null if this scholar has no
-// parent recorded for that role — both mother and father are independently
-// optional in the real data model too.
-function randomParentPhone(chance: number): string | null {
-  if (Math.random() >= chance) return null;
+// A plausible-looking Romanian mobile number.
+function randomPhoneNumber(): string {
   const prefix = pick(['072', '073', '074', '075', '076', '077', '078']);
   let digits = '';
   for (let i = 0; i < 7; i++)
     digits += Math.floor(Math.random() * 10).toString();
   return `${prefix}${digits}`;
+}
+
+interface RandomParent {
+  firstName: string | null;
+  lastName: string | null;
+  phoneNumber: string | null;
+}
+
+// A parent (name + phone), or all-null if this scholar has no parent
+// recorded for that role — both mother and father are independently
+// optional in the real data model too.
+function randomParent(chance: number): RandomParent {
+  if (Math.random() >= chance) {
+    return { firstName: null, lastName: null, phoneNumber: null };
+  }
+  return {
+    firstName: pick(FIRST_NAMES),
+    lastName: pick(LAST_NAMES),
+    phoneNumber: randomPhoneNumber(),
+  };
 }
 
 @Component({
@@ -249,6 +266,8 @@ export class AboutComponent {
   }
 
   private buildRandomScholar(schools: School[]): Scholar {
+    const mother = randomParent(0.7);
+    const father = randomParent(0.5);
     return {
       id: '00000000-0000-0000-0000-000000000000',
       firstName: pick(FIRST_NAMES),
@@ -257,8 +276,12 @@ export class AboutComponent {
       grade: randomInt(0, 12),
       dateOfBirth: randomBirthdate(),
       pickUpSchedule: randomPickUpSchedule(),
-      motherPhoneNumber: randomParentPhone(0.7),
-      fatherPhoneNumber: randomParentPhone(0.5),
+      motherFirstName: mother.firstName,
+      motherLastName: mother.lastName,
+      motherPhoneNumber: mother.phoneNumber,
+      fatherFirstName: father.firstName,
+      fatherLastName: father.lastName,
+      fatherPhoneNumber: father.phoneNumber,
     };
   }
 

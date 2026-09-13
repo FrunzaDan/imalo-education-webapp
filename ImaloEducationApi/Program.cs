@@ -13,6 +13,9 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddScoped<ScholarDataAccess>();
 builder.Services.AddSingleton<AppLogger>();
 
+// Health checks (liveness only — no DB probe)
+builder.Services.AddHealthChecks();
+
 // CORS Configuration
 builder.Services.AddCors(options =>
 {
@@ -80,6 +83,8 @@ app.Use(async (context, next) =>
     context.Response.Headers.CacheControl = "no-store";
     await next();
 });
+
+app.MapHealthChecks("/health");
 
 // Map attribute-based controllers
 app.MapControllers();
