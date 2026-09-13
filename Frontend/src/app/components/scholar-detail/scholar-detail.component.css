@@ -99,3 +99,29 @@ h2 {
   font-style: italic;
   color: #666;
 }
+
+.audit-trail-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.audit-trail-list li {
+  padding: 0.5rem 0;
+  border-bottom: 1px solid #e0e0e0;
+  color: #555;
+}
+
+.audit-trail-list li:last-child {
+  border-bottom: none;
+}
+
+.audit-trail-details {
+  margin-top: 0.15rem;
+  font-size: 0.85rem;
+  color: #777;
+}
+
+.audit-trail-error {
+  color: #b00020;
+}

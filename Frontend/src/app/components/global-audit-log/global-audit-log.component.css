@@ -1,0 +1,35 @@
+.audit-log-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 1rem;
+}
+
+.audit-log-clear-button {
+  background-color: #b00020;
+}
+
+.audit-log-clear-button:hover:not(:disabled) {
+  background-color: #8c0019;
+}
+
+.audit-log-error {
+  color: #b00020;
+}
+
+.audit-log-link {
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.audit-log-deleted {
+  color: #666;
+  font-style: italic;
+}
+
+.audit-log-pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 1rem;
+}

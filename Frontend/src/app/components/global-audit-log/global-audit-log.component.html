@@ -1,0 +1,75 @@
+<h2>Audit Log</h2>
+
+<div class="audit-log-toolbar">
+  <button
+    type="button"
+    class="app-button audit-log-clear-button"
+    [disabled]="clearing() || loading() || totalItems() === 0"
+    (click)="clearAuditLog()"
+  >
+    {{ clearing() ? 'Clearing...' : 'Clear Audit Log' }}
+  </button>
+</div>
+
+@if (loading()) {
+<div class="loading-message">Loading audit log...</div>
+} @else if (error(); as errorMessage) {
+<div class="audit-log-error">{{ errorMessage }}</div>
+} @else {
+<table class="app-table">
+  <thead>
+    <tr>
+      <th class="table-header">Date</th>
+      <th class="table-header">Scholar</th>
+      <th class="table-header">Action</th>
+      <th class="table-header">Details</th>
+    </tr>
+  </thead>
+  <tbody>
+    @for (entry of entries(); track trackByAuditId($index, entry)) {
+    <tr class="table-row">
+      <td class="table-cell">{{ entry.actionDate | date: 'medium' }}</td>
+      <td class="table-cell">
+        @if (entry.firstName || entry.lastName) {
+        <a
+          (click)="navigateToScholar(entry)"
+          class="audit-log-link"
+          role="button"
+        >{{ scholarLabel(entry) }}</a>
+        } @else {
+        <span class="audit-log-deleted">{{ scholarLabel(entry) }}</span>
+        }
+      </td>
+      <td class="table-cell">{{ entry.action }}</td>
+      <td class="table-cell">{{ entry.details }}</td>
+    </tr>
+    } @empty {
+    <tr class="table-row">
+      <td colspan="4" class="table-cell">No recorded actions yet.</td>
+    </tr>
+    }
+  </tbody>
+</table>
+
+@if (totalPages() > 1) {
+<nav class="audit-log-pagination">
+  <button
+    type="button"
+    class="app-button"
+    [disabled]="currentPage() === 1"
+    (click)="goToPage(currentPage() - 1)"
+  >
+    Previous
+  </button>
+  <span>Page {{ currentPage() }} of {{ totalPages() }}</span>
+  <button
+    type="button"
+    class="app-button"
+    [disabled]="currentPage() === totalPages()"
+    (click)="goToPage(currentPage() + 1)"
+  >
+    Next
+  </button>
+</nav>
+}
+}

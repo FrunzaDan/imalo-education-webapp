@@ -4,6 +4,7 @@ import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { ScholarsService } from '../../services/scholars.service';
 import { SchoolsService } from '../../services/schools.service';
 import { NotificationService } from '../../services/notification.service';
+import { AuditLogService } from '../../services/audit-log.service';
 import { Scholar } from '../../interfaces/scholar';
 import { School } from '../../interfaces/school';
 import { WeekDays } from '../../constants/week-days';
@@ -24,9 +25,14 @@ export class ScholarDetailComponent implements OnInit {
   private readonly schoolsService = inject(SchoolsService);
   private readonly router = inject(Router);
   private readonly notificationService = inject(NotificationService);
+  private readonly auditLogService = inject(AuditLogService);
 
   scholar = signal<Scholar | null>(null);
   school = signal<School | null>(null);
+
+  readonly auditLog = this.auditLogService.entries;
+  readonly auditLogLoading = this.auditLogService.loading;
+  readonly auditLogError = this.auditLogService.error;
 
   daysOfWeek: (keyof PickUpSchedule)[] = Object.values(WeekDays);
 
@@ -40,6 +46,7 @@ export class ScholarDetailComponent implements OnInit {
             console.error('Scholar ID not found in route parameters.');
             return of(null); // Return observable of null if no ID
           }
+          this.auditLogService.loadAuditLog(scholarId);
           return this.scholarsService.getScholarById(scholarId);
         }),
         // tap: Assign scholar to component property

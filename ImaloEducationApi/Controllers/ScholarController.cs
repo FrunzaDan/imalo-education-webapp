@@ -175,6 +175,74 @@ public class ScholarsController : ControllerBase
     }
 
     // ---------------------------------------
+    // Audit log endpoints
+    // ---------------------------------------
+
+    [HttpGet("{id:guid}/auditLog")]
+    public async Task<ActionResult<IEnumerable<AuditLogEntry>>> GetScholarAuditLog(Guid id)
+    {
+        try
+        {
+            var entries = await _scholarDataAccess.GetAuditLogByScholarIdAsync(id);
+            return Ok(entries);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unexpected error retrieving audit log for scholar ID: {ScholarId}", id);
+            return StatusCode(500, new
+            {
+                message = "An unexpected error occurred while retrieving the audit log.",
+                details = ex.Message
+            });
+        }
+    }
+
+    [HttpGet("auditLog/all")]
+    public async Task<ActionResult<PagedResult<GlobalAuditLogEntry>>> GetAllAuditLog(
+        [FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 20)
+    {
+        if (pageNumber < 1)
+            return BadRequest(new { message = "Page number must be 1 or greater." });
+
+        if (pageSize < 1 || pageSize > 100)
+            return BadRequest(new { message = "Page size must be between 1 and 100." });
+
+        try
+        {
+            var result = await _scholarDataAccess.GetAllAuditLogAsync(pageNumber, pageSize);
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unexpected error retrieving the global audit log.");
+            return StatusCode(500, new
+            {
+                message = "An unexpected error occurred while retrieving the audit log.",
+                details = ex.Message
+            });
+        }
+    }
+
+    [HttpDelete("auditLog/all")]
+    public async Task<IActionResult> DeleteAllAuditLog()
+    {
+        try
+        {
+            await _scholarDataAccess.DeleteAllAuditLogAsync();
+            return NoContent();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unexpected error clearing the audit log.");
+            return StatusCode(500, new
+            {
+                message = "An unexpected error occurred while clearing the audit log.",
+                details = ex.Message
+            });
+        }
+    }
+
+    // ---------------------------------------
     // Attendance endpoints for each Scholar
     // ---------------------------------------
 

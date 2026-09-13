@@ -93,6 +93,8 @@ public class ScholarDataAccess
                     await insertParentCmd.ExecuteNonQueryAsync();
                 }
 
+                await LogAuditAsync(insertedId, "Created");
+
                 return scholar;
             }
 
@@ -319,6 +321,8 @@ public class ScholarDataAccess
                 }
             }
 
+            await LogAuditAsync(scholar.Id, "Edited");
+
             _logger.LogInformation("Updated scholar with ID: {ScholarId}", scholar.Id);
             return scholar;
         }
@@ -368,6 +372,8 @@ public class ScholarDataAccess
                 _logger.LogWarning("No scholar found to delete with ID: {ScholarId}", id);
                 return false; // Scholar not found
             }
+
+            await LogAuditAsync(id, "Deleted");
 
             _logger.LogInformation("Deleted scholar with ID: {ScholarId}", id);
             return true;
@@ -557,7 +563,170 @@ public class ScholarDataAccess
         }
     }
 
+    // ---------------------------
+    // Audit log
+    // ---------------------------
 
+    // Writing an audit entry is best-effort: it always runs after the scholar
+    // mutation it's recording has already succeeded, so a DB hiccup while writing
+    // the log must never turn an otherwise-successful request into a 500 — it's
+    // swallowed and logged instead. Uses its own connection rather than sharing
+    // the caller's, for the same reason.
+    private async Task LogAuditAsync(Guid scholarId, string action, string? details = null)
+    {
+        const string sql = """
+                            INSERT INTO ScholarAuditLog (ScholarId, Action, Details, ActionDate)
+                            VALUES (@ScholarId, @Action, @Details, SYSUTCDATETIME());
+                            """;
+
+        try
+        {
+            await using var connection = new SqlConnection(_connectionString);
+            await using var command = new SqlCommand(sql, connection);
+
+            command.Parameters.AddWithValue("@ScholarId", scholarId);
+            command.Parameters.AddWithValue("@Action", action);
+            command.Parameters.AddWithValue("@Details", ToDbValue(details));
+
+            await connection.OpenAsync();
+            await command.ExecuteNonQueryAsync();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to write audit log entry for scholar {ScholarId}, action {Action}",
+                scholarId, action);
+        }
+    }
+
+    public async Task<List<AuditLogEntry>> GetAuditLogByScholarIdAsync(Guid scholarId)
+    {
+        if (scholarId == Guid.Empty)
+            throw new ArgumentException("Scholar ID must not be empty.", nameof(scholarId));
+
+        const string sql = """
+                            SELECT AuditId, ScholarId, Action, Details, ActionDate
+                            FROM ScholarAuditLog
+                            WHERE ScholarId = @ScholarId
+                            ORDER BY ActionDate DESC, AuditId DESC;
+                            """;
+
+        var entries = new List<AuditLogEntry>();
+
+        await using var connection = new SqlConnection(_connectionString);
+        await using var command = new SqlCommand(sql, connection);
+        command.Parameters.AddWithValue("@ScholarId", scholarId);
+
+        try
+        {
+            await connection.OpenAsync();
+            await using var reader = await command.ExecuteReaderAsync();
+
+            while (await reader.ReadAsync())
+            {
+                entries.Add(new AuditLogEntry
+                {
+                    AuditId = reader.GetInt32(reader.GetOrdinal("AuditId")),
+                    ScholarId = reader.GetGuid(reader.GetOrdinal("ScholarId")),
+                    Action = reader.GetString(reader.GetOrdinal("Action")),
+                    Details = reader.IsDBNull(reader.GetOrdinal("Details"))
+                        ? null
+                        : reader.GetString(reader.GetOrdinal("Details")),
+                    ActionDate = reader.GetDateTime(reader.GetOrdinal("ActionDate")),
+                });
+            }
+
+            _logger.LogInformation("Fetched {Count} audit log entries for scholar {ScholarId}.", entries.Count,
+                scholarId);
+            return entries;
+        }
+        catch (SqlException ex)
+        {
+            _logger.LogError(ex, "SQL error while fetching audit log for scholar ID {ScholarId}.", scholarId);
+            throw;
+        }
+    }
+
+    public async Task<PagedResult<GlobalAuditLogEntry>> GetAllAuditLogAsync(int pageNumber, int pageSize)
+    {
+        // LEFT JOIN, not INNER: ScholarAuditLog has no FK to Scholars (a deleted
+        // scholar's history must survive the delete — see ScholarAuditLog.sql), so
+        // FirstName/LastName come back NULL for a scholar that no longer exists
+        // rather than dropping that row.
+        const string sql = """
+                            SELECT
+                                l.AuditId, l.ScholarId, s.FirstName, s.LastName, l.Action, l.Details, l.ActionDate,
+                                COUNT(*) OVER() AS TotalCount
+                            FROM ScholarAuditLog AS l
+                            LEFT JOIN Scholars AS s ON s.Id = l.ScholarId
+                            ORDER BY l.ActionDate DESC, l.AuditId DESC
+                            OFFSET (@PageNumber - 1) * @PageSize ROWS
+                            FETCH NEXT @PageSize ROWS ONLY;
+                            """;
+
+        var result = new PagedResult<GlobalAuditLogEntry> { PageNumber = pageNumber, PageSize = pageSize };
+
+        await using var connection = new SqlConnection(_connectionString);
+        await using var command = new SqlCommand(sql, connection);
+        command.Parameters.AddWithValue("@PageNumber", pageNumber);
+        command.Parameters.AddWithValue("@PageSize", pageSize);
+
+        try
+        {
+            await connection.OpenAsync();
+            await using var reader = await command.ExecuteReaderAsync();
+
+            while (await reader.ReadAsync())
+            {
+                result.Items.Add(new GlobalAuditLogEntry
+                {
+                    AuditId = reader.GetInt32(reader.GetOrdinal("AuditId")),
+                    ScholarId = reader.GetGuid(reader.GetOrdinal("ScholarId")),
+                    FirstName = reader.IsDBNull(reader.GetOrdinal("FirstName"))
+                        ? null
+                        : reader.GetString(reader.GetOrdinal("FirstName")),
+                    LastName = reader.IsDBNull(reader.GetOrdinal("LastName"))
+                        ? null
+                        : reader.GetString(reader.GetOrdinal("LastName")),
+                    Action = reader.GetString(reader.GetOrdinal("Action")),
+                    Details = reader.IsDBNull(reader.GetOrdinal("Details"))
+                        ? null
+                        : reader.GetString(reader.GetOrdinal("Details")),
+                    ActionDate = reader.GetDateTime(reader.GetOrdinal("ActionDate")),
+                });
+                result.TotalItems = reader.GetInt32(reader.GetOrdinal("TotalCount"));
+            }
+
+            _logger.LogInformation("Fetched page {PageNumber} ({Count} of {Total}) of the global audit log.",
+                pageNumber, result.Items.Count, result.TotalItems);
+            return result;
+        }
+        catch (SqlException ex)
+        {
+            _logger.LogError(ex, "SQL error while fetching the global audit log.");
+            throw;
+        }
+    }
+
+    public async Task DeleteAllAuditLogAsync()
+    {
+        const string sql = "DELETE FROM ScholarAuditLog;";
+
+        await using var connection = new SqlConnection(_connectionString);
+        await using var command = new SqlCommand(sql, connection);
+
+        try
+        {
+            await connection.OpenAsync();
+            var rows = await command.ExecuteNonQueryAsync();
+
+            _logger.LogInformation("Cleared the audit log ({Count} entries deleted).", rows);
+        }
+        catch (SqlException ex)
+        {
+            _logger.LogError(ex, "SQL error while clearing the audit log.");
+            throw;
+        }
+    }
 
     private Scholar? TryMapScholarFromReader(SqlDataReader reader)
     {

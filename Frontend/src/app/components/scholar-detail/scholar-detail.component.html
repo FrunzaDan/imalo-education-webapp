@@ -68,6 +68,28 @@
     <p class="text-gray-600 italic">Pick-Up Schedule not available.</p>
   </div>
   }
+  <div class="detail-card">
+    <h3>Audit Trail</h3>
+    @if (auditLogLoading()) {
+    <p>Loading audit trail...</p>
+    } @else if (auditLogError(); as errorMessage) {
+    <p class="audit-trail-error">{{ errorMessage }}</p>
+    } @else if (auditLog().length === 0) {
+    <p>No recorded actions yet.</p>
+    } @else {
+    <ul class="audit-trail-list">
+      @for (entry of auditLog(); track entry.auditId) {
+      <li>
+        <strong>{{ entry.action }}</strong> on
+        {{ entry.actionDate | date : 'medium' }}
+        @if (entry.details) {
+        <div class="audit-trail-details">{{ entry.details }}</div>
+        }
+      </li>
+      }
+    </ul>
+    }
+  </div>
 </div>
 }
 
