@@ -1,9 +1,4 @@
-import {
-  Component,
-  OnInit,
-  ChangeDetectionStrategy,
-  signal,
-} from '@angular/core';
+import { Component, OnInit, signal } from '@angular/core';
 import { ScholarsService } from '../../services/scholars.service';
 import { SchoolsService } from '../../services/schools.service';
 import { SortingService } from '../../services/sorting.service';
@@ -11,7 +6,7 @@ import { CsvExportService } from '../../services/csv-export.service';
 import { NotificationService } from '../../services/notification.service';
 import { Scholar } from '../../interfaces/scholar';
 import { School } from '../../interfaces/school';
-import { CommonModule } from '@angular/common';
+import { NgStyle } from '@angular/common';
 import { forkJoin, from, of } from 'rxjs';
 import { catchError, concatMap, map, toArray } from 'rxjs/operators';
 import { RouterModule } from '@angular/router';
@@ -27,10 +22,9 @@ interface TransformedScholarData {
 }
 
 @Component({
-  imports: [CommonModule, RouterModule],
+  imports: [NgStyle, RouterModule],
   selector: 'app-scholar-table',
   templateUrl: './scholar-table.component.html',
-  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrls: ['./scholar-table.component.css'],
 })
 export class ScholarTableComponent implements OnInit {

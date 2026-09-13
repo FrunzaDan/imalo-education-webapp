@@ -1,10 +1,5 @@
-import {
-  Component,
-  OnInit,
-  ChangeDetectionStrategy,
-  signal,
-} from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, OnInit, signal } from '@angular/core';
+import { CurrencyPipe, DatePipe } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { forkJoin } from 'rxjs';
 import { map } from 'rxjs/operators';
@@ -26,9 +21,8 @@ interface AttendanceRow {
 @Component({
   selector: 'app-attendance',
   standalone: true,
-  imports: [CommonModule, RouterModule],
+  imports: [DatePipe, CurrencyPipe, RouterModule],
   templateUrl: './attendance.component.html',
-  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './attendance.component.css',
 })
 export class AttendanceComponent implements OnInit {

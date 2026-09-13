@@ -1,11 +1,5 @@
-import {
-  Component,
-  OnInit,
-  inject,
-  ChangeDetectionStrategy,
-  ChangeDetectorRef,
-} from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, OnInit, inject, signal } from '@angular/core';
+import { DatePipe, TitleCasePipe } from '@angular/common';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { ScholarsService } from '../../services/scholars.service';
 import { SchoolsService } from '../../services/schools.service';
@@ -20,9 +14,8 @@ import { of } from 'rxjs';
 @Component({
   selector: 'app-scholar-detail',
   standalone: true,
-  imports: [CommonModule, RouterModule],
+  imports: [DatePipe, TitleCasePipe, RouterModule],
   templateUrl: './scholar-detail.component.html',
-  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrls: ['./scholar-detail.component.css'],
 })
 export class ScholarDetailComponent implements OnInit {
@@ -30,11 +23,10 @@ export class ScholarDetailComponent implements OnInit {
   private readonly scholarsService = inject(ScholarsService);
   private readonly schoolsService = inject(SchoolsService);
   private readonly router = inject(Router);
-  private readonly cdr = inject(ChangeDetectorRef);
   private readonly notificationService = inject(NotificationService);
 
-  scholar: Scholar | null = null;
-  school: School | null = null;
+  scholar = signal<Scholar | null>(null);
+  school = signal<School | null>(null);
 
   daysOfWeek: (keyof PickUpSchedule)[] = Object.values(WeekDays);
 
@@ -52,11 +44,10 @@ export class ScholarDetailComponent implements OnInit {
         }),
         // tap: Assign scholar to component property
         tap((fetchedScholar) => {
-          this.scholar = fetchedScholar;
+          this.scholar.set(fetchedScholar);
           if (!fetchedScholar) {
             console.warn('Scholar not found for the given ID.');
           }
-          this.cdr.markForCheck();
         }),
         // Second switchMap: If scholar found, fetch their school using getSchoolById
         switchMap((scholar) => {
@@ -68,13 +59,13 @@ export class ScholarDetailComponent implements OnInit {
         }),
         // tap: Assign school to component property
         tap((fetchedSchool) => {
-          this.school = fetchedSchool;
-          if (!fetchedSchool && this.scholar) {
+          const scholar = this.scholar();
+          this.school.set(fetchedSchool);
+          if (!fetchedSchool && scholar) {
             console.warn(
-              `School with ID ${this.scholar.schoolId} not found for scholar ${this.scholar.firstName} ${this.scholar.lastName}.`,
+              `School with ID ${scholar.schoolId} not found for scholar ${scholar.firstName} ${scholar.lastName}.`,
             );
           }
-          this.cdr.markForCheck();
         }),
       )
       .subscribe();
@@ -93,26 +84,24 @@ export class ScholarDetailComponent implements OnInit {
   }
 
   navigateToUpdateScholar(): void {
-    if (!this.scholar?.id) return;
+    const scholar = this.scholar();
+    if (!scholar?.id) return;
 
-    this.router.navigate(['/scholars/update', this.scholar.id]);
+    this.router.navigate(['/scholars/update', scholar.id]);
   }
 
   deleteScholar(): void {
-    if (!this.scholar?.id) return;
+    const scholar = this.scholar();
+    if (!scholar?.id) return;
 
-    if (
-      !confirm(
-        `Are you sure you want to delete ${this.scholar.firstName} ${this.scholar.lastName}?`,
-      )
-    ) {
+    if (!confirm(`Are you sure you want to delete ${scholar.firstName} ${scholar.lastName}?`)) {
       return;
     }
 
-    this.scholarsService.deleteScholar(this.scholar.id).subscribe({
+    this.scholarsService.deleteScholar(scholar.id).subscribe({
       next: () => {
         this.notificationService.show(
-          `Scholar ${this.scholar?.firstName} ${this.scholar?.lastName} deleted successfully.`,
+          `Scholar ${scholar.firstName} ${scholar.lastName} deleted successfully.`,
         );
         this.router.navigate(['/scholars']);
       },

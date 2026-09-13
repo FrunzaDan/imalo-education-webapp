@@ -1,17 +1,10 @@
-import {
-  Component,
-  OnInit,
-  inject,
-  ChangeDetectionStrategy,
-  signal,
-} from '@angular/core';
+import { Component, OnInit, inject, signal } from '@angular/core';
 import {
   FormBuilder,
   FormGroup,
   ReactiveFormsModule,
   Validators,
 } from '@angular/forms';
-import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { Scholar } from '../../interfaces/scholar';
 import { School } from '../../interfaces/school';
@@ -26,9 +19,8 @@ import { NotificationService } from '../../services/notification.service';
 @Component({
   selector: 'app-scholar-form',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterModule],
+  imports: [ReactiveFormsModule, RouterModule],
   templateUrl: './scholar-form.component.html',
-  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './scholar-form.component.css',
 })
 export class ScholarFormComponent implements OnInit {

@@ -1,10 +1,5 @@
-import { CommonModule } from '@angular/common';
-import {
-  Component,
-  OnInit,
-  ChangeDetectionStrategy,
-  signal,
-} from '@angular/core';
+import { NgStyle } from '@angular/common';
+import { Component, OnInit, signal } from '@angular/core';
 import { TimeSlot } from '../../interfaces/time-slot';
 import { Scholar } from '../../interfaces/scholar';
 import { School } from '../../interfaces/school';
@@ -18,9 +13,8 @@ import { PickUpSchedule } from '../../interfaces/pick-up-schedule';
 @Component({
   selector: 'app-gantt-chart',
   standalone: true,
-  imports: [CommonModule],
+  imports: [NgStyle],
   templateUrl: './gantt-chart.component.html',
-  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrls: ['./gantt-chart.component.css'],
 })
 export class GanttChartComponent implements OnInit {

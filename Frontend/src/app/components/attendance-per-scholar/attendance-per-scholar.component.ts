@@ -3,11 +3,10 @@ import {
   OnInit,
   inject,
   OnDestroy,
-  ChangeDetectionStrategy,
   ChangeDetectorRef,
 } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
-import { CommonModule, CurrencyPipe, DatePipe } from '@angular/common';
+import { CurrencyPipe, DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Subscription } from 'rxjs';
 
@@ -34,9 +33,8 @@ interface AttendanceDayRow {
 @Component({
   selector: 'app-attendance-per-scholar',
   standalone: true,
-  imports: [CommonModule, FormsModule, CurrencyPipe, DatePipe],
+  imports: [FormsModule, CurrencyPipe, DatePipe],
   templateUrl: './attendance-per-scholar.component.html',
-  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './attendance-per-scholar.component.css',
 })
 export class AttendancePerScholarComponent implements OnInit, OnDestroy {

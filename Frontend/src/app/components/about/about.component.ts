@@ -1,9 +1,4 @@
-import {
-  Component,
-  ChangeDetectionStrategy,
-  inject,
-  signal,
-} from '@angular/core';
+import { Component, inject, signal } from '@angular/core';
 import { catchError, concatMap, from, map, of, switchMap, toArray } from 'rxjs';
 import { ApiLoggerService } from '../../services/api-logger.service';
 import { ScholarsService } from '../../services/scholars.service';
@@ -188,7 +183,6 @@ function randomParent(chance: number): RandomParent {
   imports: [],
   templateUrl: './about.component.html',
   styleUrl: './about.component.css',
-  changeDetection: ChangeDetectionStrategy.Eager,
 })
 export class AboutComponent {
   private readonly apiLoggerService = inject(ApiLoggerService);

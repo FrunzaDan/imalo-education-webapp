@@ -4,7 +4,6 @@ import {
   OnDestroy,
   OnInit,
   PLATFORM_ID,
-  ChangeDetectionStrategy,
   signal,
 } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
@@ -19,7 +18,6 @@ import { HealthService } from './services/health.service';
   selector: 'app-root',
   imports: [NavbarComponent, NotificationComponent, RouterOutlet],
   templateUrl: './app.html',
-  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './app.css',
 })
 export class App implements OnInit, OnDestroy {

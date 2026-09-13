@@ -1,9 +1,9 @@
-@if (scholar) {
+@if (scholar(); as scholarValue) {
 <button
   type="button"
   class="app-button"
   (click)="navigateToUpdateScholar()"
-  [disabled]="!scholar"
+  [disabled]="!scholarValue"
 >
   Edit Scholar
 </button>
@@ -11,39 +11,39 @@
   type="button"
   class="app-button delete-button"
   (click)="deleteScholar()"
-  [disabled]="!scholar"
+  [disabled]="!scholarValue"
 >
   Delete Scholar
 </button>
 
 <div class="scholar-detail-container">
-  <h2>{{ scholar.firstName }} {{ scholar.lastName }}</h2>
+  <h2>{{ scholarValue.firstName }} {{ scholarValue.lastName }}</h2>
   <div class="detail-card">
-    <p><strong>Grade:</strong> {{ scholar.grade }}</p>
+    <p><strong>Grade:</strong> {{ scholarValue.grade }}</p>
     <p>
-      <strong>Birth Date:</strong> {{ scholar.dateOfBirth | date : 'longDate' }}
+      <strong>Birth Date:</strong> {{ scholarValue.dateOfBirth | date : 'longDate' }}
     </p>
-    <p><strong>School:</strong> {{ school?.name || 'Unknown' }}</p>
+    <p><strong>School:</strong> {{ school()?.name || 'Unknown' }}</p>
   </div>
-  @if (scholar.motherFirstName || scholar.motherLastName || scholar.motherPhoneNumber
-  || scholar.fatherFirstName || scholar.fatherLastName || scholar.fatherPhoneNumber) {
+  @if (scholarValue.motherFirstName || scholarValue.motherLastName || scholarValue.motherPhoneNumber
+  || scholarValue.fatherFirstName || scholarValue.fatherLastName || scholarValue.fatherPhoneNumber) {
   <div class="detail-card">
     <h3>Parents</h3>
-    @if (scholar.motherFirstName || scholar.motherLastName || scholar.motherPhoneNumber) {
+    @if (scholarValue.motherFirstName || scholarValue.motherLastName || scholarValue.motherPhoneNumber) {
     <p>
       <strong>Mother:</strong>
-      {{ formatParent(scholar.motherFirstName, scholar.motherLastName, scholar.motherPhoneNumber) }}
+      {{ formatParent(scholarValue.motherFirstName, scholarValue.motherLastName, scholarValue.motherPhoneNumber) }}
     </p>
     }
-    @if (scholar.fatherFirstName || scholar.fatherLastName || scholar.fatherPhoneNumber) {
+    @if (scholarValue.fatherFirstName || scholarValue.fatherLastName || scholarValue.fatherPhoneNumber) {
     <p>
       <strong>Father:</strong>
-      {{ formatParent(scholar.fatherFirstName, scholar.fatherLastName, scholar.fatherPhoneNumber) }}
+      {{ formatParent(scholarValue.fatherFirstName, scholarValue.fatherLastName, scholarValue.fatherPhoneNumber) }}
     </p>
     }
   </div>
   }
-  @if (scholar.pickUpSchedule) {
+  @if (scholarValue.pickUpSchedule) {
   <div class="pickup-schedule">
     <h3>Pick-Up Schedule</h3>
     <table>
@@ -57,7 +57,7 @@
         @for (day of daysOfWeek; track day) {
         <tr>
           <td>{{ day | titlecase }}</td>
-          <td>{{ scholar.pickUpSchedule[day] }}</td>
+          <td>{{ scholarValue.pickUpSchedule[day] }}</td>
         </tr>
         }
       </tbody>
@@ -71,10 +71,10 @@
 </div>
 }
 
-<button [routerLink]="['/attendance', $safeNavigationMigration(scholar?.id)]" class="app-button">
+<button [routerLink]="['/attendance', scholar()?.id]" class="app-button">
   View Attendance
 </button>
 
-@if (!scholar) {
+@if (!scholar()) {
 <div class="loading">Loading scholar details...</div>
 }
