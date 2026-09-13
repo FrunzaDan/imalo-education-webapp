@@ -21,6 +21,8 @@
 /ImaloEducationApi/bin/
 /ImaloEducationApi/obj/
 /ImaloEducationApi/publish/
+/ImaloEducationApi.Tests/bin/
+/ImaloEducationApi.Tests/obj/
 *.pdb # Debugging symbols
 *.suo # Visual Studio Solution User Options
 *.user # Visual Studio user settings

@@ -21,4 +21,6 @@ The three layers only talk over HTTP — nothing shares process or memory. Angul
 
 ## Known limitations (deliberate, not bugs)
 
-No authentication/authorization anywhere; CORS is wide open; API error responses leak exception text; no automated tests exist for either layer. Each doc above notes these again in its own Gotchas section where relevant — don't "fix" them without checking with the user first.
+No authentication/authorization anywhere; CORS is wide open; API error responses leak exception text. Each doc above notes these again in its own Gotchas section where relevant — don't "fix" them without checking with the user first.
+
+Unit tests exist for both layers' pure business logic (`ImaloEducationApi.Tests`, `Frontend/**/*.spec.ts`, run via `build.sh` — see [[build-and-run]]), but not for controllers, data access, or Angular components — those still have no regression coverage.

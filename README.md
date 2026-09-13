@@ -28,7 +28,7 @@ School reference data (name, color, lunch/transport prices) is static frontend J
 Then open `http://localhost:4200`. `Ctrl+C` stops both the API and Angular. `run.sh` is idempotent — safe to re-run.
 
 ```bash
-./build.sh  # CI-style: builds the API, the DB project, and the Angular app — no services started, proves everything compiles
+./build.sh  # CI-style: builds the API, the DB project, and the Angular app, then runs both test suites — no services started
 ```
 
 ## Documentation
@@ -42,4 +42,6 @@ Full docs live in [`ai_docs/`](ai_docs/) — **start at [`ai_docs/index.md`](ai_
 
 ## Known limitations (deliberate, not bugs)
 
-No authentication/authorization anywhere; CORS is wide open; API error responses leak exception text; no automated tests exist for either layer. See `ai_docs/index.md` and the per-layer docs' Gotchas sections before "fixing" any of these.
+No authentication/authorization anywhere; CORS is wide open; API error responses leak exception text. See `ai_docs/index.md` and the per-layer docs' Gotchas sections before "fixing" any of these.
+
+Unit tests cover both layers' pure business logic (validation rules, sorting, CSV export, date utilities) but not controllers, data access, or Angular components — see `ai_docs/index.md`.

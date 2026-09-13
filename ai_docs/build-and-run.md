@@ -6,7 +6,9 @@ How to compile and run the three layers (DB, API, Angular UI) locally, via `buil
 
 ## Key files / paths
 
-- `build.sh` — repo root, compile only, no live services, no tests (none exist — see [[api]]/[[database]] Gotchas).
+- `build.sh` — repo root, compiles everything and runs both test suites; no live services started.
+- `ImaloEducationApi.Tests/` — xUnit project for the API, see [[api]] Gotchas.
+- `Frontend/vitest-base.config.ts` — Vitest config for the Angular app, see [[angular-frontend]] Gotchas.
 - `run.sh` — repo root, full dev environment orchestration.
 - `.run/` — gitignored logs written by `run.sh` (`api.log`, `sqlpackage.log`).
 - `ImaloEducationDB/global.json` — pins the DB project's build to the .NET 8 SDK.
@@ -16,12 +18,14 @@ How to compile and run the three layers (DB, API, Angular UI) locally, via `buil
 
 ## `build.sh`
 
-CI-style, one-shot, proves everything compiles:
+CI-style, one-shot, proves everything compiles and passes its tests:
 1. `dotnet restore`/`build` the API (`ImaloEducationApi.csproj`, Debug).
-2. `dotnet restore`/`build` the DB `.sqlproj` (Debug).
-3. `npm ci && npm run build` the Angular app.
+2. `dotnet test` the API's xUnit project (`ImaloEducationApi.Tests`, Debug).
+3. `dotnet restore`/`build` the DB `.sqlproj` (Debug).
+4. `npm ci && npm run build` the Angular app.
+5. `npm test` — the Angular app's Vitest suite (single run, not watch mode).
 
-No services are started, nothing is deployed, no tests run. Run before committing API/DB/UI changes.
+No services are started, nothing is deployed. Run before committing API/DB/UI changes.
 
 ## `run.sh`
 

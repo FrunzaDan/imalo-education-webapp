@@ -81,6 +81,7 @@ Mirror the API's C# models 1:1 (see [[api]]): `Scholar`, `PickUpSchedule` (optio
 
 ## Gotchas / conventions
 
+- **Unit tests** — Vitest, via the `@angular/build:unit-test` builder (`ng test` / `npm test`), config in `vitest-base.config.ts`. Covers pure-logic units only so far: `SortingService`, `CsvExportService`, `getWeekdayDatesInMonth` (`src/app/utils/weekday-dates.spec.ts`, `src/app/services/*.spec.ts`). No component/TestBed tests yet — nothing exercises `HttpClientTestingModule`, routing, or template rendering.
 - **`SchoolId` on `Scholar` is not a DB foreign key** — schools live only in `assets/schools.json`, resolved client-side. Don't assume a `Schools` table or a schools API endpoint exists.
 - **Zoneless + Signals throughout** — state that needs to trigger re-render must be a `signal`/`computed`, not a plain field mutated in place (the one intentional exception: `ScholarTableComponent.scholars`/`schools` plain fields are write-once scratch state, not read reactively by the template).
 - All 11 routes are lazy (`loadComponent`) — adding a new route should follow the same pattern rather than an eager `component:` reference, to keep the initial bundle from growing.
