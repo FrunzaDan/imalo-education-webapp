@@ -1,24 +1,81 @@
 import { Routes } from '@angular/router';
-import { ScholarTableComponent } from './components/scholar-table/scholar-table.component';
-import { GanttChartComponent } from './components/gantt-chart/gantt-chart.component';
-import { AttendanceComponent } from './components/attendance/attendance.component';
-import { ScholarDetailComponent } from './components/scholar-detail/scholar-detail.component';
-import { AttendancePerScholarComponent } from './components/attendance-per-scholar/attendance-per-scholar.component';
-import { ScholarFormComponent } from './components/scholar-form/scholar-form.component';
-import { NotFoundComponent } from './components/not-found/not-found.component';
-import { AboutComponent } from './components/about/about.component';
-import { GlobalAuditLogComponent } from './components/global-audit-log/global-audit-log.component';
 
 export const routes: Routes = [
-  { path: '', component: ScholarTableComponent },
-  { path: 'scholars', component: ScholarTableComponent },
-  { path: 'create-scholar', component: ScholarFormComponent },
-  { path: 'scholars/:id', component: ScholarDetailComponent },
-  { path: 'scholars/update/:id', component: ScholarFormComponent },
-  { path: 'pickup-time', component: GanttChartComponent },
-  { path: 'attendance', component: AttendanceComponent },
-  { path: 'attendance/:id', component: AttendancePerScholarComponent },
-  { path: 'audit-log', component: GlobalAuditLogComponent },
-  { path: 'about', component: AboutComponent },
-  { path: '**', component: NotFoundComponent },
+  {
+    path: '',
+    loadComponent: () =>
+      import('./components/scholar-table/scholar-table.component').then(
+        (m) => m.ScholarTableComponent,
+      ),
+  },
+  {
+    path: 'scholars',
+    loadComponent: () =>
+      import('./components/scholar-table/scholar-table.component').then(
+        (m) => m.ScholarTableComponent,
+      ),
+  },
+  {
+    path: 'create-scholar',
+    loadComponent: () =>
+      import('./components/scholar-form/scholar-form.component').then(
+        (m) => m.ScholarFormComponent,
+      ),
+  },
+  {
+    path: 'scholars/:id',
+    loadComponent: () =>
+      import('./components/scholar-detail/scholar-detail.component').then(
+        (m) => m.ScholarDetailComponent,
+      ),
+  },
+  {
+    path: 'scholars/update/:id',
+    loadComponent: () =>
+      import('./components/scholar-form/scholar-form.component').then(
+        (m) => m.ScholarFormComponent,
+      ),
+  },
+  {
+    path: 'pickup-time',
+    loadComponent: () =>
+      import('./components/gantt-chart/gantt-chart.component').then(
+        (m) => m.GanttChartComponent,
+      ),
+  },
+  {
+    path: 'attendance',
+    loadComponent: () =>
+      import('./components/attendance/attendance.component').then(
+        (m) => m.AttendanceComponent,
+      ),
+  },
+  {
+    path: 'attendance/:id',
+    loadComponent: () =>
+      import(
+        './components/attendance-per-scholar/attendance-per-scholar.component'
+      ).then((m) => m.AttendancePerScholarComponent),
+  },
+  {
+    path: 'audit-log',
+    loadComponent: () =>
+      import('./components/global-audit-log/global-audit-log.component').then(
+        (m) => m.GlobalAuditLogComponent,
+      ),
+  },
+  {
+    path: 'about',
+    loadComponent: () =>
+      import('./components/about/about.component').then(
+        (m) => m.AboutComponent,
+      ),
+  },
+  {
+    path: '**',
+    loadComponent: () =>
+      import('./components/not-found/not-found.component').then(
+        (m) => m.NotFoundComponent,
+      ),
+  },
 ];

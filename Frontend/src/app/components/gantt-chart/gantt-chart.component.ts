@@ -1,5 +1,5 @@
 import { NgStyle } from '@angular/common';
-import { Component, OnInit, signal } from '@angular/core';
+import { Component, OnInit, computed, signal } from '@angular/core';
 import { TimeSlot } from '../../interfaces/time-slot';
 import { Scholar } from '../../interfaces/scholar';
 import { School } from '../../interfaces/school';
@@ -9,6 +9,11 @@ import { WeekDays } from '../../constants/week-days';
 import { forkJoin } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { PickUpSchedule } from '../../interfaces/pick-up-schedule';
+
+interface GanttCell {
+  style: Record<string, string>;
+  label: string;
+}
 
 @Component({
   selector: 'app-gantt-chart',
@@ -25,6 +30,44 @@ export class GanttChartComponent implements OnInit {
     WeekDays,
   ) as (keyof PickUpSchedule)[];
   private readonly SLOT_DURATION = 10;
+  private static readonly EMPTY_STYLE: Record<string, string> = {};
+
+  // Built once per scholars() change instead of being recomputed per-cell on
+  // every change-detection pass (this grid is days × scholars × timeSlots
+  // cells, and each cell used to independently re-parse times and rebuild a
+  // style object).
+  private readonly cellsByKey = computed(() => {
+    const map = new Map<string, GanttCell>();
+    const slotsByMinutes = new Map(
+      this.timeSlots.map((slot) => [this.timeToMinutes(slot.start), slot]),
+    );
+    const columnsSpan = Math.ceil(this.SLOT_DURATION / 15);
+
+    for (const scholar of this.scholars()) {
+      if (!scholar.pickUpSchedule) continue;
+      const school = this.schools.get(scholar.schoolId?.toString() ?? '');
+
+      for (const day of this.weekDays) {
+        const pickupTime = scholar.pickUpSchedule[day];
+        if (!pickupTime || typeof pickupTime !== 'string') continue;
+
+        const slot = slotsByMinutes.get(this.timeToMinutes(pickupTime));
+        if (!slot) continue;
+
+        map.set(this.cellKey(scholar.id, day, slot.start), {
+          style: {
+            backgroundColor: school?.color || '#a0a0a0',
+            gridColumn: `span ${columnsSpan}`,
+          },
+          label: `${pickupTime} - ${this.calculateEndTime(pickupTime)}\n${
+            school?.name || 'Unknown School'
+          }`,
+        });
+      }
+    }
+
+    return map;
+  });
 
   constructor(
     private scholarsService: ScholarsService,
@@ -94,43 +137,28 @@ export class GanttChartComponent implements OnInit {
     return this.minutesToTime(this.timeToMinutes(start) + this.SLOT_DURATION);
   }
 
-  private isSlotScheduled(
+  private cellKey(
+    scholarId: string,
+    day: keyof PickUpSchedule,
+    slotStart: string,
+  ): string {
+    return `${scholarId}|${day}|${slotStart}`;
+  }
+
+  private getCell(
     scholar: Scholar,
     slot: TimeSlot,
-    day: keyof PickUpSchedule, // Use keyof PickUpSchedule for 'day'
-  ): boolean {
-    // Safely check if pickUpSchedule exists and has the 'day' property
-    if (
-      !scholar.pickUpSchedule ||
-      typeof scholar.pickUpSchedule[day] === 'undefined'
-    ) {
-      return false;
-    }
-    const pickupTime = scholar.pickUpSchedule[day];
-    // Ensure pickupTime is a string before calling timeToMinutes
-    return (
-      !!pickupTime &&
-      typeof pickupTime === 'string' && // Add type check for pickupTime
-      this.timeToMinutes(pickupTime) === this.timeToMinutes(slot.start)
-    );
+    day: keyof PickUpSchedule,
+  ): GanttCell | undefined {
+    return this.cellsByKey().get(this.cellKey(scholar.id, day, slot.start));
   }
 
   getSlotStyle(
     scholar: Scholar,
     slot: TimeSlot,
-    day: keyof PickUpSchedule, // Use keyof PickUpSchedule for 'day'
+    day: keyof PickUpSchedule,
   ): Record<string, string> {
-    if (this.isSlotScheduled(scholar, slot, day)) {
-      const school = this.schools.get(scholar.schoolId?.toString() ?? '');
-      // Calculate column span based on SLOT_DURATION and interval (assuming 15min interval for display)
-      const columnsSpan = Math.ceil(this.SLOT_DURATION / 15);
-
-      return {
-        backgroundColor: school?.color || '#a0a0a0', // Default to gray if school color is not found
-        gridColumn: `span ${columnsSpan}`,
-      };
-    }
-    return {};
+    return this.getCell(scholar, slot, day)?.style ?? GanttChartComponent.EMPTY_STYLE;
   }
 
   getTimeRange(
@@ -138,15 +166,7 @@ export class GanttChartComponent implements OnInit {
     slot: TimeSlot,
     day: keyof PickUpSchedule,
   ): string {
-    if (this.isSlotScheduled(scholar, slot, day)) {
-      // We already know pickUpSchedule is not null and has 'day' property due to isSlotScheduled check
-      const pickupTime = scholar.pickUpSchedule![day]!; // Non-null: checked by isSlotScheduled (typeof === 'string')
-      const school = this.schools.get(scholar.schoolId?.toString() ?? '');
-      return `${pickupTime} - ${this.calculateEndTime(pickupTime)}\n${
-        school?.name || 'Unknown School'
-      }`;
-    }
-    return '';
+    return this.getCell(scholar, slot, day)?.label ?? '';
   }
 
   isTimeOccupied(
@@ -154,7 +174,7 @@ export class GanttChartComponent implements OnInit {
     slot: TimeSlot,
     day: keyof PickUpSchedule,
   ): boolean {
-    return this.isSlotScheduled(scholar, slot, day);
+    return this.getCell(scholar, slot, day) !== undefined;
   }
 
   formatDayTitle(day: string): string {
