@@ -23,4 +23,4 @@ The three layers only talk over HTTP — nothing shares process or memory. Angul
 
 No authentication/authorization anywhere; CORS is wide open; API error responses leak exception text. Each doc above notes these again in its own Gotchas section where relevant — don't "fix" them without checking with the user first.
 
-Unit tests exist for both layers' pure business logic (`ImaloEducationApi.Tests`, `Frontend/**/*.spec.ts`, run via `build.sh` — see [[build-and-run]]), but not for controllers, data access, or Angular components — those still have no regression coverage.
+Unit tests exist for both layers' pure business logic, plus `ScholarsController` (against a mocked `IScholarDataAccess`), a handful of pure Angular services, and one `TestBed` component spec (`AttendancePerScholarComponent`) (`ImaloEducationApi.Tests`, `Frontend/**/*.spec.ts`, run via `build.sh` — see [[build-and-run]]). Still no coverage for `ScholarDataAccess`'s actual SQL, the other 11 Angular components, or the remaining `HttpClient`-backed Angular services — see each doc's Gotchas section.

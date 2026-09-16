@@ -1,13 +1,9 @@
-import {
-  HttpClient,
-  HttpErrorResponse,
-  HttpHeaders,
-} from '@angular/common/http';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Observable, throwError } from 'rxjs';
-import { catchError } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
 import { Scholar } from '../interfaces/scholar';
+import { catchHttpError } from '../utils/http-error';
 
 @Injectable({ providedIn: 'root' })
 export class ScholarsService {
@@ -19,17 +15,19 @@ export class ScholarsService {
   // ---- CRUD METHODS ----
 
   getScholars(): Observable<Scholar[]> {
-    return this.request<Scholar[]>(this.baseUrl, 'getScholars');
+    return this.http.get<Scholar[]>(this.baseUrl).pipe(catchHttpError('getScholars'));
   }
 
   getScholarById(id: string): Observable<Scholar> {
-    return this.request<Scholar>(this.urlWithId(id), `getScholarById id=${id}`);
+    return this.http
+      .get<Scholar>(this.urlWithId(id))
+      .pipe(catchHttpError(`getScholarById id=${id}`));
   }
 
   createScholar(scholar: Scholar): Observable<Scholar> {
     return this.http
       .post<Scholar>(this.baseUrl, scholar, { headers: this.jsonHeaders })
-      .pipe(catchError(this.handleError<Scholar>('createScholar')));
+      .pipe(catchHttpError('createScholar'));
   }
 
   updateScholar(scholar: Scholar): Observable<Scholar> {
@@ -40,45 +38,18 @@ export class ScholarsService {
       .put<Scholar>(this.urlWithId(scholar.id), scholar, {
         headers: this.jsonHeaders,
       })
-      .pipe(
-        catchError(this.handleError<Scholar>(`updateScholar id=${scholar.id}`)),
-      );
+      .pipe(catchHttpError(`updateScholar id=${scholar.id}`));
   }
 
   deleteScholar(id: string): Observable<void> {
     return this.http
       .delete<void>(this.urlWithId(id))
-      .pipe(catchError(this.handleError<void>(`deleteScholar id=${id}`)));
+      .pipe(catchHttpError(`deleteScholar id=${id}`));
   }
 
   // ---- HELPERS ----
 
   private urlWithId(id: string) {
     return `${this.baseUrl}/${id}`;
-  }
-
-  private request<T>(url: string, operation: string): Observable<T> {
-    return this.http
-      .get<T>(url)
-      .pipe(catchError(this.handleError<T>(operation)));
-  }
-
-  private handleError<T>(operation = 'operation') {
-    return (error: HttpErrorResponse): Observable<T> => {
-      let message = `${operation} failed: ${error.message}`;
-
-      // Optional chaining for brevity
-      if (error.error?.errors) {
-        const validationErrors = Object.values(error.error.errors)
-          .flat()
-          .join('; ');
-        message = `${operation} failed: Validation errors - ${validationErrors}`;
-      } else if (error.error?.message) {
-        message = `${operation} failed: ${error.error.message}`;
-      }
-
-      console.error(message, error);
-      return throwError(() => new Error(message));
-    };
   }
 }

@@ -1,4 +1,4 @@
-import { Component, OnInit, signal } from '@angular/core';
+import { Component, OnInit, inject, signal } from '@angular/core';
 import { CurrencyPipe, DatePipe } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { forkJoin } from 'rxjs';
@@ -20,24 +20,21 @@ interface AttendanceRow {
 
 @Component({
   selector: 'app-attendance',
-  standalone: true,
   imports: [DatePipe, CurrencyPipe, RouterModule],
   templateUrl: './attendance.component.html',
   styleUrl: './attendance.component.css',
 })
 export class AttendanceComponent implements OnInit {
+  private readonly scholarsService = inject(ScholarsService);
+  private readonly attendanceService = inject(AttendanceService);
+  private readonly sortingService = inject(SortingService);
+  private readonly csvExportService = inject(CsvExportService);
+
   rows = signal<AttendanceRow[]>([]);
   loading = signal(true);
 
   currentSortColumn: string = '';
   isAscending: boolean = true;
-
-  constructor(
-    private readonly scholarsService: ScholarsService,
-    private readonly attendanceService: AttendanceService,
-    private readonly sortingService: SortingService,
-    private readonly csvExportService: CsvExportService,
-  ) {}
 
   ngOnInit(): void {
     this.loadData();

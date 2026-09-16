@@ -8,7 +8,7 @@ ASP.NET Core Web API (.NET 10, C#), single controller, plain ADO.NET data access
 
 - `ImaloEducationApi/Program.cs` — host setup: CORS, Swagger, logging middleware, `no-store` cache header.
 - `ImaloEducationApi/Controllers/ScholarController.cs` — the one controller, `ScholarsController`, route `api/Scholars`.
-- `ImaloEducationApi/Data/ScholarDataAccess.cs` — all SQL, scoped DI service.
+- `ImaloEducationApi/Data/ScholarDataAccess.cs` — all SQL, scoped DI service. Implements `IScholarDataAccess` (`Data/IScholarDataAccess.cs`) — extracted solely to let `ScholarsController` be unit-tested against a mock (see Gotchas), not for a second implementation.
 - `ImaloEducationApi/Models/Scholar.cs` — the `Scholar` model + its `ValidationAttribute` validators.
 - `ImaloEducationApi/Models/AttendanceRecord.cs`, `AuditLogEntry.cs` (+ `GlobalAuditLogEntry`), `PagedResult.cs` — the other DTOs/models.
 - `ImaloEducationApi/Logging/AppLogger.cs` — singleton, logs a startup "ramp-up" block (env, OS, DB connectivity check, memory) once via `Program.cs`.
@@ -57,6 +57,10 @@ All under `api/Scholars`. All return `500` with `{ message, details = ex.Message
 - **No authentication/authorization.** `UseAuthorization()` is called but nothing configures `AddAuthentication`/a scheme — every endpoint, including `DELETE /api/Scholars/auditLog/all`, is open to anyone who can reach the API. Known, deliberately deferred for this learning project.
 - **CORS is wide open** (`AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader()`), flagged in-line with `// TODO: Restrict to specific origins in production`.
 - **Exception messages leak to clients** — every catch-all `500` response includes `details = ex.Message` verbatim. Known, deliberately deferred.
-- **Unit tests** — `ImaloEducationApi.Tests` (xUnit), covering `Scholar`'s validation attributes (`ValidateDateOfBirth`, `ValidatePickUpSchedule`, `ValidatePhoneNumber`) individually and through `Validator.TryValidateObject`, the same path ASP.NET Core's `ModelState` binding uses. Run via `dotnet test ImaloEducationApi.Tests` or as part of [[build-and-run]]'s `build.sh`. No controller/data-access tests yet — `ScholarDataAccess` is a concrete class with no interface, so unit-testing the controllers would need either an interface extraction or a real DB integration test; neither exists yet, don't assume controller behavior is covered.
+- **Unit tests** — `ImaloEducationApi.Tests` (xUnit), two layers:
+  - `Models/` — `Scholar`'s validation attributes (`ValidateDateOfBirth`, `ValidatePickUpSchedule`, `ValidatePhoneNumber`) individually and through `Validator.TryValidateObject`, the same path ASP.NET Core's `ModelState` binding uses.
+  - `Controllers/ScholarsControllerTests.cs` — `ScholarsController` against a Moq mock of `IScholarDataAccess` (status codes, `ModelState`-invalid shape, not-found vs. success vs. exception branching for every endpoint). `ScholarDataAccess` was given an `IScholarDataAccess` interface (`Data/IScholarDataAccess.cs`) purely so this mock could exist — there's still no second implementation and none is planned.
+  - Still **no real-DB coverage** — `ScholarDataAccess`'s own SQL (transactions, cascade deletes, the `OUTER APPLY` parent join, best-effort audit logging) is untested; that would need an integration test against a real SQL Server, not a mock.
+  - Run via `dotnet test ImaloEducationApi.Tests` or as part of [[build-and-run]]'s `build.sh`.
 - Direct SQL via `SqlCommand`, not stored procedures or an ORM — a deliberate simplicity choice for this project (contrast with sibling projects that route everything through stored procs).
 - The API is plain HTTP (`http://localhost:5244`, see `Properties/launchSettings.json`) — no HTTPS launch profile, so none of the usual dev-cert trust issues apply here.

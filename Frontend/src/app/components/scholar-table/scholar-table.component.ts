@@ -1,4 +1,4 @@
-import { Component, OnInit, signal } from '@angular/core';
+import { Component, OnInit, inject, signal } from '@angular/core';
 import { ScholarsService } from '../../services/scholars.service';
 import { SchoolsService } from '../../services/schools.service';
 import { SortingService } from '../../services/sorting.service';
@@ -26,9 +26,16 @@ interface TransformedScholarData {
   imports: [NgStyle, RouterModule],
   selector: 'app-scholar-table',
   templateUrl: './scholar-table.component.html',
-  styleUrls: ['./scholar-table.component.css'],
+  styleUrl: './scholar-table.component.css',
 })
 export class ScholarTableComponent implements OnInit {
+  private readonly scholarsService = inject(ScholarsService);
+  private readonly schoolsService = inject(SchoolsService);
+  private readonly sortingService = inject(SortingService);
+  private readonly csvExportService = inject(CsvExportService);
+  private readonly notificationService = inject(NotificationService);
+  private readonly confirmModalService = inject(ConfirmModalService);
+
   scholars: Scholar[] = [];
   schools: Map<string, School> = new Map();
   scholarData = signal<TransformedScholarData[]>([]);
@@ -40,15 +47,6 @@ export class ScholarTableComponent implements OnInit {
 
   selectedIds = signal<Set<string>>(new Set());
   bulkDeleteInProgress = signal(false);
-
-  constructor(
-    private scholarsService: ScholarsService,
-    private schoolsService: SchoolsService,
-    private sortingService: SortingService,
-    private csvExportService: CsvExportService,
-    private notificationService: NotificationService,
-    private confirmModalService: ConfirmModalService,
-  ) {}
 
   ngOnInit(): void {
     this.loadData();

@@ -3,7 +3,6 @@ import { ConfirmModalService } from '../../services/confirm-modal.service';
 
 @Component({
   selector: 'app-confirm-modal',
-  standalone: true,
   templateUrl: './confirm-modal.component.html',
   styleUrl: './confirm-modal.component.css',
 })

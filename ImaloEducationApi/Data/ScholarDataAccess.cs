@@ -5,7 +5,7 @@ using Microsoft.Data.SqlClient;
 
 namespace ImaloEducationApi.Data;
 
-public class ScholarDataAccess
+public class ScholarDataAccess : IScholarDataAccess
 {
     private readonly string _connectionString;
     private readonly ILogger<ScholarDataAccess> _logger;

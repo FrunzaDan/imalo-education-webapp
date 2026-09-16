@@ -4,6 +4,7 @@ import { Observable } from 'rxjs';
 import { AttendanceRecord } from '../interfaces/attendance-record';
 import { ScholarAttendance } from '../interfaces/scholar-attendance';
 import { environment } from '../../environments/environment';
+import { catchHttpError } from '../utils/http-error';
 
 @Injectable({
   providedIn: 'root',
@@ -21,16 +22,18 @@ export class AttendanceService {
   // per-scholar edits get saved elsewhere, so a stale cached copy would show
   // pre-edit data. It's a small local dataset — refetching is cheap.
   getAllScholarAttendance(): Observable<ScholarAttendance[]> {
-    return this.http.get<ScholarAttendance[]>(`${this.baseUrl}/attendance`);
+    return this.http
+      .get<ScholarAttendance[]>(`${this.baseUrl}/attendance`)
+      .pipe(catchHttpError('getAllScholarAttendance'));
   }
 
   // ----------------------------
   // Fetch a single scholar's attendance
   // ----------------------------
   getAttendanceByScholarId(scholarId: string): Observable<AttendanceRecord[]> {
-    return this.http.get<AttendanceRecord[]>(
-      `${this.baseUrl}/${scholarId}/attendance`,
-    );
+    return this.http
+      .get<AttendanceRecord[]>(`${this.baseUrl}/${scholarId}/attendance`)
+      .pipe(catchHttpError(`getAttendanceByScholarId id=${scholarId}`));
   }
 
   // ----------------------------
@@ -40,16 +43,17 @@ export class AttendanceService {
     scholarId: string,
     attendance: AttendanceRecord[],
   ): Observable<any> {
-    return this.http.post(
-      `${this.baseUrl}/${scholarId}/attendance`,
-      attendance,
-    );
+    return this.http
+      .post(`${this.baseUrl}/${scholarId}/attendance`, attendance)
+      .pipe(catchHttpError(`saveAttendance id=${scholarId}`));
   }
 
   // ----------------------------
   // Delete attendance for a scholar
   // ----------------------------
   deleteAttendance(scholarId: string): Observable<any> {
-    return this.http.delete(`${this.baseUrl}/${scholarId}/attendance`);
+    return this.http
+      .delete(`${this.baseUrl}/${scholarId}/attendance`)
+      .pipe(catchHttpError(`deleteAttendance id=${scholarId}`));
   }
 }

@@ -1,4 +1,4 @@
-@if (scholar) {
+@if (scholar(); as scholar) {
 <div class="attendance-container">
   <h2 class="attendance-container__title">
     Attendance for {{ scholar.firstName }} {{ scholar.lastName }}
@@ -9,8 +9,8 @@
     <input
       id="monthPicker"
       type="month"
-      [(ngModel)]="selectedMonth"
-      (ngModelChange)="onMonthChange()"
+      [value]="selectedMonth()"
+      (change)="onMonthChange($event)"
       class="controls__month-input"
     />
     <button type="button" class="app-button" (click)="exportCsv()">
@@ -30,7 +30,7 @@
       </tr>
     </thead>
     <tbody class="attendance-table__body">
-      @for (row of dayRows; track trackByDayRow($index, row)) {
+      @for (row of dayRows(); track trackByDayRow($index, row)) {
       <tr
         class="attendance-table__row"
         [class.attendance-table__row--unsaved]="!row.isPersisted && (row.record.lunchSelected || row.record.transportSelected)"
@@ -41,16 +41,16 @@
         <td class="attendance-table__data-cell">
           <input
             type="checkbox"
-            [(ngModel)]="row.record.lunchSelected"
-            (ngModelChange)="onLunchChange(row)"
+            [checked]="row.record.lunchSelected"
+            (change)="onLunchChange(row, $event)"
             class="attendance-table__checkbox"
           />
         </td>
         <td class="attendance-table__data-cell">
           <input
             type="checkbox"
-            [(ngModel)]="row.record.transportSelected"
-            (ngModelChange)="onTransportChange(row)"
+            [checked]="row.record.transportSelected"
+            (change)="onTransportChange(row, $event)"
             class="attendance-table__checkbox"
           />
         </td>
@@ -100,14 +100,14 @@
           class="attendance-table__data-cell attendance-table__data-cell--total-value"
         >
           <strong>{{
-            totalSelectedLunchCost | currency : 'RON' : 'symbol' : '1.2-2'
+            totalSelectedLunchCost() | currency : 'RON' : 'symbol' : '1.2-2'
           }}</strong>
         </td>
         <td
           class="attendance-table__data-cell attendance-table__data-cell--total-value"
         >
           <strong>{{
-            totalSelectedTransportCost | currency : 'RON' : 'symbol' : '1.2-2'
+            totalSelectedTransportCost() | currency : 'RON' : 'symbol' : '1.2-2'
           }}</strong>
         </td>
       </tr>
@@ -122,7 +122,7 @@
           colspan="2"
           class="attendance-table__data-cell attendance-table__data-cell--total-value"
         >
-          <strong>{{ grandTotal | currency : 'RON' : 'symbol' : '1.2-2' }}</strong>
+          <strong>{{ grandTotal() | currency : 'RON' : 'symbol' : '1.2-2' }}</strong>
         </td>
       </tr>
     </tfoot>
@@ -132,16 +132,16 @@
     <button
       type="button"
       class="app-button"
-      [disabled]="isSaving"
+      [disabled]="isSaving()"
       (click)="save()"
     >
-      {{ isSaving ? 'Saving...' : 'Save Changes' }}
+      {{ isSaving() ? 'Saving...' : 'Save Changes' }}
     </button>
-    @if (hasUnsavedChanges && !isSaving) {
+    @if (hasUnsavedChanges() && !isSaving()) {
     <span class="attendance-container__unsaved-note">Unsaved changes</span>
     }
   </div>
 </div>
-} @if (!scholar) {
+} @else {
 <div class="loading-message">Loading attendance...</div>
 }

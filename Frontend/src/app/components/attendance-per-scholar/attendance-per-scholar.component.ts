@@ -1,13 +1,6 @@
-import {
-  Component,
-  OnInit,
-  inject,
-  OnDestroy,
-  ChangeDetectorRef,
-} from '@angular/core';
+import { Component, OnInit, OnDestroy, computed, inject, signal } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { CurrencyPipe, DatePipe } from '@angular/common';
-import { FormsModule } from '@angular/forms';
 import { Subscription } from 'rxjs';
 
 import { ScholarsService } from '../../services/scholars.service';
@@ -32,8 +25,7 @@ interface AttendanceDayRow {
 
 @Component({
   selector: 'app-attendance-per-scholar',
-  standalone: true,
-  imports: [FormsModule, CurrencyPipe, DatePipe],
+  imports: [CurrencyPipe, DatePipe],
   templateUrl: './attendance-per-scholar.component.html',
   styleUrl: './attendance-per-scholar.component.css',
 })
@@ -44,35 +36,52 @@ export class AttendancePerScholarComponent implements OnInit, OnDestroy {
   private readonly attendanceService = inject(AttendanceService);
   private readonly csvExportService = inject(CsvExportService);
   private readonly notificationService = inject(NotificationService);
-  private readonly cdr = inject(ChangeDetectorRef);
 
   private scholarSubscription: Subscription | undefined;
   private attendanceSubscription: Subscription | undefined;
 
-  scholar: Scholar | null = null;
+  scholar = signal<Scholar | null>(null);
   scholarId: string = '';
 
   // Standard per-day prices for this scholar's school, applied when a day is
   // marked for the first time. 0 until the school has loaded (or if the
-  // scholar has no school set).
+  // scholar has no school set). Not read directly by the template — only used
+  // internally when seeding a newly-checked day's cost — so a plain field is
+  // enough (same reasoning as ScholarTableComponent.scholars/schools).
   lunchPrice = 0;
   transportPrice = 0;
 
   // The full, unfiltered list for this scholar, as loaded from (and sent
   // back to) the API. Day rows for the selected month hold direct references
   // into this array once a day has been touched, so editing a row mutates
-  // the record here too — Save just sends this array as-is.
+  // the record here too — Save just sends this array as-is. Not read
+  // directly by the template either, so it stays a plain field too.
   allAttendanceRecords: AttendanceRecord[] = [];
 
-  selectedMonth: string = ''; // 'YYYY-MM', bound to <input type="month">
-  dayRows: AttendanceDayRow[] = [];
+  selectedMonth = signal(''); // 'YYYY-MM', bound to <input type="month">
+  dayRows = signal<AttendanceDayRow[]>([]);
 
-  totalSelectedLunchCost: number = 0;
-  totalSelectedTransportCost: number = 0;
-  grandTotal: number = 0;
+  // Derived from dayRows — a checkbox handler mutates a row's record in place
+  // (so the checkbox stays bound to a stable object) and then re-sets dayRows
+  // to a fresh array to both notify these and re-render.
+  readonly totalSelectedLunchCost = computed(() =>
+    this.dayRows().reduce(
+      (sum, row) => sum + (row.record.lunchSelected ? row.record.lunchCost : 0),
+      0,
+    ),
+  );
+  readonly totalSelectedTransportCost = computed(() =>
+    this.dayRows().reduce(
+      (sum, row) => sum + (row.record.transportSelected ? row.record.transportCost : 0),
+      0,
+    ),
+  );
+  readonly grandTotal = computed(
+    () => this.totalSelectedLunchCost() + this.totalSelectedTransportCost(),
+  );
 
-  isSaving: boolean = false;
-  hasUnsavedChanges: boolean = false;
+  isSaving = signal(false);
+  hasUnsavedChanges = signal(false);
 
   ngOnInit(): void {
     const scholarId = this.route.snapshot.paramMap.get('id');
@@ -84,20 +93,19 @@ export class AttendancePerScholarComponent implements OnInit, OnDestroy {
 
     this.scholarSubscription = this.scholarsService.getScholars().subscribe({
       next: (scholars) => {
-        this.scholar = scholars.find((s) => s.id === scholarId) || null;
+        const scholar = scholars.find((s) => s.id === scholarId) || null;
+        this.scholar.set(scholar);
 
-        if (!this.scholar) {
+        if (!scholar) {
           console.warn(`Scholar with ID ${scholarId} not found.`);
-          this.cdr.markForCheck();
           return;
         }
 
-        if (this.scholar.schoolId != null) {
-          this.schoolsService.getSchoolById(this.scholar.schoolId).subscribe({
+        if (scholar.schoolId != null) {
+          this.schoolsService.getSchoolById(scholar.schoolId).subscribe({
             next: (school) => {
               this.lunchPrice = school?.lunchPrice ?? 0;
               this.transportPrice = school?.transportPrice ?? 0;
-              this.cdr.markForCheck();
             },
           });
         }
@@ -107,25 +115,20 @@ export class AttendancePerScholarComponent implements OnInit, OnDestroy {
           .subscribe({
             next: (attendanceData: AttendanceRecord[] | undefined) => {
               this.allAttendanceRecords = attendanceData ?? [];
-              this.selectedMonth = this.pickDefaultMonth();
+              this.selectedMonth.set(this.pickDefaultMonth());
               this.rebuildDayRows();
-              this.cdr.markForCheck();
             },
             error: (err) => {
               console.error('Error fetching attendance data:', err);
               this.allAttendanceRecords = [];
-              this.selectedMonth = this.pickDefaultMonth();
+              this.selectedMonth.set(this.pickDefaultMonth());
               this.rebuildDayRows();
-              this.cdr.markForCheck();
             },
           });
-
-        this.cdr.markForCheck();
       },
       error: (err) => {
         console.error('Error fetching scholars:', err);
-        this.scholar = null;
-        this.cdr.markForCheck();
+        this.scholar.set(null);
       },
     });
   }
@@ -155,58 +158,39 @@ export class AttendancePerScholarComponent implements OnInit, OnDestroy {
     return dateStr.substring(0, 10);
   }
 
-  onMonthChange(): void {
+  onMonthChange(event: Event): void {
+    this.selectedMonth.set((event.target as HTMLInputElement).value);
     this.rebuildDayRows();
   }
 
   private rebuildDayRows(): void {
-    if (!this.selectedMonth) {
-      this.dayRows = [];
-      this.updateTotals();
+    if (!this.selectedMonth()) {
+      this.dayRows.set([]);
       return;
     }
 
-    const [year, month] = this.selectedMonth.split('-').map(Number);
-    this.dayRows = getWeekdayDatesInMonth(year, month).map(
-      (date) => {
-        const existing = this.allAttendanceRecords.find(
-          (r) => this.toDateOnly(r.date) === date,
-        );
-        if (existing) {
-          return { date, record: existing, isPersisted: true };
-        }
-        return {
+    const [year, month] = this.selectedMonth().split('-').map(Number);
+    const rows = getWeekdayDatesInMonth(year, month).map((date) => {
+      const existing = this.allAttendanceRecords.find(
+        (r) => this.toDateOnly(r.date) === date,
+      );
+      if (existing) {
+        return { date, record: existing, isPersisted: true };
+      }
+      return {
+        date,
+        record: {
           date,
-          record: {
-            date,
-            lunchCost: 0,
-            transportCost: 0,
-            lunchSelected: false,
-            transportSelected: false,
-          },
-          isPersisted: false,
-        };
-      },
-    );
+          lunchCost: 0,
+          transportCost: 0,
+          lunchSelected: false,
+          transportSelected: false,
+        },
+        isPersisted: false,
+      };
+    });
 
-    this.updateTotals();
-  }
-
-  updateTotals(): void {
-    this.totalSelectedLunchCost = this.dayRows.reduce(
-      (sum, row) =>
-        sum + (row.record.lunchSelected ? row.record.lunchCost : 0),
-      0,
-    );
-
-    this.totalSelectedTransportCost = this.dayRows.reduce(
-      (sum, row) =>
-        sum + (row.record.transportSelected ? row.record.transportCost : 0),
-      0,
-    );
-
-    this.grandTotal =
-      this.totalSelectedLunchCost + this.totalSelectedTransportCost;
+    this.dayRows.set(rows);
   }
 
   // Adds a day's record to the list that actually gets saved, the first time
@@ -218,35 +202,43 @@ export class AttendancePerScholarComponent implements OnInit, OnDestroy {
     }
   }
 
-  // Called after [(ngModel)] has already written the new checked state onto
-  // the record — only cross-field cascade + first-time cost seeding happens
-  // here, never a toggle of the field itself.
-  onLunchChange(row: AttendanceDayRow): void {
-    if (row.record.lunchSelected) {
+  // Mutates row.record in place (so the checkbox's [checked] binding and any
+  // other reference to this row stay pointed at the same object), then
+  // re-sets dayRows to a new array so the totalSelected*/grandTotal computed
+  // signals — and the template — pick the change up.
+  //
+  // Lunch and Transport are independent: toggling one never touches the
+  // other. The "Both" checkbox (onBothChange) is the only thing that sets
+  // both at once, and it's a plain reflection of "are both currently
+  // checked", not a cascade rule — see its [checked] binding in the template.
+  onLunchChange(row: AttendanceDayRow, event: Event): void {
+    const isChecked = (event.target as HTMLInputElement).checked;
+    row.record.lunchSelected = isChecked;
+
+    if (isChecked) {
       if (row.record.lunchCost === 0) {
         row.record.lunchCost = this.lunchPrice;
       }
       this.ensurePersisted(row);
-    } else if (row.record.transportSelected) {
-      // Transport implies lunch (e.g. school pickup includes the lunch
-      // service) — turning lunch off turns transport off too.
-      row.record.transportSelected = false;
     }
-    this.hasUnsavedChanges = true;
-    this.updateTotals();
+
+    this.hasUnsavedChanges.set(true);
+    this.dayRows.update((rows) => [...rows]);
   }
 
-  onTransportChange(row: AttendanceDayRow): void {
-    if (row.record.transportSelected) {
+  onTransportChange(row: AttendanceDayRow, event: Event): void {
+    const isChecked = (event.target as HTMLInputElement).checked;
+    row.record.transportSelected = isChecked;
+
+    if (isChecked) {
       if (row.record.transportCost === 0) {
         row.record.transportCost = this.transportPrice;
       }
       this.ensurePersisted(row);
-    } else if (row.record.lunchSelected) {
-      row.record.lunchSelected = false;
     }
-    this.hasUnsavedChanges = true;
-    this.updateTotals();
+
+    this.hasUnsavedChanges.set(true);
+    this.dayRows.update((rows) => [...rows]);
   }
 
   onBothChange(row: AttendanceDayRow, event: Event): void {
@@ -259,29 +251,27 @@ export class AttendancePerScholarComponent implements OnInit, OnDestroy {
         row.record.transportCost = this.transportPrice;
       this.ensurePersisted(row);
     }
-    this.hasUnsavedChanges = true;
-    this.updateTotals();
+    this.hasUnsavedChanges.set(true);
+    this.dayRows.update((rows) => [...rows]);
   }
 
   save(): void {
-    if (!this.scholarId || this.isSaving) return;
+    if (!this.scholarId || this.isSaving()) return;
 
-    this.isSaving = true;
+    this.isSaving.set(true);
     this.attendanceService
       .saveAttendance(this.scholarId, this.allAttendanceRecords)
       .subscribe({
         next: () => {
-          this.isSaving = false;
-          this.hasUnsavedChanges = false;
-          this.cdr.markForCheck();
+          this.isSaving.set(false);
+          this.hasUnsavedChanges.set(false);
           this.notificationService.show('Attendance saved successfully!');
         },
         error: (err) => {
-          this.isSaving = false;
-          this.cdr.markForCheck();
-          console.error('Failed to save attendance:', err);
+          this.isSaving.set(false);
+          console.error('Failed to save attendance:', err.message);
           this.notificationService.show(
-            'Failed to save attendance. Check console for details.',
+            `Failed to save attendance. ${err.message}`,
             'error',
           );
         },
@@ -293,12 +283,11 @@ export class AttendancePerScholarComponent implements OnInit, OnDestroy {
   }
 
   exportCsv(): void {
-    const scholarName = this.scholar
-      ? `${this.scholar.firstName}_${this.scholar.lastName}`
-      : this.scholarId;
+    const scholar = this.scholar();
+    const scholarName = scholar ? `${scholar.firstName}_${scholar.lastName}` : this.scholarId;
 
     this.csvExportService.export(
-      `attendance_${scholarName}_${this.selectedMonth}`,
+      `attendance_${scholarName}_${this.selectedMonth()}`,
       [
         { header: 'Date', value: (r: AttendanceDayRow) => r.date },
         {
@@ -312,7 +301,7 @@ export class AttendancePerScholarComponent implements OnInit, OnDestroy {
         { header: 'Lunch Cost', value: (r: AttendanceDayRow) => r.record.lunchCost },
         { header: 'Transport Cost', value: (r: AttendanceDayRow) => r.record.transportCost },
       ],
-      this.dayRows,
+      this.dayRows(),
     );
   }
 }

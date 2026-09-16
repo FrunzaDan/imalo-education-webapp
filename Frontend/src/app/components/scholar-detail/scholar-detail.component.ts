@@ -15,10 +15,9 @@ import { of } from 'rxjs';
 
 @Component({
   selector: 'app-scholar-detail',
-  standalone: true,
   imports: [DatePipe, TitleCasePipe, RouterModule],
   templateUrl: './scholar-detail.component.html',
-  styleUrls: ['./scholar-detail.component.css'],
+  styleUrl: './scholar-detail.component.css',
 })
 export class ScholarDetailComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);

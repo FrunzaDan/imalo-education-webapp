@@ -9,9 +9,9 @@ namespace ImaloEducationApi.Controllers;
 public class ScholarsController : ControllerBase
 {
     private readonly ILogger<ScholarsController> _logger;
-    private readonly ScholarDataAccess _scholarDataAccess;
+    private readonly IScholarDataAccess _scholarDataAccess;
 
-    public ScholarsController(ScholarDataAccess scholarDataAccess, ILogger<ScholarsController> logger)
+    public ScholarsController(IScholarDataAccess scholarDataAccess, ILogger<ScholarsController> logger)
     {
         _scholarDataAccess = scholarDataAccess;
         _logger = logger;

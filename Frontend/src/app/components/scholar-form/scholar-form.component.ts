@@ -18,7 +18,6 @@ import { NotificationService } from '../../services/notification.service';
 // flows the same School dropdown and error handling.
 @Component({
   selector: 'app-scholar-form',
-  standalone: true,
   imports: [ReactiveFormsModule, RouterModule],
   templateUrl: './scholar-form.component.html',
   styleUrl: './scholar-form.component.css',

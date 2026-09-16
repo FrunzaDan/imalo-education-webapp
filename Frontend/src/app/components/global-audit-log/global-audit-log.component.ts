@@ -8,10 +8,9 @@ import { GlobalAuditLogEntry } from '../../interfaces/global-audit-log-entry';
 
 @Component({
   selector: 'app-global-audit-log',
-  standalone: true,
   imports: [DatePipe],
   templateUrl: './global-audit-log.component.html',
-  styleUrls: ['./global-audit-log.component.css'],
+  styleUrl: './global-audit-log.component.css',
 })
 export class GlobalAuditLogComponent implements OnInit {
   private readonly globalAuditLogService = inject(GlobalAuditLogService);

@@ -10,7 +10,7 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 // Custom Services
-builder.Services.AddScoped<ScholarDataAccess>();
+builder.Services.AddScoped<IScholarDataAccess, ScholarDataAccess>();
 builder.Services.AddSingleton<AppLogger>();
 
 // Health checks (liveness only — no DB probe)

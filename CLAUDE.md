@@ -9,6 +9,8 @@ Then check `/workspace/ai_docs/todo.md` and any relevant concept doc before expl
 ## Project context
 
 - Full context: see `ai_docs/index.md` and `ai_docs/learning_approach.md`
+- Build the app via `./build.sh` in the repo root
+- Run the app via `./run.sh` in the repo root
 
 ## When documenting a new concept
 

@@ -1,5 +1,5 @@
 import { NgStyle } from '@angular/common';
-import { Component, OnInit, computed, signal } from '@angular/core';
+import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { TimeSlot } from '../../interfaces/time-slot';
 import { Scholar } from '../../interfaces/scholar';
 import { School } from '../../interfaces/school';
@@ -17,12 +17,14 @@ interface GanttCell {
 
 @Component({
   selector: 'app-gantt-chart',
-  standalone: true,
   imports: [NgStyle],
   templateUrl: './gantt-chart.component.html',
-  styleUrls: ['./gantt-chart.component.css'],
+  styleUrl: './gantt-chart.component.css',
 })
 export class GanttChartComponent implements OnInit {
+  private readonly scholarsService = inject(ScholarsService);
+  private readonly schoolsService = inject(SchoolsService);
+
   scholars = signal<Scholar[]>([]);
   schools = new Map<string, School>();
   timeSlots: TimeSlot[] = [];
@@ -68,11 +70,6 @@ export class GanttChartComponent implements OnInit {
 
     return map;
   });
-
-  constructor(
-    private scholarsService: ScholarsService,
-    private schoolsService: SchoolsService,
-  ) {}
 
   ngOnInit(): void {
     this.initializeTimeSlots();

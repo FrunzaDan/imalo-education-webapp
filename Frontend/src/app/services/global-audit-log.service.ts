@@ -4,6 +4,7 @@ import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
 import { GlobalAuditLogEntry } from '../interfaces/global-audit-log-entry';
 import { PagedResponse } from '../interfaces/paged-response';
+import { extractHttpErrorMessage } from '../utils/http-error';
 
 export interface LoadAllAuditLogParams {
   pageNumber: number;
@@ -54,19 +55,12 @@ export class GlobalAuditLogService {
           this.state.update((state) => ({
             ...state,
             loading: false,
-            error: this.extractErrorMessage(error),
+            error: extractHttpErrorMessage(error),
           })),
       });
   }
 
   clearAuditLog(): Observable<void> {
     return this.http.delete<void>(this.API_URL);
-  }
-
-  private extractErrorMessage(error: HttpErrorResponse): string {
-    if (error.status === 0) {
-      return 'Could not reach the server. It may be offline.';
-    }
-    return error.error?.message ?? `Request failed (${error.status}). Please try again.`;
   }
 }

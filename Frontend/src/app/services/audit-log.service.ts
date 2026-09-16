@@ -2,6 +2,7 @@ import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { computed, Injectable, signal } from '@angular/core';
 import { environment } from '../../environments/environment';
 import { AuditLogEntry } from '../interfaces/audit-log-entry';
+import { extractHttpErrorMessage } from '../utils/http-error';
 
 @Injectable({ providedIn: 'root' })
 export class AuditLogService {
@@ -29,15 +30,8 @@ export class AuditLogService {
           this.state.update((state) => ({
             ...state,
             loading: false,
-            error: this.extractErrorMessage(error),
+            error: extractHttpErrorMessage(error),
           })),
       });
-  }
-
-  private extractErrorMessage(error: HttpErrorResponse): string {
-    if (error.status === 0) {
-      return 'Could not reach the server. It may be offline.';
-    }
-    return error.error?.message ?? `Request failed (${error.status}). Please try again.`;
   }
 }
