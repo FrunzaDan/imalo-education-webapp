@@ -1,0 +1,39 @@
+@if (state(); as s) {
+<div
+  class="confirm-modal-overlay"
+  [class.closing]="closing()"
+  (click)="cancel()"
+>
+  <div
+    class="confirm-modal-card"
+    [class.closing]="closing()"
+    [class.confirm-modal-card-danger]="s.variant === 'danger'"
+    role="alertdialog"
+    aria-modal="true"
+    [attr.aria-label]="s.title ?? s.message"
+    (click)="$event.stopPropagation()"
+  >
+    @if (s.title) {
+    <h3 class="confirm-modal-title">{{ s.title }}</h3>
+    }
+    <p class="confirm-modal-message">{{ s.message }}</p>
+    <div class="confirm-modal-actions">
+      <button
+        type="button"
+        class="confirm-modal-btn confirm-modal-btn-cancel"
+        (click)="cancel()"
+      >
+        {{ s.cancelText }}
+      </button>
+      <button
+        type="button"
+        class="confirm-modal-btn confirm-modal-btn-confirm"
+        [class.confirm-modal-btn-danger]="s.variant === 'danger'"
+        (click)="confirm()"
+      >
+        {{ s.confirmText }}
+      </button>
+    </div>
+  </div>
+</div>
+}

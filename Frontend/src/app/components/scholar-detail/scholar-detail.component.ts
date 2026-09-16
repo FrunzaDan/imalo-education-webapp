@@ -4,6 +4,7 @@ import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { ScholarsService } from '../../services/scholars.service';
 import { SchoolsService } from '../../services/schools.service';
 import { NotificationService } from '../../services/notification.service';
+import { ConfirmModalService } from '../../services/confirm-modal.service';
 import { AuditLogService } from '../../services/audit-log.service';
 import { Scholar } from '../../interfaces/scholar';
 import { School } from '../../interfaces/school';
@@ -25,6 +26,7 @@ export class ScholarDetailComponent implements OnInit {
   private readonly schoolsService = inject(SchoolsService);
   private readonly router = inject(Router);
   private readonly notificationService = inject(NotificationService);
+  private readonly confirmModalService = inject(ConfirmModalService);
   private readonly auditLogService = inject(AuditLogService);
 
   scholar = signal<Scholar | null>(null);
@@ -97,13 +99,15 @@ export class ScholarDetailComponent implements OnInit {
     this.router.navigate(['/scholars/update', scholar.id]);
   }
 
-  deleteScholar(): void {
+  async deleteScholar(): Promise<void> {
     const scholar = this.scholar();
     if (!scholar?.id) return;
 
-    if (!confirm(`Are you sure you want to delete ${scholar.firstName} ${scholar.lastName}?`)) {
-      return;
-    }
+    const confirmed = await this.confirmModalService.confirm(
+      `Are you sure you want to delete ${scholar.firstName} ${scholar.lastName}?`,
+      { title: 'Delete scholar', confirmText: 'Delete', variant: 'danger' },
+    );
+    if (!confirmed) return;
 
     this.scholarsService.deleteScholar(scholar.id).subscribe({
       next: () => {

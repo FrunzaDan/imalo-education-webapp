@@ -4,6 +4,7 @@ import { SchoolsService } from '../../services/schools.service';
 import { SortingService } from '../../services/sorting.service';
 import { CsvExportService } from '../../services/csv-export.service';
 import { NotificationService } from '../../services/notification.service';
+import { ConfirmModalService } from '../../services/confirm-modal.service';
 import { Scholar } from '../../interfaces/scholar';
 import { School } from '../../interfaces/school';
 import { NgStyle } from '@angular/common';
@@ -46,6 +47,7 @@ export class ScholarTableComponent implements OnInit {
     private sortingService: SortingService,
     private csvExportService: CsvExportService,
     private notificationService: NotificationService,
+    private confirmModalService: ConfirmModalService,
   ) {}
 
   ngOnInit(): void {
@@ -173,18 +175,16 @@ export class ScholarTableComponent implements OnInit {
     this.selectedIds.set(next);
   }
 
-  bulkDeleteSelected(): void {
+  async bulkDeleteSelected(): Promise<void> {
     if (this.selectedIds().size === 0 || this.bulkDeleteInProgress()) return;
 
     const ids = Array.from(this.selectedIds());
-    if (
-      !confirm(
-        `Are you sure you want to delete ${ids.length} scholar${ids.length === 1 ? '' : 's'}? ` +
-          `This also deletes their pickup schedule and attendance records. This cannot be undone.`,
-      )
-    ) {
-      return;
-    }
+    const confirmed = await this.confirmModalService.confirm(
+      `Are you sure you want to delete ${ids.length} scholar${ids.length === 1 ? '' : 's'}? ` +
+        `This also deletes their pickup schedule and attendance records. This cannot be undone.`,
+      { title: 'Delete scholars', confirmText: 'Delete', variant: 'danger' },
+    );
+    if (!confirmed) return;
 
     this.bulkDeleteInProgress.set(true);
 

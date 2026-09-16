@@ -1,0 +1,124 @@
+.confirm-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1090;
+  padding: 1rem;
+  animation: confirm-overlay-fade-in 0.5s ease-out forwards;
+}
+
+.confirm-modal-overlay.closing {
+  animation: confirm-overlay-fade-out 1s ease-in forwards;
+}
+
+.confirm-modal-card {
+  background-color: #fff;
+  border-radius: 12px;
+  padding: 1.5rem;
+  width: 100%;
+  max-width: 420px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+  animation: confirm-card-zoom-in 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+.confirm-modal-card.closing {
+  animation: confirm-card-zoom-out 1s ease-in forwards;
+}
+
+.confirm-modal-title {
+  margin: 0 0 0.5rem;
+  color: #165b58;
+  font-size: 1.15rem;
+}
+
+.confirm-modal-message {
+  margin: 0 0 1.25rem;
+  color: #333;
+  line-height: 1.4;
+}
+
+.confirm-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+}
+
+.confirm-modal-btn {
+  padding: 0.5rem 1.1rem;
+  border-radius: 8px;
+  border: 2px solid transparent;
+  font-family: inherit;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.confirm-modal-btn-cancel {
+  background-color: transparent;
+  border-color: #165b58;
+  color: #165b58;
+}
+
+.confirm-modal-btn-cancel:hover {
+  background-color: rgba(22, 91, 88, 0.08);
+}
+
+.confirm-modal-btn-confirm {
+  background-color: #165b58;
+  color: #fff;
+}
+
+.confirm-modal-btn-confirm:hover {
+  background-color: #124b48;
+}
+
+.confirm-modal-btn-confirm.confirm-modal-btn-danger {
+  background-color: #dc2626;
+}
+
+.confirm-modal-btn-confirm.confirm-modal-btn-danger:hover {
+  background-color: #b91c1c;
+}
+
+@keyframes confirm-overlay-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes confirm-overlay-fade-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes confirm-card-zoom-in {
+  from {
+    transform: scale(0.7);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes confirm-card-zoom-out {
+  from {
+    transform: scale(1);
+    opacity: 1;
+  }
+  to {
+    transform: scale(0.7);
+    opacity: 0;
+  }
+}

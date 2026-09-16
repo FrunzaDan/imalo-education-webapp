@@ -3,6 +3,7 @@ import { DatePipe } from '@angular/common';
 import { Router } from '@angular/router';
 import { GlobalAuditLogService } from '../../services/global-audit-log.service';
 import { NotificationService } from '../../services/notification.service';
+import { ConfirmModalService } from '../../services/confirm-modal.service';
 import { GlobalAuditLogEntry } from '../../interfaces/global-audit-log-entry';
 
 @Component({
@@ -16,6 +17,7 @@ export class GlobalAuditLogComponent implements OnInit {
   private readonly globalAuditLogService = inject(GlobalAuditLogService);
   private readonly router = inject(Router);
   private readonly notificationService = inject(NotificationService);
+  private readonly confirmModalService = inject(ConfirmModalService);
 
   readonly entries = this.globalAuditLogService.entries;
   readonly loading = this.globalAuditLogService.loading;
@@ -59,10 +61,12 @@ export class GlobalAuditLogComponent implements OnInit {
     return entry.auditId;
   }
 
-  clearAuditLog(): void {
-    if (!confirm('Are you sure you want to permanently delete the entire audit log?')) {
-      return;
-    }
+  async clearAuditLog(): Promise<void> {
+    const confirmed = await this.confirmModalService.confirm(
+      'Are you sure you want to permanently delete the entire audit log?',
+      { title: 'Delete audit log', confirmText: 'Delete', variant: 'danger' },
+    );
+    if (!confirmed) return;
 
     this.clearing.set(true);
     this.globalAuditLogService.clearAuditLog().subscribe({

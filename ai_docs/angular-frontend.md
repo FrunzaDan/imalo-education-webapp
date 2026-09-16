@@ -62,6 +62,8 @@ Angular 22 standalone-component app, zoneless change detection, SSR via `@angula
 
 **NotFoundComponent** (`not-found/`) — wildcard (`**`) route target, static link back.
 
+**ConfirmModalComponent** (`confirm-modal/`) — global confirm-dialog host (rendered once, in `app.ts`, alongside `NotificationComponent`), driven by `ConfirmModalService.state`/`closing` signals. Replaces native `confirm()`. Dimmed overlay + centered card; opens with a 0.5s scale(0.7→1)-with-overshoot + fade-in (`cubic-bezier(0.34, 1.56, 0.64, 1)`), closes with a 1s reverse zoom-out/fade-out. Backdrop click and Escape both cancel.
+
 ## Services
 
 - **`ScholarsService`** — CRUD over `{baseUrlScholars}` (`GET`/`POST`/`PUT /{id}`/`DELETE /{id}`, matching `ScholarsController`). Shared `handleError` extracts the API's validation-dict or message into a thrown `Error`. No caching, no signal state.
@@ -72,6 +74,7 @@ Angular 22 standalone-component app, zoneless change detection, SSR via `@angula
 - **`SortingService`** — generic `sort<T>(data, column, type: 'string'|'number'|'date', isAscending)`; nulls always sort to the "outside" regardless of direction. Shared by `ScholarTableComponent` and `AttendanceComponent`.
 - **`CsvExportService`** — pure client-side CSV building + Blob download (`export<T>(filenamePrefix, columns, rows)`), timestamped filename. No export API endpoint exists server-side — every table already holds its full dataset in memory.
 - **`NotificationService`** — signal-backed toast list (`show(message, type, durationMs=3000)`, auto-dismiss + manual `dismiss(id)`). Used everywhere instead of `alert()`.
+- **`ConfirmModalService`** — signal-backed (`state`/`closing`) replacement for native `confirm()`. `confirm(message, options?): Promise<boolean>` resolves as soon as the user picks an option (callers `await` it, e.g. `deleteScholar()` in `ScholarDetailComponent`, `clearAuditLog()` in `GlobalAuditLogComponent`, `bulkDeleteSelected()` in `ScholarTableComponent`); `respond(result)` sets `closing` and defers clearing `state` for 1s so `ConfirmModalComponent` can play its closing animation.
 - **`HealthService`** — `checkApiHealth()` (GET `/health`, maps HTTP ok→bool), `pollApiHealth()` (`timer(0, 15000)` + `switchMap`). Consumed only by `app.ts`, browser-only.
 - **`ApiLoggerService`** + **`apiLoggerInterceptor`** — toggle (persisted to `localStorage`, default on) that makes every HTTP request/response/error print to the browser console (color-coded), skipped entirely during SSR.
 
@@ -87,3 +90,4 @@ Mirror the API's C# models 1:1 (see [[api]]): `Scholar`, `PickUpSchedule` (optio
 - All 11 routes are lazy (`loadComponent`) — adding a new route should follow the same pattern rather than an eager `component:` reference, to keep the initial bundle from growing.
 - `GanttChartComponent`'s per-cell lookup map (`cellsByKey`) must stay a `computed()` keyed off `scholars()` — recomputing style/label inline per template call again would reintroduce the O(days × scholars × slots) per-change-detection cost it was written to eliminate.
 - `NotificationService.show(...)`, not `alert()` — every component that used to call `alert()` has been migrated; keep new user-facing feedback consistent with that.
+- `ConfirmModalService.confirm(...)`, not `confirm()` — every component that used to call native `confirm()` has been migrated to `await` this instead. It's async (a real modal, not a blocking dialog), so callers that use it need an `async` handler method.

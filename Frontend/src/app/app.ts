@@ -12,11 +12,12 @@ import { Subscription } from 'rxjs';
 import { environment } from '../environments/environment';
 import { NavbarComponent } from './components/navbar/navbar.component';
 import { NotificationComponent } from './components/notification/notification.component';
+import { ConfirmModalComponent } from './components/confirm-modal/confirm-modal.component';
 import { HealthService } from './services/health.service';
 
 @Component({
   selector: 'app-root',
-  imports: [NavbarComponent, NotificationComponent, RouterOutlet],
+  imports: [NavbarComponent, NotificationComponent, ConfirmModalComponent, RouterOutlet],
   templateUrl: './app.html',
   styleUrl: './app.css',
 })
