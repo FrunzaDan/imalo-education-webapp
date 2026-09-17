@@ -7,15 +7,15 @@
     (input)="onSearchTermChange($any($event.target).value)"
     aria-label="Search scholars by name"
   />
-  <button [routerLink]="['/create-scholar']" class="app-button">
+  <button [routerLink]="['/create-scholar']" class="app-button app-button--accent">
     Create Scholar
   </button>
-  <button type="button" class="app-button" (click)="exportCsv()">
+  <button type="button" class="app-button app-button--ghost" (click)="exportCsv()">
     Export CSV
   </button>
   <button
     type="button"
-    class="app-button scholar-table-toolbar__delete"
+    class="app-button app-button--danger"
     [disabled]="selectedIds().size === 0 || bulkDeleteInProgress()"
     (click)="bulkDeleteSelected()"
   >

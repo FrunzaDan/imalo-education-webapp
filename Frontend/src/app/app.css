@@ -3,21 +3,22 @@
   margin: 40px auto;
   padding: 24px;
   background-color: #fff;
-  border: 1px solid #e0e0e0;
+  border: 1px solid rgba(var(--cyan-main-color-for-alpha), 0.15);
+  border-top: 4px solid var(--orange-main-color);
   border-radius: 12px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   text-align: center;
-  color: #333;
-  font-family: 'Segoe UI', sans-serif;
+  color: var(--dark-main-color);
+  font-family: inherit;
 }
 
 .api-down-card h2 {
-  color: #dc2626; /* red warning color */
+  color: var(--orange-main-color);
   margin-bottom: 12px;
 }
 
 .api-down-card code {
-  background-color: #f1f5f9;
+  background-color: var(--light-main-color);
   padding: 4px 8px;
   border-radius: 4px;
   font-size: 0.95rem;

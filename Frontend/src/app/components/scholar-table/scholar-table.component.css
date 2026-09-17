@@ -7,6 +7,7 @@
   align-items: center;
   flex-wrap: wrap;
   gap: 0.5rem;
+  padding: 1rem 0;
 }
 
 .scholar-table-toolbar__search {
@@ -16,17 +17,4 @@
   flex: 1 1 240px;
   max-width: 320px;
   margin-bottom: 0;
-}
-
-.scholar-table-toolbar__delete {
-  background-color: #b91c1c;
-}
-
-.scholar-table-toolbar__delete:hover:not(:disabled) {
-  background-color: #7f1414;
-}
-
-.scholar-table-toolbar__delete:disabled {
-  background-color: #c9b3b3;
-  cursor: not-allowed;
 }

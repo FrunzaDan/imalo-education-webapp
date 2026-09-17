@@ -13,7 +13,7 @@
       (change)="onMonthChange($event)"
       class="controls__month-input"
     />
-    <button type="button" class="app-button" (click)="exportCsv()">
+    <button type="button" class="app-button app-button--ghost" (click)="exportCsv()">
       Export CSV
     </button>
   </div>
@@ -131,7 +131,7 @@
   <div class="attendance-container__save-bar">
     <button
       type="button"
-      class="app-button"
+      class="app-button app-button--accent"
       [disabled]="isSaving()"
       (click)="save()"
     >

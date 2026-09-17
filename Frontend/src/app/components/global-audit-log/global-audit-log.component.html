@@ -3,7 +3,7 @@
 <div class="audit-log-toolbar">
   <button
     type="button"
-    class="app-button audit-log-clear-button"
+    class="app-button app-button--danger"
     [disabled]="clearing() || loading() || totalItems() === 0"
     (click)="clearAuditLog()"
   >

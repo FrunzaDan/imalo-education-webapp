@@ -2,34 +2,48 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background-color: #165b59;
-  padding: 0.5rem 1rem;
-  font-family: "Roboto", sans-serif;
-  color: white;
+  background-color: var(--cyan-dark-color);
+  padding: 1rem;
+  font-family: inherit;
+  color: var(--light-main-color);
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   border-radius: 12px;
 }
 
 .navbar-brand {
-  font-size: 1.5rem;
-  font-weight: 500;
+  font-size: 2rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
 }
 
 .navbar-links {
   list-style: none;
   display: flex;
-  gap: 1.5rem;
+  gap: 0.25rem;
   margin: 0;
   padding: 0;
 }
 
 .nav-link {
+  display: inline-block;
   text-decoration: none;
-  color: white;
-  font-weight: 400;
-  transition: color 0.3s ease;
+  color: rgba(var(--cyan-light-color-for-alpha), 0.85);
+  font-weight: 500;
+  padding: 0.4rem 0.75rem;
+  border-radius: 8px;
+  border-bottom: 2px solid transparent;
+  transition:
+    color 0.2s ease,
+    background-color 0.2s ease;
 }
 
 .nav-link:hover {
-  color: #d4edda;
+  color: var(--light-main-color);
+  background-color: rgba(var(--cyan-light-color-for-alpha), 0.14);
+}
+
+.nav-link.active {
+  color: var(--light-main-color);
+  background-color: rgba(255, 255, 255, 0.12);
+  border-bottom-color: var(--orange-main-color);
 }

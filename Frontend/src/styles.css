@@ -1,3 +1,47 @@
+:root {
+  /* Tidepool palette */
+  --cyan-main-color: #00acb9;
+  --cyan-main-color-for-alpha: 0, 172, 185;
+  --cyan-darker-color: #1e817f;
+  --cyan-darker-color-for-alpha: 30, 129, 127;
+  --cyan-light-color: #3cd0e1;
+  --cyan-light-color-for-alpha: 60, 208, 225;
+  --cyan-dark-color: #155b5a;
+  --orange-main-color: #ffa726;
+  --orange-main-color-for-alpha: 255, 176, 38;
+  --orange-light-color: #ffb347;
+  --orange-light-color-for-alpha: 255, 179, 71;
+  --light-main-color: #fdf1e8;
+  --dark-main-color: #394546;
+  --primary-font: 'Main', sans-serif;
+
+  --bs-breakpoint-xs: 0;
+  --bs-breakpoint-sm: 576px;
+  --bs-breakpoint-md: 768px;
+  --bs-breakpoint-lg: 992px;
+  --bs-breakpoint-xl: 1200px;
+  --bs-breakpoint-xxl: 1400px;
+
+  --bs-body-font-size: 1rem;
+  --bs-body-font-weight: 400;
+  --bs-body-line-height: 1.5;
+  --bs-body-color: #212529;
+  --bs-body-color-rgb: 33, 37, 41;
+  --bs-body-bg: #fff;
+}
+
+@font-face {
+  font-family: 'Main';
+  src: url('/assets/fonts/Lora-Medium.ttf');
+}
+
+body {
+  padding: 0.2rem;
+  font-family: var(--primary-font);
+  background-color: var(--light-main-color);
+  color: var(--dark-main-color);
+}
+
 /* General Button Style */
 .app-button {
   display: inline-block; /* Allows padding and margin, and centers text */
@@ -5,16 +49,19 @@
   margin-bottom: 6px;
   padding: 10px 20px;
   margin-right: 8px;
-  background-color: #165b58; /* Dark teal background */
-  color: white; /* White text */
+  background-color: var(--cyan-dark-color);
+  color: var(--light-main-color);
   border: none; /* Remove default border */
   border-radius: 8px; /* Rounded edges */
   cursor: pointer; /* Indicate it's clickable */
+  font-family: inherit;
   font-size: 16px;
   font-weight: 600;
   text-align: center;
   text-decoration: none; /* Remove underline for routerLink buttons */
-  transition: background-color 0.3s ease, transform 0.2s ease,
+  transition:
+    filter 0.2s ease,
+    transform 0.2s ease,
     box-shadow 0.3s ease; /* Smooth transitions for effects */
   -webkit-appearance: none; /* Remove default button styles for cross-browser consistency */
   -moz-appearance: none;
@@ -23,14 +70,16 @@
 
 /* Hover Effect */
 .app-button:hover {
-  background-color: #114543; /* Slightly darker teal on hover */
+  filter: brightness(
+    0.88
+  ); /* Darken the current background a step, whatever it is */
   transform: translateY(-2px); /* Lift button slightly */
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2); /* Soft shadow for depth */
 }
 
 /* Active/Click Effect */
 .app-button:active {
-  background-color: #0c302e; /* Even darker teal when clicked */
+  filter: brightness(0.75); /* Darken further when clicked */
   transform: translateY(0); /* Press button down */
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); /* Smaller shadow when pressed */
 }
@@ -38,7 +87,61 @@
 /* Focus State (for keyboard navigation accessibility) */
 .app-button:focus {
   outline: none; /* Remove default focus outline */
-  box-shadow: 0 0 0 3px rgba(22, 91, 88, 0.5); /* Custom focus ring */
+  box-shadow: 0 0 0 3px rgba(var(--cyan-light-color-for-alpha), 0.5); /* Custom focus ring */
+}
+
+.app-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+/* Accent variant: the one primary call-to-action per page (create, save) */
+.app-button--accent {
+  background-color: var(--orange-main-color);
+  color: var(--dark-main-color);
+}
+
+.app-button--accent:hover {
+  filter: none;
+  background-color: var(--orange-light-color);
+}
+
+.app-button--accent:focus {
+  box-shadow: 0 0 0 3px rgba(var(--orange-main-color-for-alpha), 0.4);
+}
+
+/* Ghost variant: secondary utility actions (export, navigate) */
+.app-button--ghost {
+  background-color: rgba(var(--cyan-main-color-for-alpha), 0.1);
+  color: var(--cyan-darker-color);
+}
+
+.app-button--ghost:hover {
+  filter: none;
+  background-color: rgba(var(--cyan-main-color-for-alpha), 0.18);
+  box-shadow: none;
+}
+
+/* Danger variant: destructive actions. The palette has no red, so
+   destructive actions are told apart by shape (outline) rather than hue. */
+.app-button--danger {
+  background-color: transparent;
+  color: var(--dark-main-color);
+  border: 1.5px solid var(--dark-main-color);
+  padding: 8.5px 18.5px; /* minus the border width, to match solid buttons */
+}
+
+.app-button--danger:hover {
+  filter: none;
+  background-color: var(--dark-main-color);
+  color: var(--light-main-color);
+}
+
+.app-button--danger:disabled {
+  border-color: rgba(var(--cyan-darker-color-for-alpha), 0.35);
+  color: rgba(var(--cyan-darker-color-for-alpha), 0.35);
 }
 
 /* General Input Style */
@@ -48,42 +151,43 @@
   margin-bottom: 6px;
   font-size: 16px;
   font-weight: 400;
-  color: #165b58;
-  background-color: #f7faf9; /* Very light teal-ish background */
-  border: 2px solid #7fafa9; /* Soft teal border */
+  color: var(--dark-main-color);
+  background-color: var(--light-main-color);
+  border: 2px solid rgba(var(--cyan-main-color-for-alpha), 0.5); /* Soft lagoon border */
   border-radius: 8px;
   box-sizing: border-box;
-  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+  transition:
+    border-color 0.3s ease,
+    box-shadow 0.3s ease;
   font-family: inherit;
   appearance: none;
 }
 
 /* Placeholder text */
 .app-input::placeholder {
-  color: #a7c4bf;
+  color: rgba(var(--cyan-darker-color-for-alpha), 0.6);
   font-style: italic;
 }
 
 /* Focus State */
 .app-input:focus {
   outline: none;
-  border-color: #165b58;
-  box-shadow: 0 0 0 3px rgba(22, 91, 88, 0.3);
-  background-color: #ecf7f6; /* Slightly lighter on focus */
+  border-color: var(--cyan-main-color);
+  box-shadow: 0 0 0 3px rgba(var(--cyan-main-color-for-alpha), 0.3);
 }
 
 /* Disabled State */
 .app-input:disabled {
-  background-color: #e0e6e5;
-  color: #8a9a97;
+  opacity: 0.55;
   cursor: not-allowed;
 }
 
-/* Error State */
+/* Error State: the palette has no red, so validation issues are told
+   apart with the warm orange accent instead of a semantic danger color. */
 .app-input.error {
-  border-color: #dc2626; /* Red border for error */
-  box-shadow: 0 0 5px 1px rgba(220, 38, 38, 0.5);
-  background-color: #fdecea; /* Light red background */
+  border-color: var(--orange-main-color);
+  box-shadow: 0 0 5px 1px rgba(var(--orange-main-color-for-alpha), 0.5);
+  background-color: rgba(var(--orange-main-color-for-alpha), 0.08);
 }
 
 /* Label Style */
@@ -92,16 +196,16 @@
   margin-bottom: 6px;
   font-size: 1rem;
   font-weight: 600;
-  color: #165b58; /* Primary teal */
+  color: var(--cyan-dark-color);
   letter-spacing: 0.3px;
 }
 
 .app-label.error {
-  color: #dc2626; /* Red for errors */
+  color: var(--orange-main-color);
 }
 
 .app-error-message {
-  color: #dc2626; /* Red color for error text */
+  color: var(--orange-main-color);
   font-size: 0.875rem;
   margin-top: 4px;
   margin-bottom: 8px;
@@ -110,8 +214,9 @@
 .create-update-scholar-page {
   margin: 4rem;
   padding: 2rem;
-  border: 2px solid #165b58;
+  border: 2px solid var(--cyan-dark-color);
   border-radius: 1rem;
+  background-color: #ffffff;
 }
 
 .create-update-scholar-entry {
@@ -122,17 +227,18 @@
 .app-table {
   width: 100%;
   border-collapse: collapse;
-  margin: 20px 0;
-  font-family: Arial, sans-serif;
+  margin: 2rem 0;
+  font-family: inherit;
   border-radius: 12px;
   overflow: hidden;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-  border: 2px solid #04abb9;
+  border: 2px solid var(--cyan-main-color);
+  background-color: #ffffff;
 }
 
 .table-header {
-  background-color: #165b59;
-  color: white;
+  background-color: var(--cyan-dark-color);
+  color: var(--light-main-color);
   padding: 12px 15px;
   text-align: left;
   font-weight: bold;
@@ -146,7 +252,7 @@
   display: inline-block;
   margin-left: 8px;
   font-size: 0.8em;
-  color: #fff;
+  color: var(--light-main-color);
 }
 
 .sort-icon span {
@@ -161,12 +267,12 @@
 }
 
 .table-row {
-  background-color: #f9f9f9;
-  border-bottom: 1px solid #ddd;
+  background-color: #ffffff;
+  border-bottom: 1px solid rgba(var(--cyan-main-color-for-alpha), 0.15);
 }
 
 .table-row:hover {
-  background-color: #f1f1f1;
+  background-color: rgba(var(--cyan-main-color-for-alpha), 0.08);
 }
 
 .table-cell {
@@ -175,7 +281,7 @@
 }
 
 .table-row:nth-child(even) {
-  background-color: #f2f2f2;
+  background-color: var(--light-main-color);
 }
 
 @media screen and (max-width: 600px) {
@@ -193,5 +299,6 @@
   text-align: center;
   margin-top: 2rem;
   font-style: italic;
-  color: #666;
+  color: var(--dark-main-color);
+  opacity: 0.65;
 }

@@ -3,5 +3,5 @@
 .parent-subheading {
   margin: 0 0 0.4rem;
   font-weight: 600;
-  color: #165b58;
+  color: var(--cyan-dark-color);
 }

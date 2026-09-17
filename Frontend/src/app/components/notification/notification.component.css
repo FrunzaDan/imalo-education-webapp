@@ -17,18 +17,21 @@
   gap: 0.75rem;
   padding: 0.75rem 1rem;
   border-radius: 8px;
-  color: #fff;
+  color: var(--light-main-color);
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
   animation: notification-slide-in 0.2s ease-out;
   pointer-events: auto;
 }
 
 .notification-success {
-  background-color: #165b58;
+  background-color: var(--cyan-dark-color);
 }
 
+/* No red in the palette: an error toast uses the warm orange accent,
+   with ink text since orange is too light for light-colored text. */
 .notification-error {
-  background-color: #dc2626;
+  background-color: var(--orange-main-color);
+  color: var(--dark-main-color);
 }
 
 .notification-close {

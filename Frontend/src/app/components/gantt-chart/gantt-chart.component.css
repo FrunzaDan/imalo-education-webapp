@@ -1,7 +1,7 @@
 .gantt-container {
-  background-color: #f9f9fb;
+  background-color: #ffffff;
   border-radius: 12px;
-  border: 2px solid #04abb9;
+  border: 2px solid var(--cyan-main-color);
   overflow-x: auto;
   margin-top: 1rem;
   margin-bottom: 1rem;
@@ -12,16 +12,17 @@
 .gantt-chart {
   display: flex;
   flex-direction: column;
-  font-family: "Roboto", sans-serif;
+  font-family: inherit;
 }
 
 .gantt-header {
   display: grid;
   grid-template-columns: 150px repeat(16, minmax(60px, 1fr));
-  background-color: #fafafa;
-  border-bottom: 2px solid #165b59;
+  background-color: var(--light-main-color);
+  border-bottom: 2px solid var(--cyan-dark-color);
   font-weight: 600;
-  color: #333;
+  color: var(--dark-main-color);
+  border-top: 2px solid var(--cyan-main-color);
 }
 
 .gantt-row {
@@ -33,10 +34,10 @@
 .name-cell {
   padding: 0.5rem;
   text-align: left;
-  background-color: #f9f9fb;
-  border-right: 2px solid #165b59;
+  background-color: var(--light-main-color);
+  border-right: 2px solid var(--cyan-dark-color);
   font-weight: bold;
-  color: #165b59;
+  color: var(--cyan-dark-color);
   display: flex;
   align-items: center;
 }
@@ -44,14 +45,15 @@
 .time-slot {
   text-align: center;
   font-size: 0.7rem;
-  color: #666;
+  color: var(--dark-main-color);
+  opacity: 0.85;
   position: relative;
   background-color: #ffffff;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-right: 1px solid #eaeaea;
-  border-bottom: 1px solid #eaeaea;
+  border-right: 1px solid rgba(var(--cyan-main-color-for-alpha), 0.15);
+  border-bottom: 1px solid rgba(var(--cyan-main-color-for-alpha), 0.15);
   white-space: pre-line;
 }
 
@@ -60,8 +62,8 @@
   top: -30px;
   left: 50%;
   transform: translateX(-50%);
-  background: #333;
-  color: #fff;
+  background: var(--dark-main-color);
+  color: var(--light-main-color);
   padding: 0.5rem;
   border-radius: 6px;
   font-size: 0.8rem;
@@ -74,12 +76,13 @@
 }
 
 .time-slot:hover .schedule-tooltip {
-  opacity: 0.8;
+  opacity: 0.95;
 }
 
 .gantt-day-title {
   text-align: center;
   padding: 0.2rem;
-  font-family: "Roboto", sans-serif;
-  color: #165b59;
+  font-family: inherit;
+  font-weight: 600;
+  color: var(--cyan-dark-color);
 }

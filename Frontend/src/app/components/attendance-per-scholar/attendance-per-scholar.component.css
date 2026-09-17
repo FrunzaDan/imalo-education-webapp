@@ -2,7 +2,7 @@
   max-width: 900px;
   margin: 2rem auto;
   padding: 1.5rem;
-  background-color: #fdfdfd;
+  background-color: #ffffff;
   border-radius: 12px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
 }
@@ -10,7 +10,7 @@
 .attendance-container__title {
   font-size: 1.8rem;
   margin-bottom: 1rem;
-  color: #333;
+  color: var(--cyan-dark-color);
 }
 
 .controls {
@@ -21,9 +21,11 @@
 
 .controls__month-input {
   padding: 6px 10px;
-  border: 2px solid #7fafa9;
+  border: 2px solid rgba(var(--cyan-main-color-for-alpha), 0.5);
   border-radius: 8px;
   font-size: 1rem;
+  font-family: inherit;
+  color: var(--dark-main-color);
 }
 
 .attendance-table {
@@ -36,34 +38,36 @@
 .attendance-table th,
 .attendance-table td {
   padding: 0.75rem 1rem;
-  border-bottom: 1px solid #e0e0e0;
+  border-bottom: 1px solid rgba(var(--cyan-main-color-for-alpha), 0.15);
   text-align: left;
 }
 
 .attendance-table thead th {
-  background-color: #f0f0f0;
+  background-color: var(--light-main-color);
+  color: var(--cyan-dark-color);
   font-weight: bold;
 }
 
 .attendance-table__muted {
-  color: #aaa;
+  color: rgba(var(--cyan-darker-color-for-alpha), 0.5);
 }
 
 .attendance-table__row--unsaved {
-  background-color: #fff8e6;
+  background-color: rgba(var(--orange-main-color-for-alpha), 0.12);
 }
 
 .attendance-table__total-row {
-  background-color: #fafafa;
+  background-color: var(--light-main-color);
   font-weight: bold;
 }
 
 .attendance-table__total-row td {
-  border-top: 2px solid #ccc;
+  border-top: 2px solid rgba(var(--cyan-main-color-for-alpha), 0.3);
 }
 
 .attendance-table__total-row--grand {
-  background-color: #eef7f6;
+  background-color: rgba(var(--cyan-main-color-for-alpha), 0.1);
+  color: var(--cyan-dark-color);
 }
 
 .attendance-container__save-bar {
@@ -74,7 +78,7 @@
 }
 
 .attendance-container__unsaved-note {
-  color: #b45309;
+  color: var(--orange-main-color);
   font-style: italic;
   font-size: 0.9rem;
 }

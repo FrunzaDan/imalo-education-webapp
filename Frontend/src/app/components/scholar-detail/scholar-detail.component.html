@@ -1,102 +1,132 @@
 @if (scholar(); as scholarValue) {
-<button
-  type="button"
-  class="app-button"
-  (click)="navigateToUpdateScholar()"
-  [disabled]="!scholarValue"
->
-  Edit Scholar
-</button>
-<button
-  type="button"
-  class="app-button delete-button"
-  (click)="deleteScholar()"
-  [disabled]="!scholarValue"
->
-  Delete Scholar
-</button>
+  <button
+    type="button"
+    class="app-button"
+    (click)="navigateToUpdateScholar()"
+    [disabled]="!scholarValue"
+  >
+    Edit Scholar
+  </button>
+  <button
+    type="button"
+    class="app-button app-button--danger"
+    (click)="deleteScholar()"
+    [disabled]="!scholarValue"
+  >
+    Delete Scholar
+  </button>
 
-<div class="scholar-detail-container">
-  <h2>{{ scholarValue.firstName }} {{ scholarValue.lastName }}</h2>
-  <div class="detail-card">
-    <p><strong>Grade:</strong> {{ scholarValue.grade }}</p>
-    <p>
-      <strong>Birth Date:</strong> {{ scholarValue.dateOfBirth | date : 'longDate' }}
-    </p>
-    <p><strong>School:</strong> {{ school()?.name || 'Unknown' }}</p>
-  </div>
-  @if (scholarValue.motherFirstName || scholarValue.motherLastName || scholarValue.motherPhoneNumber
-  || scholarValue.fatherFirstName || scholarValue.fatherLastName || scholarValue.fatherPhoneNumber) {
-  <div class="detail-card">
-    <h3>Parents</h3>
-    @if (scholarValue.motherFirstName || scholarValue.motherLastName || scholarValue.motherPhoneNumber) {
-    <p>
-      <strong>Mother:</strong>
-      {{ formatParent(scholarValue.motherFirstName, scholarValue.motherLastName, scholarValue.motherPhoneNumber) }}
-    </p>
-    }
-    @if (scholarValue.fatherFirstName || scholarValue.fatherLastName || scholarValue.fatherPhoneNumber) {
-    <p>
-      <strong>Father:</strong>
-      {{ formatParent(scholarValue.fatherFirstName, scholarValue.fatherLastName, scholarValue.fatherPhoneNumber) }}
-    </p>
-    }
-  </div>
-  }
-  @if (scholarValue.pickUpSchedule) {
-  <div class="pickup-schedule">
-    <h3>Pick-Up Schedule</h3>
-    <table>
-      <thead>
-        <tr>
-          <th>Day</th>
-          <th>Time</th>
-        </tr>
-      </thead>
-      <tbody>
-        @for (day of daysOfWeek; track day) {
-        <tr>
-          <td>{{ day | titlecase }}</td>
-          <td>{{ scholarValue.pickUpSchedule[day] }}</td>
-        </tr>
+  <button
+    [routerLink]="['/attendance', scholar()?.id]"
+    class="app-button app-button--ghost"
+  >
+    View Attendance
+  </button>
+
+  <div class="scholar-detail-container">
+    <h2>{{ scholarValue.firstName }} {{ scholarValue.lastName }}</h2>
+    <div class="detail-card">
+      <p><strong>Grade:</strong> {{ scholarValue.grade }}</p>
+      <p>
+        <strong>Birth Date:</strong>
+        {{ scholarValue.dateOfBirth | date: 'longDate' }}
+      </p>
+      <p><strong>School:</strong> {{ school()?.name || 'Unknown' }}</p>
+    </div>
+    @if (
+      scholarValue.motherFirstName ||
+      scholarValue.motherLastName ||
+      scholarValue.motherPhoneNumber ||
+      scholarValue.fatherFirstName ||
+      scholarValue.fatherLastName ||
+      scholarValue.fatherPhoneNumber
+    ) {
+      <div class="detail-card">
+        <h3>Parents</h3>
+        @if (
+          scholarValue.motherFirstName ||
+          scholarValue.motherLastName ||
+          scholarValue.motherPhoneNumber
+        ) {
+          <p>
+            <strong>Mother:</strong>
+            {{
+              formatParent(
+                scholarValue.motherFirstName,
+                scholarValue.motherLastName,
+                scholarValue.motherPhoneNumber
+              )
+            }}
+          </p>
         }
-      </tbody>
-    </table>
-  </div>
-  } @else {
-  <div class="pickup-schedule-unavailable">
-    <p class="text-gray-600 italic">Pick-Up Schedule not available.</p>
-  </div>
-  }
-  <div class="detail-card">
-    <h3>Audit Trail</h3>
-    @if (auditLogLoading()) {
-    <p>Loading audit trail...</p>
-    } @else if (auditLogError(); as errorMessage) {
-    <p class="audit-trail-error">{{ errorMessage }}</p>
-    } @else if (auditLog().length === 0) {
-    <p>No recorded actions yet.</p>
+        @if (
+          scholarValue.fatherFirstName ||
+          scholarValue.fatherLastName ||
+          scholarValue.fatherPhoneNumber
+        ) {
+          <p>
+            <strong>Father:</strong>
+            {{
+              formatParent(
+                scholarValue.fatherFirstName,
+                scholarValue.fatherLastName,
+                scholarValue.fatherPhoneNumber
+              )
+            }}
+          </p>
+        }
+      </div>
+    }
+    @if (scholarValue.pickUpSchedule) {
+      <div class="pickup-schedule">
+        <h3>Pick-Up Schedule</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>Day</th>
+              <th>Time</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (day of daysOfWeek; track day) {
+              <tr>
+                <td>{{ day | titlecase }}</td>
+                <td>{{ scholarValue.pickUpSchedule[day] }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
     } @else {
-    <ul class="audit-trail-list">
-      @for (entry of auditLog(); track entry.auditId) {
-      <li>
-        <strong>{{ entry.action }}</strong> on
-        {{ entry.actionDate | date : 'medium' }}
-        @if (entry.details) {
-        <div class="audit-trail-details">{{ entry.details }}</div>
-        }
-      </li>
-      }
-    </ul>
+      <div class="pickup-schedule-unavailable">
+        <p class="text-gray-600 italic">Pick-Up Schedule not available.</p>
+      </div>
     }
+    <div class="detail-card">
+      <h3>Audit Trail</h3>
+      @if (auditLogLoading()) {
+        <p>Loading audit trail...</p>
+      } @else if (auditLogError(); as errorMessage) {
+        <p class="audit-trail-error">{{ errorMessage }}</p>
+      } @else if (auditLog().length === 0) {
+        <p>No recorded actions yet.</p>
+      } @else {
+        <ul class="audit-trail-list">
+          @for (entry of auditLog(); track entry.auditId) {
+            <li>
+              <strong>{{ entry.action }}</strong> on
+              {{ entry.actionDate | date: 'medium' }}
+              @if (entry.details) {
+                <div class="audit-trail-details">{{ entry.details }}</div>
+              }
+            </li>
+          }
+        </ul>
+      }
+    </div>
   </div>
-</div>
 }
 
-<button [routerLink]="['/attendance', scholar()?.id]" class="app-button">
-  View Attendance
-</button>
-
 @if (!scholar()) {
-<div class="loading">Loading scholar details...</div>
+  <div class="loading">Loading scholar details...</div>
 }

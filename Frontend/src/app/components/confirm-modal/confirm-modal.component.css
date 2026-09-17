@@ -30,13 +30,14 @@
 
 .confirm-modal-title {
   margin: 0 0 0.5rem;
-  color: #165b58;
+  color: var(--cyan-dark-color);
   font-size: 1.15rem;
+  font-family: inherit;
 }
 
 .confirm-modal-message {
   margin: 0 0 1.25rem;
-  color: #333;
+  color: var(--dark-main-color);
   line-height: 1.4;
 }
 
@@ -58,29 +59,31 @@
 
 .confirm-modal-btn-cancel {
   background-color: transparent;
-  border-color: #165b58;
-  color: #165b58;
+  border-color: var(--cyan-dark-color);
+  color: var(--cyan-dark-color);
 }
 
 .confirm-modal-btn-cancel:hover {
-  background-color: rgba(22, 91, 88, 0.08);
+  background-color: rgba(var(--cyan-main-color-for-alpha), 0.08);
 }
 
 .confirm-modal-btn-confirm {
-  background-color: #165b58;
-  color: #fff;
+  background-color: var(--cyan-dark-color);
+  color: var(--light-main-color);
 }
 
 .confirm-modal-btn-confirm:hover {
-  background-color: #124b48;
+  filter: brightness(0.88);
 }
 
+/* No red in the palette: the final, irreversible confirmation is told
+   apart by switching to the ink color rather than a danger hue. */
 .confirm-modal-btn-confirm.confirm-modal-btn-danger {
-  background-color: #dc2626;
+  background-color: var(--dark-main-color);
 }
 
 .confirm-modal-btn-confirm.confirm-modal-btn-danger:hover {
-  background-color: #b91c1c;
+  filter: brightness(1.2);
 }
 
 @keyframes confirm-overlay-fade-in {
