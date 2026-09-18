@@ -3,11 +3,12 @@
   justify-content: space-between;
   align-items: center;
   background-color: var(--cyan-dark-color);
-  padding: 1rem;
+  padding: var(--space-4);
   font-family: inherit;
   color: var(--light-main-color);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  border-radius: 12px;
+  border: var(--border-width) solid var(--cyan-dark-color);
+  box-shadow: var(--card-shadow);
+  border-radius: var(--radius-lg);
 }
 
 .navbar-brand {
@@ -19,7 +20,7 @@
 .navbar-links {
   list-style: none;
   display: flex;
-  gap: 0.25rem;
+  gap: var(--space-2);
   margin: 0;
   padding: 0;
 }
@@ -29,9 +30,9 @@
   text-decoration: none;
   color: rgba(var(--cyan-light-color-for-alpha), 0.85);
   font-weight: 500;
-  padding: 0.4rem 0.75rem;
-  border-radius: 8px;
-  border-bottom: 2px solid transparent;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+  border-bottom: var(--border-width-thick) solid transparent;
   transition:
     color 0.2s ease,
     background-color 0.2s ease;

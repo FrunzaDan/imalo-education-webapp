@@ -1,49 +1,51 @@
 .scholar-detail-container {
   max-width: 600px;
-  margin: 2rem auto;
-  padding: 1.5rem;
-  border-radius: 1rem;
+  margin: var(--space-6) auto;
+  padding: var(--space-5);
+  border: var(--border-width) solid var(--border-color);
+  border-radius: var(--radius-lg);
   background-color: #ffffff;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
+  box-shadow: var(--card-shadow);
 }
 
 h2 {
   text-align: center;
-  margin-bottom: 1rem;
+  margin-bottom: var(--space-4);
   color: var(--cyan-dark-color);
 }
 
 .detail-card p {
-  margin: 0.5rem 0;
+  margin: var(--space-2) 0;
   color: var(--dark-main-color);
 }
 
 .detail-card h3 {
-  margin: 0 0 0.25rem;
+  margin: 0 0 var(--space-1);
   color: var(--cyan-dark-color);
   font-size: 1.05rem;
 }
 
 .detail-card + .detail-card {
-  margin-top: 1rem;
+  margin-top: var(--space-4);
 }
 
 /* Pick-Up Schedule Section Styling */
 .pickup-schedule {
-  margin-top: 2rem;
+  margin-top: var(--space-6);
   background-color: #ffffff; /* White background for the table area */
-  border-radius: 0.75rem; /* Slightly rounded corners for the table section */
+  border: var(--border-width) solid var(--border-color);
+  border-radius: var(--radius-lg); /* Same scale as every other card/table */
   overflow: hidden; /* Ensures table borders don't overflow rounded corners */
-  box-shadow: 0 1px 8px rgba(0, 0, 0, 0.08); /* A subtle shadow for the table block */
+  box-shadow: var(--card-shadow);
 }
 
 .pickup-schedule h3 {
   text-align: center;
-  margin-bottom: 1rem;
-  padding: 1rem 0;
+  margin-bottom: var(--space-4);
+  padding: var(--space-4) 0;
   color: var(--cyan-dark-color);
   background-color: var(--light-main-color); /* Light background for the sub-heading */
-  border-bottom: 1px solid rgba(var(--cyan-main-color-for-alpha), 0.15); /* Separator for the heading */
+  border-bottom: var(--border-width) solid rgba(var(--cyan-main-color-for-alpha), 0.15); /* Separator for the heading */
 }
 
 .pickup-schedule table {
@@ -54,7 +56,7 @@ h2 {
 
 .pickup-schedule th,
 .pickup-schedule td {
-  padding: 0.8rem 1rem; /* Generous padding for better spacing */
+  padding: var(--space-3) var(--space-4); /* Generous padding for better spacing */
   text-align: left;
 }
 
@@ -69,7 +71,7 @@ h2 {
 
 /* Table Body Row Styling */
 .pickup-schedule tbody tr {
-  border-bottom: 1px solid rgba(var(--cyan-main-color-for-alpha), 0.12); /* Lighter border for rows */
+  border-bottom: var(--border-width) solid rgba(var(--cyan-main-color-for-alpha), 0.12); /* Lighter border for rows */
 }
 
 .pickup-schedule tbody tr:last-child {
@@ -95,7 +97,7 @@ h2 {
 
 .loading {
   text-align: center;
-  margin-top: 2rem;
+  margin-top: var(--space-6);
   font-style: italic;
   color: var(--dark-main-color);
   opacity: 0.65;
@@ -108,8 +110,8 @@ h2 {
 }
 
 .audit-trail-list li {
-  padding: 0.5rem 0;
-  border-bottom: 1px solid rgba(var(--cyan-main-color-for-alpha), 0.12);
+  padding: var(--space-2) 0;
+  border-bottom: var(--border-width) solid rgba(var(--cyan-main-color-for-alpha), 0.12);
   color: var(--dark-main-color);
 }
 
@@ -118,7 +120,7 @@ h2 {
 }
 
 .audit-trail-details {
-  margin-top: 0.15rem;
+  margin-top: var(--space-1);
   font-size: 0.85rem;
   color: var(--dark-main-color);
   opacity: 0.65;

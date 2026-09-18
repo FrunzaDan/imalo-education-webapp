@@ -1,5 +1,5 @@
 .not-found {
   text-align: center;
-  margin: 4rem auto;
+  margin: var(--space-7) auto;
   max-width: 400px;
 }

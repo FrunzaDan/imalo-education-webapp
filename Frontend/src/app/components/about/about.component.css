@@ -1,42 +1,43 @@
 .about-page {
   max-width: 800px;
-  margin: 2rem auto;
-  padding: 0 1.5rem;
+  margin: var(--space-6) auto;
+  padding: 0 var(--space-5);
 }
 
 .about-lead {
   font-size: 1.1rem;
   color: var(--dark-main-color);
   opacity: 0.8;
-  margin-bottom: 1.5rem;
+  margin-bottom: var(--space-5);
 }
 
 .about-card {
-  margin-bottom: 1.5rem;
-  border-radius: 0.75rem;
+  margin-bottom: var(--space-5);
+  border: var(--border-width) solid var(--border-color);
+  border-radius: var(--radius-lg);
   overflow: hidden;
   background-color: #ffffff;
-  box-shadow: 0 1px 8px rgba(0, 0, 0, 0.08);
+  box-shadow: var(--card-shadow);
 }
 
 .about-card__header {
   background-color: var(--cyan-dark-color);
   color: var(--light-main-color);
   font-weight: 600;
-  padding: 0.75rem 1.25rem;
+  padding: var(--space-3) var(--space-5);
 }
 
 .about-card__body {
-  padding: 1.25rem;
+  padding: var(--space-5);
 }
 
 .about-card__body p {
-  margin: 0 0 0.75rem;
+  margin: 0 0 var(--space-3);
 }
 
 .about-card__body ul {
-  margin: 0 0 0.75rem;
-  padding-left: 1.25rem;
+  margin: 0 0 var(--space-3);
+  padding-left: var(--space-5);
 }
 
 .about-card__body-last {
@@ -46,8 +47,8 @@
 .about-code {
   background-color: var(--dark-main-color);
   color: var(--light-main-color);
-  padding: 1rem;
-  border-radius: 0.5rem;
+  padding: var(--space-4);
+  border-radius: var(--radius-md);
   overflow-x: auto;
   font-size: 0.85rem;
 }
@@ -57,7 +58,7 @@
 }
 
 .about-result {
-  margin-top: 0.75rem;
+  margin-top: var(--space-3);
   font-style: italic;
   color: var(--cyan-dark-color);
 }

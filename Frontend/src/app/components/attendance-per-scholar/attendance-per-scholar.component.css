@@ -1,28 +1,29 @@
 .attendance-container {
   max-width: 900px;
-  margin: 2rem auto;
-  padding: 1.5rem;
+  margin: var(--space-6) auto;
+  padding: var(--space-5);
+  border: var(--border-width) solid var(--border-color);
+  border-radius: var(--radius-lg);
   background-color: #ffffff;
-  border-radius: 12px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  box-shadow: var(--card-shadow);
 }
 
 .attendance-container__title {
   font-size: 1.8rem;
-  margin-bottom: 1rem;
+  margin-bottom: var(--space-4);
   color: var(--cyan-dark-color);
 }
 
 .controls {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: var(--space-3);
 }
 
 .controls__month-input {
-  padding: 6px 10px;
-  border: 2px solid rgba(var(--cyan-main-color-for-alpha), 0.5);
-  border-radius: 8px;
+  padding: var(--space-2) var(--space-3);
+  border: var(--border-width-thick) solid rgba(var(--cyan-main-color-for-alpha), 0.5);
+  border-radius: var(--radius-md);
   font-size: 1rem;
   font-family: inherit;
   color: var(--dark-main-color);
@@ -31,14 +32,14 @@
 .attendance-table {
   width: 100%;
   border-collapse: collapse;
-  margin-top: 1rem;
+  margin-top: var(--space-4);
   background-color: white;
 }
 
 .attendance-table th,
 .attendance-table td {
-  padding: 0.75rem 1rem;
-  border-bottom: 1px solid rgba(var(--cyan-main-color-for-alpha), 0.15);
+  padding: var(--space-3) var(--space-4);
+  border-bottom: var(--border-width) solid rgba(var(--cyan-main-color-for-alpha), 0.15);
   text-align: left;
 }
 
@@ -62,7 +63,7 @@
 }
 
 .attendance-table__total-row td {
-  border-top: 2px solid rgba(var(--cyan-main-color-for-alpha), 0.3);
+  border-top: var(--border-width-thick) solid rgba(var(--cyan-main-color-for-alpha), 0.3);
 }
 
 .attendance-table__total-row--grand {
@@ -73,8 +74,8 @@
 .attendance-container__save-bar {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  margin-top: 1.5rem;
+  gap: var(--space-3);
+  margin-top: var(--space-5);
 }
 
 .attendance-container__unsaved-note {

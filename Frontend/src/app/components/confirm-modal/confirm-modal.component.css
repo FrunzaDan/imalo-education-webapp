@@ -6,7 +6,7 @@
   align-items: center;
   justify-content: center;
   z-index: 1090;
-  padding: 1rem;
+  padding: var(--space-4);
   animation: confirm-overlay-fade-in 0.5s ease-out forwards;
 }
 
@@ -16,8 +16,9 @@
 
 .confirm-modal-card {
   background-color: #fff;
-  border-radius: 12px;
-  padding: 1.5rem;
+  border: var(--border-width) solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: var(--space-5);
   width: 100%;
   max-width: 420px;
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
@@ -29,14 +30,14 @@
 }
 
 .confirm-modal-title {
-  margin: 0 0 0.5rem;
+  margin: 0 0 var(--space-2);
   color: var(--cyan-dark-color);
   font-size: 1.15rem;
   font-family: inherit;
 }
 
 .confirm-modal-message {
-  margin: 0 0 1.25rem;
+  margin: 0 0 var(--space-5);
   color: var(--dark-main-color);
   line-height: 1.4;
 }
@@ -44,13 +45,13 @@
 .confirm-modal-actions {
   display: flex;
   justify-content: flex-end;
-  gap: 0.75rem;
+  gap: var(--space-3);
 }
 
 .confirm-modal-btn {
-  padding: 0.5rem 1.1rem;
-  border-radius: 8px;
-  border: 2px solid transparent;
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-md);
+  border: var(--border-width-thick) solid transparent;
   font-family: inherit;
   font-size: 0.95rem;
   cursor: pointer;

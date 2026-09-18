@@ -1,7 +1,7 @@
 /* Styling comes from the global .app-* classes in src/styles.css. */
 
 .parent-subheading {
-  margin: 0 0 0.4rem;
+  margin: 0 0 var(--space-2);
   font-weight: 600;
   color: var(--cyan-dark-color);
 }
