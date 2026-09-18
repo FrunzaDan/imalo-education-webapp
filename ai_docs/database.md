@@ -26,7 +26,7 @@ SQL Server schema for `ImaloEducationDB`, defined as an SSDT database project (`
 
 **`Attendance`** (`Attendance.sql`) — one row per scholar, JSON blob.
 - `ScholarId UNIQUEIDENTIFIER` PK and FK → `Scholars.Id`, `ON DELETE CASCADE`
-- `AttendanceJson NVARCHAR(MAX)` NOT NULL — a `List<AttendanceRecord>` (`Date`, `LunchCost`, `TransportCost`, `LunchSelected`, `TransportSelected`) serialized as JSON. A day is only present in the list if it's ever been touched in the UI; unchecking a day keeps its record with `…Selected: false` rather than removing it.
+- `AttendanceJson NVARCHAR(MAX)` NOT NULL — a `List<AttendanceRecord>` (`Date`, `LunchCost`, `TransportCost`, `Present`, `LunchSelected`, `TransportSelected`) serialized as JSON. A day is only present in the list if it's ever been touched in the UI; unchecking a day keeps its record with `…Selected: false` rather than removing it. `Present` gates `LunchSelected`/`TransportSelected` — the API rejects a save where either is `true` while `Present` is `false` (see [[api]]); all three default to `true` so records saved before `Present` existed still deserialize as present, matching the selections they already carried.
 
 **`Parents`** (`Parents.sql`) — genuinely relational (unlike the two JSON-blob tables above), because it's a bounded one-to-few relationship, not a day-keyed collection.
 - `Id UNIQUEIDENTIFIER` PK, default `NEWID()`

@@ -255,6 +255,19 @@ public class ScholarsController : ControllerBase
         if (attendance == null)
             return BadRequest(new { message = "Attendance data is required." });
 
+        var absentButSelected = attendance
+            .Where(r => !r.Present && (r.LunchSelected || r.TransportSelected))
+            .Select(r => r.Date)
+            .ToList();
+        if (absentButSelected.Count > 0)
+        {
+            return BadRequest(new
+            {
+                message = "Lunch or Transport cannot be selected on a day the scholar was not present.",
+                dates = absentButSelected
+            });
+        }
+
         try
         {
             var result = await _scholarDataAccess.CreateOrUpdateAttendanceAsync(id, attendance, cancellationToken);

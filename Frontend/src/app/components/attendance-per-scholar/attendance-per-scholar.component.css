@@ -53,6 +53,11 @@
   color: rgba(var(--cyan-darker-color-for-alpha), 0.5);
 }
 
+.attendance-table__checkbox:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
 .attendance-table__row--unsaved {
   background-color: rgba(var(--orange-main-color-for-alpha), 0.12);
 }

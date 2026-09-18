@@ -14,6 +14,7 @@ interface AttendanceRow {
   date: string;
   lunchCost: number;
   transportCost: number;
+  present: boolean;
   lunchSelected: boolean;
   transportSelected: boolean;
 }
@@ -59,6 +60,7 @@ export class AttendanceComponent implements OnInit {
               date: record.date,
               lunchCost: record.lunchCost,
               transportCost: record.transportCost,
+              present: record.present,
               lunchSelected: record.lunchSelected,
               transportSelected: record.transportSelected,
             })),
@@ -101,6 +103,7 @@ export class AttendanceComponent implements OnInit {
       [
         { header: 'Scholar', value: (r: AttendanceRow) => r.scholarName },
         { header: 'Date', value: (r: AttendanceRow) => r.date },
+        { header: 'Present', value: (r: AttendanceRow) => (r.present ? 'Yes' : 'No') },
         { header: 'Lunch Cost', value: (r: AttendanceRow) => r.lunchCost },
         { header: 'Transport Cost', value: (r: AttendanceRow) => r.transportCost },
         { header: 'Lunch Selected', value: (r: AttendanceRow) => (r.lunchSelected ? 'Yes' : 'No') },

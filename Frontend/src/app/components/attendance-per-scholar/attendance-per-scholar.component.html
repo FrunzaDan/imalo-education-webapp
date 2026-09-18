@@ -1,147 +1,178 @@
 @if (scholar(); as scholar) {
-<div class="attendance-container">
-  <h2 class="attendance-container__title">
-    Attendance for {{ scholar.firstName }} {{ scholar.lastName }}
-  </h2>
+  <div class="attendance-container">
+    <h2 class="attendance-container__title">
+      Attendance for {{ scholar.firstName }} {{ scholar.lastName }}
+    </h2>
 
-  <div class="attendance-container__controls controls">
-    <label for="monthPicker" class="controls__label">Month:</label>
-    <input
-      id="monthPicker"
-      type="month"
-      [value]="selectedMonth()"
-      (change)="onMonthChange($event)"
-      class="controls__month-input"
-    />
-    <button type="button" class="app-button app-button--ghost" (click)="exportCsv()">
-      Export CSV
-    </button>
-  </div>
-
-  <table class="attendance-container__table attendance-table">
-    <thead class="attendance-table__header">
-      <tr>
-        <th class="attendance-table__header-cell">Date</th>
-        <th class="attendance-table__header-cell">Lunch</th>
-        <th class="attendance-table__header-cell">Transport</th>
-        <th class="attendance-table__header-cell">Both</th>
-        <th class="attendance-table__header-cell">Lunch Cost</th>
-        <th class="attendance-table__header-cell">Transport Cost</th>
-      </tr>
-    </thead>
-    <tbody class="attendance-table__body">
-      @for (row of dayRows(); track trackByDayRow($index, row)) {
-      <tr
-        class="attendance-table__row"
-        [class.attendance-table__row--unsaved]="!row.isPersisted && (row.record.lunchSelected || row.record.transportSelected)"
+    <div class="attendance-container__controls controls">
+      <label for="monthPicker" class="controls__label">Month:</label>
+      <input
+        id="monthPicker"
+        type="month"
+        [value]="selectedMonth()"
+        (change)="onMonthChange($event)"
+        class="controls__month-input"
+      />
+      <button
+        type="button"
+        class="app-button app-button--ghost"
+        (click)="exportCsv()"
       >
-        <td class="attendance-table__data-cell">
-          {{ row.date | date : 'EEE, mediumDate' }}
-        </td>
-        <td class="attendance-table__data-cell">
-          <input
-            type="checkbox"
-            [checked]="row.record.lunchSelected"
-            (change)="onLunchChange(row, $event)"
-            class="attendance-table__checkbox"
-          />
-        </td>
-        <td class="attendance-table__data-cell">
-          <input
-            type="checkbox"
-            [checked]="row.record.transportSelected"
-            (change)="onTransportChange(row, $event)"
-            class="attendance-table__checkbox"
-          />
-        </td>
-        <td class="attendance-table__data-cell">
-          <input
-            type="checkbox"
-            [checked]="row.record.lunchSelected && row.record.transportSelected"
-            (change)="onBothChange(row, $event)"
-            class="attendance-table__checkbox"
-          />
-        </td>
-        <td class="attendance-table__data-cell">
-          @if (row.record.lunchSelected) {
-          {{ row.record.lunchCost | currency : 'RON' : 'symbol' : '1.2-2' }}
-          } @else {
-          <span class="attendance-table__muted">&mdash;</span>
-          }
-        </td>
-        <td class="attendance-table__data-cell">
-          @if (row.record.transportSelected) {
-          {{ row.record.transportCost | currency : 'RON' : 'symbol' : '1.2-2' }}
-          } @else {
-          <span class="attendance-table__muted">&mdash;</span>
-          }
-        </td>
-      </tr>
-      } @empty {
-      <tr class="attendance-table__row">
-        <td
-          colspan="6"
-          class="attendance-table__data-cell attendance-table__data-cell--empty"
-        >
-          No weekdays in this month.
-        </td>
-      </tr>
-      }
-    </tbody>
-    <tfoot class="attendance-table__footer">
-      <tr class="attendance-table__total-row">
-        <td
-          colspan="4"
-          class="attendance-table__data-cell attendance-table__data-cell--total-label"
-        >
-          <strong>Total for the month</strong>
-        </td>
-        <td
-          class="attendance-table__data-cell attendance-table__data-cell--total-value"
-        >
-          <strong>{{
-            totalSelectedLunchCost() | currency : 'RON' : 'symbol' : '1.2-2'
-          }}</strong>
-        </td>
-        <td
-          class="attendance-table__data-cell attendance-table__data-cell--total-value"
-        >
-          <strong>{{
-            totalSelectedTransportCost() | currency : 'RON' : 'symbol' : '1.2-2'
-          }}</strong>
-        </td>
-      </tr>
-      <tr class="attendance-table__total-row attendance-table__total-row--grand">
-        <td
-          colspan="4"
-          class="attendance-table__data-cell attendance-table__data-cell--total-label"
-        >
-          <strong>Grand total</strong>
-        </td>
-        <td
-          colspan="2"
-          class="attendance-table__data-cell attendance-table__data-cell--total-value"
-        >
-          <strong>{{ grandTotal() | currency : 'RON' : 'symbol' : '1.2-2' }}</strong>
-        </td>
-      </tr>
-    </tfoot>
-  </table>
+        Export CSV
+      </button>
+    </div>
 
-  <div class="attendance-container__save-bar">
-    <button
-      type="button"
-      class="app-button app-button--accent"
-      [disabled]="isSaving()"
-      (click)="save()"
-    >
-      {{ isSaving() ? 'Saving...' : 'Save Changes' }}
-    </button>
-    @if (hasUnsavedChanges() && !isSaving()) {
-    <span class="attendance-container__unsaved-note">Unsaved changes</span>
-    }
+    <table class="attendance-container__table attendance-table">
+      <thead class="attendance-table__header">
+        <tr>
+          <th class="attendance-table__header-cell">Date</th>
+          <th class="attendance-table__header-cell">Present</th>
+          <th class="attendance-table__header-cell">Lunch</th>
+          <th class="attendance-table__header-cell">Transport</th>
+          <th class="attendance-table__header-cell">Both</th>
+          <th class="attendance-table__header-cell">Lunch Cost</th>
+          <th class="attendance-table__header-cell">Transport Cost</th>
+        </tr>
+      </thead>
+      <tbody class="attendance-table__body">
+        @for (row of dayRows(); track trackByDayRow($index, row)) {
+          <tr
+            class="attendance-table__row"
+            [class.attendance-table__row--unsaved]="
+              !row.isPersisted &&
+              (row.record.lunchSelected || row.record.transportSelected)
+            "
+          >
+            <td class="attendance-table__data-cell">
+              {{ row.date | date: 'EEE, mediumDate' }}
+            </td>
+            <td class="attendance-table__data-cell">
+              <input
+                type="checkbox"
+                [checked]="row.record.present"
+                (change)="onPresentChange(row, $event)"
+                class="attendance-table__checkbox"
+              />
+            </td>
+            <td class="attendance-table__data-cell">
+              <input
+                type="checkbox"
+                [checked]="row.record.lunchSelected"
+                [disabled]="!row.record.present"
+                (change)="onLunchChange(row, $event)"
+                class="attendance-table__checkbox"
+              />
+            </td>
+            <td class="attendance-table__data-cell">
+              <input
+                type="checkbox"
+                [checked]="row.record.transportSelected"
+                [disabled]="!row.record.present"
+                (change)="onTransportChange(row, $event)"
+                class="attendance-table__checkbox"
+              />
+            </td>
+            <td class="attendance-table__data-cell">
+              <input
+                type="checkbox"
+                [checked]="
+                  row.record.lunchSelected && row.record.transportSelected
+                "
+                [disabled]="!row.record.present"
+                (change)="onBothChange(row, $event)"
+                class="attendance-table__checkbox"
+              />
+            </td>
+            <td class="attendance-table__data-cell">
+              @if (row.record.lunchSelected) {
+                {{
+                  row.record.lunchCost | currency: 'RON' : 'symbol' : '1.2-2'
+                }}
+              } @else {
+                <span class="attendance-table__muted">&mdash;</span>
+              }
+            </td>
+            <td class="attendance-table__data-cell">
+              @if (row.record.transportSelected) {
+                {{
+                  row.record.transportCost
+                    | currency: 'RON' : 'symbol' : '1.2-2'
+                }}
+              } @else {
+                <span class="attendance-table__muted">&mdash;</span>
+              }
+            </td>
+          </tr>
+        } @empty {
+          <tr class="attendance-table__row">
+            <td
+              colspan="7"
+              class="attendance-table__data-cell attendance-table__data-cell--empty"
+            >
+              No weekdays in this month.
+            </td>
+          </tr>
+        }
+      </tbody>
+      <tfoot class="attendance-table__footer">
+        <tr class="attendance-table__total-row">
+          <td
+            colspan="5"
+            class="attendance-table__data-cell attendance-table__data-cell--total-label"
+          >
+            <strong>Total for the month (food and transport)</strong>
+          </td>
+          <td
+            class="attendance-table__data-cell attendance-table__data-cell--total-value"
+          >
+            <strong>{{
+              totalSelectedLunchCost() | currency: 'RON' : 'symbol' : '1.2-2'
+            }}</strong>
+          </td>
+          <td
+            class="attendance-table__data-cell attendance-table__data-cell--total-value"
+          >
+            <strong>{{
+              totalSelectedTransportCost()
+                | currency: 'RON' : 'symbol' : '1.2-2'
+            }}</strong>
+          </td>
+        </tr>
+        <tr
+          class="attendance-table__total-row attendance-table__total-row--grand"
+        >
+          <td
+            colspan="5"
+            class="attendance-table__data-cell attendance-table__data-cell--total-label"
+          >
+            <strong>Grand total</strong>
+          </td>
+          <td
+            colspan="2"
+            class="attendance-table__data-cell attendance-table__data-cell--total-value"
+          >
+            <strong>{{
+              grandTotal() | currency: 'RON' : 'symbol' : '1.2-2'
+            }}</strong>
+          </td>
+        </tr>
+      </tfoot>
+    </table>
+
+    <div class="attendance-container__save-bar">
+      <button
+        type="button"
+        class="app-button app-button--accent"
+        [disabled]="isSaving()"
+        (click)="save()"
+      >
+        {{ isSaving() ? 'Saving...' : 'Save Changes' }}
+      </button>
+      @if (hasUnsavedChanges() && !isSaving()) {
+        <span class="attendance-container__unsaved-note">Unsaved changes</span>
+      }
+    </div>
   </div>
-</div>
 } @else {
-<div class="loading-message">Loading attendance...</div>
+  <div class="loading-message">Loading attendance...</div>
 }

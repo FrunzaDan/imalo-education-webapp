@@ -23,6 +23,7 @@
           <span [class.active]="currentSortColumn === 'date' && !isAscending">↓</span>
         </span>
       </th>
+      <th class="table-header">Present</th>
       <th class="table-header sortable" (click)="sortData('lunchCost', 'number')">
         Lunch Cost
         <span class="sort-icon">
@@ -49,6 +50,7 @@
     >
       <td class="table-cell">{{ row.scholarName }}</td>
       <td class="table-cell">{{ row.date | date : 'longDate' }}</td>
+      <td class="table-cell">{{ row.present ? 'Yes' : 'No' }}</td>
       <td class="table-cell">{{ row.lunchCost | currency : 'RON' : 'symbol' : '1.2-2' }}</td>
       <td class="table-cell">{{ row.transportCost | currency : 'RON' : 'symbol' : '1.2-2' }}</td>
       <td class="table-cell">
@@ -60,7 +62,7 @@
     </tr>
     } @empty {
     <tr class="table-row">
-      <td colspan="5" class="table-cell">No attendance records found.</td>
+      <td colspan="6" class="table-cell">No attendance records found.</td>
     </tr>
     }
   </tbody>

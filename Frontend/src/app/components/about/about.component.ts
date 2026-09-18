@@ -300,14 +300,17 @@ export class AboutComponent {
       for (const date of getWeekdayDatesInMonth(year, month)) {
         if (Math.random() >= 0.7) continue; // skip some days entirely
 
-        const lunchSelected = Math.random() < 0.8;
-        // Transport implies lunch, mirroring the rule enforced in the UI itself.
+        // Lunch/Transport can only be selected while present, mirroring the
+        // rule enforced in the UI and the API.
+        const present = Math.random() < 0.9;
+        const lunchSelected = present && Math.random() < 0.8;
         const transportSelected = lunchSelected && Math.random() < 0.4;
 
         records.push({
           date,
           lunchCost: lunchSelected ? lunchPrice : 0,
           transportCost: transportSelected ? transportPrice : 0,
+          present,
           lunchSelected,
           transportSelected,
         });

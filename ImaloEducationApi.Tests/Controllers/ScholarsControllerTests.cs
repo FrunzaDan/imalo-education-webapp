@@ -333,6 +333,57 @@ public class ScholarsControllerTests
     }
 
     [Fact]
+    public async Task CreateOrUpdateAttendance_AbsentButLunchSelected_ReturnsBadRequest()
+    {
+        var (controller, dataAccess) = MakeController();
+        var id = Guid.NewGuid();
+        var records = new List<AttendanceRecord>
+        {
+            new() { Date = DateTime.UtcNow, Present = false, LunchSelected = true },
+        };
+
+        var result = await controller.CreateOrUpdateAttendance(id, records, CancellationToken.None);
+
+        Assert.IsType<BadRequestObjectResult>(result);
+        dataAccess.Verify(
+            d => d.CreateOrUpdateAttendanceAsync(It.IsAny<Guid>(), It.IsAny<List<AttendanceRecord>>(),
+                It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task CreateOrUpdateAttendance_AbsentButTransportSelected_ReturnsBadRequest()
+    {
+        var (controller, _) = MakeController();
+        var id = Guid.NewGuid();
+        var records = new List<AttendanceRecord>
+        {
+            new() { Date = DateTime.UtcNow, Present = false, TransportSelected = true },
+        };
+
+        var result = await controller.CreateOrUpdateAttendance(id, records, CancellationToken.None);
+
+        Assert.IsType<BadRequestObjectResult>(result);
+    }
+
+    [Fact]
+    public async Task CreateOrUpdateAttendance_AbsentAndNothingSelected_ReturnsOk()
+    {
+        var (controller, dataAccess) = MakeController();
+        var id = Guid.NewGuid();
+        var records = new List<AttendanceRecord>
+        {
+            new() { Date = DateTime.UtcNow, Present = false, LunchSelected = false, TransportSelected = false },
+        };
+        dataAccess
+            .Setup(d => d.CreateOrUpdateAttendanceAsync(id, records, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true);
+
+        var result = await controller.CreateOrUpdateAttendance(id, records, CancellationToken.None);
+
+        Assert.IsType<OkObjectResult>(result);
+    }
+
+    [Fact]
     public async Task CreateOrUpdateAttendance_Success_ReturnsOk()
     {
         var (controller, dataAccess) = MakeController();

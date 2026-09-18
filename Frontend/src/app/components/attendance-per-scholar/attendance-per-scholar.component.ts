@@ -183,6 +183,7 @@ export class AttendancePerScholarComponent implements OnInit, OnDestroy {
           date,
           lunchCost: 0,
           transportCost: 0,
+          present: false,
           lunchSelected: false,
           transportSelected: false,
         },
@@ -202,6 +203,26 @@ export class AttendancePerScholarComponent implements OnInit, OnDestroy {
     }
   }
 
+  // Present gates Lunch/Transport: neither can be selected on a day the
+  // scholar wasn't there. Unchecking Present clears both (rather than just
+  // disabling their checkboxes going forward) so a day can never be saved
+  // with Present false but Lunch/Transport true — the API rejects that
+  // combination too (see [[api]]).
+  onPresentChange(row: AttendanceDayRow, event: Event): void {
+    const isChecked = (event.target as HTMLInputElement).checked;
+    row.record.present = isChecked;
+
+    if (!isChecked) {
+      row.record.lunchSelected = false;
+      row.record.transportSelected = false;
+    } else {
+      this.ensurePersisted(row);
+    }
+
+    this.hasUnsavedChanges.set(true);
+    this.dayRows.update((rows) => [...rows]);
+  }
+
   // Mutates row.record in place (so the checkbox's [checked] binding and any
   // other reference to this row stay pointed at the same object), then
   // re-sets dayRows to a new array so the totalSelected*/grandTotal computed
@@ -213,6 +234,8 @@ export class AttendancePerScholarComponent implements OnInit, OnDestroy {
   // checked", not a cascade rule — see its [checked] binding in the template.
   onLunchChange(row: AttendanceDayRow, event: Event): void {
     const isChecked = (event.target as HTMLInputElement).checked;
+    if (isChecked && !row.record.present) return; // template also disables this checkbox
+
     row.record.lunchSelected = isChecked;
 
     if (isChecked) {
@@ -228,6 +251,8 @@ export class AttendancePerScholarComponent implements OnInit, OnDestroy {
 
   onTransportChange(row: AttendanceDayRow, event: Event): void {
     const isChecked = (event.target as HTMLInputElement).checked;
+    if (isChecked && !row.record.present) return; // template also disables this checkbox
+
     row.record.transportSelected = isChecked;
 
     if (isChecked) {
@@ -243,6 +268,8 @@ export class AttendancePerScholarComponent implements OnInit, OnDestroy {
 
   onBothChange(row: AttendanceDayRow, event: Event): void {
     const isChecked = (event.target as HTMLInputElement).checked;
+    if (isChecked && !row.record.present) return; // template also disables this checkbox
+
     row.record.lunchSelected = isChecked;
     row.record.transportSelected = isChecked;
     if (isChecked) {
@@ -290,6 +317,10 @@ export class AttendancePerScholarComponent implements OnInit, OnDestroy {
       `attendance_${scholarName}_${this.selectedMonth()}`,
       [
         { header: 'Date', value: (r: AttendanceDayRow) => r.date },
+        {
+          header: 'Present',
+          value: (r: AttendanceDayRow) => (r.record.present ? 'Yes' : 'No'),
+        },
         {
           header: 'Lunch Selected',
           value: (r: AttendanceDayRow) => (r.record.lunchSelected ? 'Yes' : 'No'),

@@ -50,6 +50,7 @@ function makeExistingRecord(): AttendanceRecord {
     date: EXISTING_DATE,
     lunchCost: 15,
     transportCost: 0,
+    present: true,
     lunchSelected: true,
     transportSelected: false,
   };
@@ -186,15 +187,24 @@ describe('AttendancePerScholarComponent', () => {
   });
 
   describe('checking a day (DOM-level)', () => {
-    it('checking Lunch on an untouched day seeds its cost from the school price and persists it', () => {
+    it('the Lunch checkbox is disabled until Present is checked, on an untouched day', () => {
       const { fixture, component } = setup();
       const untouchedDate = getWeekdayDatesInMonth(2024, 3).find((d) => d !== EXISTING_DATE)!;
       const rowIndex = component.dayRows().findIndex((r) => r.date === untouchedDate);
 
       const rowEls = fixture.nativeElement.querySelectorAll('.attendance-table__row');
-      const lunchCheckbox: HTMLInputElement = rowEls[rowIndex].querySelectorAll(
+      const checkboxes: NodeListOf<HTMLInputElement> = rowEls[rowIndex].querySelectorAll(
         'input[type="checkbox"]',
-      )[0];
+      );
+      const [presentCheckbox, lunchCheckbox] = checkboxes;
+
+      expect(lunchCheckbox.disabled).toBe(true);
+
+      presentCheckbox.checked = true;
+      presentCheckbox.dispatchEvent(new Event('change'));
+      fixture.detectChanges();
+
+      expect(lunchCheckbox.disabled).toBe(false);
 
       lunchCheckbox.checked = true;
       lunchCheckbox.dispatchEvent(new Event('change'));
@@ -210,10 +220,49 @@ describe('AttendancePerScholarComponent', () => {
     });
   });
 
+  describe('Present gates Lunch/Transport', () => {
+    it('checking Lunch/Transport/Both is a no-op while Present is false', () => {
+      const { component } = setup();
+      const row = dayRow(component, getWeekdayDatesInMonth(2024, 3).find((d) => d !== EXISTING_DATE)!);
+
+      component.onLunchChange(row, checkedEvent(true));
+      component.onTransportChange(row, checkedEvent(true));
+      component.onBothChange(row, checkedEvent(true));
+
+      expect(row.record.lunchSelected).toBe(false);
+      expect(row.record.transportSelected).toBe(false);
+      expect(row.isPersisted).toBe(false);
+    });
+
+    it('unchecking Present clears an already-checked Lunch and Transport', () => {
+      const { component } = setup();
+      const row = dayRow(component, EXISTING_DATE); // present: true, lunchSelected: true
+      row.record.transportSelected = true;
+
+      component.onPresentChange(row, checkedEvent(false));
+
+      expect(row.record.present).toBe(false);
+      expect(row.record.lunchSelected).toBe(false);
+      expect(row.record.transportSelected).toBe(false);
+    });
+
+    it('checking Present on an untouched day persists it even with nothing else selected', () => {
+      const { component } = setup();
+      const row = dayRow(component, getWeekdayDatesInMonth(2024, 3).find((d) => d !== EXISTING_DATE)!);
+
+      component.onPresentChange(row, checkedEvent(true));
+
+      expect(row.record.present).toBe(true);
+      expect(row.isPersisted).toBe(true);
+      expect(component.allAttendanceRecords).toContain(row.record);
+    });
+  });
+
   describe('Lunch and Transport are independent', () => {
     it('checking Lunch does not touch Transport', () => {
       const { component } = setup();
       const row = dayRow(component, getWeekdayDatesInMonth(2024, 3).find((d) => d !== EXISTING_DATE)!);
+      row.record.present = true;
 
       component.onLunchChange(row, checkedEvent(true));
 
@@ -235,6 +284,7 @@ describe('AttendancePerScholarComponent', () => {
     it('checking Transport seeds its cost from the school price, persists the row, and does not touch Lunch', () => {
       const { component } = setup();
       const row = dayRow(component, getWeekdayDatesInMonth(2024, 3).find((d) => d !== EXISTING_DATE)!);
+      row.record.present = true;
 
       component.onTransportChange(row, checkedEvent(true));
 
@@ -259,7 +309,7 @@ describe('AttendancePerScholarComponent', () => {
       const rowIndex = component.dayRows().findIndex((r) => r.date === EXISTING_DATE);
       const bothCheckbox: HTMLInputElement = fixture.nativeElement.querySelectorAll(
         '.attendance-table__row',
-      )[rowIndex].querySelectorAll('input[type="checkbox"]')[2];
+      )[rowIndex].querySelectorAll('input[type="checkbox"]')[3];
 
       expect(bothCheckbox.checked).toBe(false);
 
@@ -272,6 +322,7 @@ describe('AttendancePerScholarComponent', () => {
     it('"Both" checks Lunch and Transport together and seeds both costs', () => {
       const { component } = setup();
       const row = dayRow(component, getWeekdayDatesInMonth(2024, 3).find((d) => d !== EXISTING_DATE)!);
+      row.record.present = true;
 
       component.onBothChange(row, checkedEvent(true));
 
@@ -288,6 +339,7 @@ describe('AttendancePerScholarComponent', () => {
       const { component } = setup();
       const otherDate = getWeekdayDatesInMonth(2024, 3).find((d) => d !== EXISTING_DATE)!;
       const row = dayRow(component, otherDate);
+      row.record.present = true;
 
       component.onTransportChange(row, checkedEvent(true));
 
