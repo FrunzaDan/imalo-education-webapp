@@ -14,7 +14,7 @@ Angular 22 UI  --HTTP-->  ASP.NET Core Web API  --ADO.NET-->  SQL Server
 | Layer | Folder | Tech |
 |---|---|---|
 | UI | [`UI/`](UI/) | Angular 22, standalone components, zoneless + Signals, SSR via `@angular/ssr` |
-| API | [`API/ImaloEducationApi/`](API/ImaloEducationApi/) | .NET 10 / ASP.NET Core Web API, C#, raw ADO.NET (no ORM, no stored procs) |
+| API | [`API/ImaloEducationApi/ImaloEducationApi/`](API/ImaloEducationApi/ImaloEducationApi/) | .NET 10 / ASP.NET Core Web API, C#, raw ADO.NET (no ORM, no stored procs) |
 | DB | [`DB/`](DB/) | SQL Server, SSDT `.sqlproj`, deployed via `sqlpackage` |
 
 School reference data (name, color, lunch/transport prices) is static frontend JSON (`UI/src/assets/schools.json`), not a database table — `SchoolId` on a scholar is a plain integer, not a foreign key.

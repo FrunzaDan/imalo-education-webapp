@@ -18,11 +18,11 @@
 *.sqlproj.user
 
 # .NET / C# build output
-/API/ImaloEducationApi/bin/
-/API/ImaloEducationApi/obj/
-/API/ImaloEducationApi/publish/
-/API/ImaloEducationApi.Tests/bin/
-/API/ImaloEducationApi.Tests/obj/
+/API/ImaloEducationApi/ImaloEducationApi/bin/
+/API/ImaloEducationApi/ImaloEducationApi/obj/
+/API/ImaloEducationApi/ImaloEducationApi/publish/
+/API/ImaloEducationApi/ImaloEducationApi.Tests/bin/
+/API/ImaloEducationApi/ImaloEducationApi.Tests/obj/
 *.pdb # Debugging symbols
 *.suo # Visual Studio Solution User Options
 *.user # Visual Studio user settings
@@ -84,5 +84,5 @@ Thumbs.db
 # You might want to ignore appsettings.Development.json or other environment-specific
 # config files if they contain sensitive information or are managed separately.
 # For example:
-# /API/ImaloEducationApi/appsettings.Development.json
-# /API/ImaloEducationApi/appsettings.Production.json
+# /API/ImaloEducationApi/ImaloEducationApi/appsettings.Development.json
+# /API/ImaloEducationApi/ImaloEducationApi/appsettings.Production.json

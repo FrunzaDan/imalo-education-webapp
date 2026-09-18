@@ -5,7 +5,7 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-API_PROJ_DIR="$ROOT_DIR/API/ImaloEducationApi"
+API_PROJ_DIR="$ROOT_DIR/API/ImaloEducationApi/ImaloEducationApi"
 API_PROJ="$API_PROJ_DIR/ImaloEducationApi.csproj"
 API_LAUNCH_SETTINGS="$API_PROJ_DIR/Properties/launchSettings.json"
 API_LAUNCH_PROFILE="ImaloEducationApi"
@@ -26,8 +26,8 @@ SQL_DATABASE="ImaloEducationDB"
 
 # Default falls back to the "ImaloEducationApi" launch profile's applicationUrl so the
 # script doesn't silently poll the wrong port if the profile is ever changed; set
-# API_URL yourself to override. This project has no HTTPS profile (see
-# ai_docs/known-gaps.md) — plain HTTP only.
+# API_URL yourself to override. This project has no HTTPS profile (see ai_docs/api.md's
+# Gotchas) — plain HTTP only, deliberately, since this is local-only.
 DEFAULT_API_URL="http://localhost:5244"
 if [[ -z "${API_URL:-}" ]] && [[ -f "$API_LAUNCH_SETTINGS" ]]; then
   DEFAULT_API_URL="$(sed -nE 's/.*"applicationUrl"[[:space:]]*:[[:space:]]*"(http:\/\/[^";]*).*/\1/p' "$API_LAUNCH_SETTINGS" | head -1)"
