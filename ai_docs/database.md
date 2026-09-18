@@ -6,10 +6,10 @@ SQL Server schema for `ImaloEducationDB`, defined as an SSDT database project (`
 
 ## Key files / paths
 
-- `ImaloEducationDB/ImaloEducationDB.sqlproj` — project file. `DSP` is `SqlAzureV12DatabaseSchemaProvider` (targets Azure SQL / SQL Server 2019-compatible surface — chosen because local dev runs against Azure SQL Edge, which reports as SQL Server 2019 and rejects a SQL2022-targeted DACPAC).
-- `ImaloEducationDB/global.json` — pins this project's build to the .NET 8 SDK; see [[build-and-run]] for why.
-- `ImaloEducationDB/Scripts/Pre-Deployment/Script.PreDeployment.sql` — creates the `ImaloEducationDB` database itself if it doesn't exist, then `USE`s it. Runs before every table deploy.
-- `ImaloEducationDB/Tables/*.sql` — one file per table (below).
+- `DB/ImaloEducationDB.sqlproj` — project file. `DSP` is `SqlAzureV12DatabaseSchemaProvider` (targets Azure SQL / SQL Server 2019-compatible surface — chosen because local dev runs against Azure SQL Edge, which reports as SQL Server 2019 and rejects a SQL2022-targeted DACPAC).
+- `DB/global.json` — pins this project's build to the .NET 8 SDK; see [[build-and-run]] for why.
+- `DB/Scripts/Pre-Deployment/Script.PreDeployment.sql` — creates the `ImaloEducationDB` database itself if it doesn't exist, then `USE`s it. Runs before every table deploy.
+- `DB/Tables/*.sql` — one file per table (below).
 
 ## Tables
 
@@ -18,7 +18,7 @@ SQL Server schema for `ImaloEducationDB`, defined as an SSDT database project (`
 - `FirstName`, `LastName NVARCHAR(100)` NOT NULL
 - `DateOfBirth DATETIME2` NOT NULL
 - `Grade INT` NULL (0–12, enforced app-side)
-- `SchoolId INT` NULL — **not a foreign key**, no `Schools` table exists in the DB. Schools are static frontend config (`Frontend/src/assets/schools.json`: id, name, color, lunchPrice, transportPrice) served by `SchoolsService`, not persisted server-side. `SchoolId` here is just an integer the frontend resolves against that static list.
+- `SchoolId INT` NULL — **not a foreign key**, no `Schools` table exists in the DB. Schools are static frontend config (`UI/src/assets/schools.json`: id, name, color, lunchPrice, transportPrice) served by `SchoolsService`, not persisted server-side. `SchoolId` here is just an integer the frontend resolves against that static list.
 
 **`PickUpSchedule`** (`PickUpSchedule.sql`) — one row per scholar, JSON blob, not normalized.
 - `ScholarId UNIQUEIDENTIFIER` PK **and** FK → `Scholars.Id`, `ON DELETE CASCADE`

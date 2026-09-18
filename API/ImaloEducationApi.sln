@@ -3,9 +3,9 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.5.2.0
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ImaloEducationApi", "ImaloEducationApi.csproj", "{1FF39DC7-08D4-FB47-4577-F91AD1FBC697}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ImaloEducationApi", "ImaloEducationApi\ImaloEducationApi.csproj", "{1FF39DC7-08D4-FB47-4577-F91AD1FBC697}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ImaloEducationApi.Tests", "..\ImaloEducationApi.Tests\ImaloEducationApi.Tests.csproj", "{1719AEDC-D1B0-4219-94F8-7EB7820491FD}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ImaloEducationApi.Tests", "ImaloEducationApi.Tests\ImaloEducationApi.Tests.csproj", "{1719AEDC-D1B0-4219-94F8-7EB7820491FD}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

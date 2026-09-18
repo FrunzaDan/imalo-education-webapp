@@ -2,27 +2,27 @@
 
 # --- Compiled Output & Build Artifacts ---
 # Angular build output
-/Frontend/dist/
-/Frontend/tmp/
-/Frontend/out-tsc/
-/Frontend/bazel-out/
-/Frontend/.angular/cache/
-/Frontend/coverage/
+/UI/dist/
+/UI/tmp/
+/UI/out-tsc/
+/UI/bazel-out/
+/UI/.angular/cache/
+/UI/coverage/
 
 # ImaloEducationDB build output
-/ImaloEducationDB/bin/
-/ImaloEducationDB/obj/
+/DB/bin/
+/DB/obj/
 
 # SQL Server Data Tools (SSDT) intermediate files
 *.dbmdl
 *.sqlproj.user
 
 # .NET / C# build output
-/ImaloEducationApi/bin/
-/ImaloEducationApi/obj/
-/ImaloEducationApi/publish/
-/ImaloEducationApi.Tests/bin/
-/ImaloEducationApi.Tests/obj/
+/API/ImaloEducationApi/bin/
+/API/ImaloEducationApi/obj/
+/API/ImaloEducationApi/publish/
+/API/ImaloEducationApi.Tests/bin/
+/API/ImaloEducationApi.Tests/obj/
 *.pdb # Debugging symbols
 *.suo # Visual Studio Solution User Options
 *.user # Visual Studio user settings
@@ -30,7 +30,7 @@
 
 # --- Dependencies ---
 # Node.js modules for Angular
-/Frontend/node_modules/
+/UI/node_modules/
 npm-debug.log
 yarn-error.log
 .pnp/
@@ -84,5 +84,5 @@ Thumbs.db
 # You might want to ignore appsettings.Development.json or other environment-specific
 # config files if they contain sensitive information or are managed separately.
 # For example:
-# /ImaloEducationApi/appsettings.Development.json
-# /ImaloEducationApi/appsettings.Production.json
+# /API/ImaloEducationApi/appsettings.Development.json
+# /API/ImaloEducationApi/appsettings.Production.json

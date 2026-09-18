@@ -1,0 +1,1298 @@
+{
+	"info": {
+		"_postman_id": "0be33911-c498-471e-9528-0252a57b7334",
+		"name": "Imalo Education API",
+		"description": "Full API coverage for the Imalo Education API (.NET 10 / ASP.NET Core Web API — see ai_docs/api.md). Import this collection plus the companion environment file (optional — a sane default baseUrl is baked in as a collection variable, so this works immediately after import even with no environment selected).\n\n**No authentication** — unlike some sibling projects, this API has no login/JWT flow (see ai_docs/api.md's Gotchas), so every request here runs unauthenticated by design.\n\n**Folders:**\n- **Scholars** — a numbered, top-to-bottom, self-cleaning walk through create → get → update → list → audit log → delete → confirm-gone. Safe to run repeatedly (Collection Runner-friendly): each pass creates and then deletes its own randomly-generated scholar.\n- **Attendance** — a self-contained, self-cleaning walk through a helper scholar's attendance: save → get-for-scholar → get-all → delete → cleanup.\n- **Audit Log** — the global (cross-scholar) paginated audit trail, plus the destructive clear-all-logs action.\n- **Negative & Edge Cases** — validation failures (`400`) and not-found (`404`) cases matching the status-code conventions documented in ai_docs/api.md and ai_docs/database.md. A couple of these register their own short-lived helper scholar first (same pattern as the other folders) and clean it up afterwards.\n- **Health** — the unauthenticated `/health` liveness check.\n\nSee `ai_docs/index.md` for the full architecture and `ai_docs/api.md` / `ai_docs/database.md` for the validation rules and status-code conventions this collection exercises.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"event": [
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					"pm.test(\"No unhandled server error (500)\", function () {",
+					"    pm.expect(pm.response.code).to.not.equal(500);",
+					"});",
+					"",
+					"pm.test(\"Response time is reasonable (< 5s)\", function () {",
+					"    pm.expect(pm.response.responseTime).to.be.below(5000);",
+					"});"
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost:5244",
+			"type": "string"
+		},
+		{
+			"key": "scholarGuid",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "scholarFirstName",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "scholarLastName",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "attendanceScholarGuid",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "attendanceFirstName",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "attendanceLastName",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "negScholarGuid",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "negFirstName",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "negLastName",
+			"value": "",
+			"type": "string"
+		}
+	],
+	"item": [
+		{
+			"name": "Scholars",
+			"item": [
+				{
+					"name": "1. Create Scholar",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/Scholars",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"Scholars"
+							]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"firstName\": \"{{scholarFirstName}}\",\n    \"lastName\": \"{{scholarLastName}}\",\n    \"schoolId\": 1,\n    \"grade\": 5,\n    \"dateOfBirth\": \"2015-04-12\",\n    \"pickUpSchedule\": {\n        \"monday\": \"15:30\",\n        \"tuesday\": null,\n        \"wednesday\": \"15:30\",\n        \"thursday\": null,\n        \"friday\": \"14:00\"\n    },\n    \"motherFirstName\": \"Jane\",\n    \"motherLastName\": \"Doe\",\n    \"motherPhoneNumber\": \"+1 555-123-4567\",\n    \"fatherFirstName\": \"John\",\n    \"fatherLastName\": \"Doe\",\n    \"fatherPhoneNumber\": \"+1 555-987-6543\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"description": "Creates a new scholar with a fresh, randomly-generated name each run (built in the Pre-request Script) so this step — and the whole folder — is safe to re-run without colliding with a previous pass. The GUID is always server-generated (`Guid.NewGuid()`), never client-supplied.\n\nUnlike some sibling projects' register endpoints, `CreatedAtAction` returns the full created `Scholar` (including its server-generated `id`) directly in the response body — no separate lookup-by-field step is needed to capture it, see ai_docs/api.md."
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"const rand = Date.now() + Math.floor(Math.random() * 1000);",
+									"pm.collectionVariables.set(\"scholarFirstName\", \"Test\" + String(rand).slice(-6));",
+									"pm.collectionVariables.set(\"scholarLastName\", \"Scholar\" + String(rand).slice(-4));"
+								]
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status code is 201\", () => pm.response.to.have.status(201));",
+									"",
+									"const body = pm.response.json();",
+									"pm.test(\"Response contains a server-generated id\", () => {",
+									"    pm.expect(body).to.have.property(\"id\").that.is.a(\"string\").and.is.not.empty;",
+									"});",
+									"",
+									"if (body && body.id) {",
+									"    pm.collectionVariables.set(\"scholarGuid\", body.id);",
+									"}"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "2. Get Scholar By Id",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/Scholars/{{scholarGuid}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"Scholars",
+								"{{scholarGuid}}"
+							]
+						}
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status code is 200\", () => pm.response.to.have.status(200));",
+									"",
+									"const body = pm.response.json();",
+									"pm.test(\"firstName matches the scholar just created\", () => {",
+									"    pm.expect(body.firstName).to.eql(pm.collectionVariables.get(\"scholarFirstName\"));",
+									"});"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "3. Update Scholar",
+					"request": {
+						"method": "PUT",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/Scholars/{{scholarGuid}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"Scholars",
+								"{{scholarGuid}}"
+							]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"id\": \"{{scholarGuid}}\",\n    \"firstName\": \"{{scholarFirstName}}\",\n    \"lastName\": \"{{scholarLastName}}\",\n    \"schoolId\": 1,\n    \"grade\": 6,\n    \"dateOfBirth\": \"2015-04-12\",\n    \"pickUpSchedule\": {\n        \"monday\": \"16:00\",\n        \"wednesday\": \"16:00\"\n    },\n    \"motherFirstName\": \"Jane\",\n    \"motherLastName\": \"Doe\",\n    \"motherPhoneNumber\": \"+1 555-123-4567\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"description": "Full replace, not a partial patch — fields left out of the body (like `fatherFirstName` here) are cleared, not left unchanged (contrast with sibling projects' `ISNULL(@param, column)` partial-update pattern). The URL id and the body's `id` must match, or the controller returns `400` before touching the data layer, see Negative & Edge Cases."
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status code is 200\", () => pm.response.to.have.status(200));",
+									"",
+									"const body = pm.response.json();",
+									"pm.test(\"grade reflects the edit\", () => pm.expect(body.grade).to.eql(6));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "4. List All Scholars",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/Scholars",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"Scholars"
+							]
+						},
+						"description": "No pagination, no filtering — returns every scholar in one call. Backs the main scholar table in the UI."
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status code is 200\", () => pm.response.to.have.status(200));",
+									"",
+									"const body = pm.response.json();",
+									"pm.test(\"Response is an array containing the scholar just created\", () => {",
+									"    pm.expect(body).to.be.an(\"array\");",
+									"    pm.expect(body.some(s => s.id === pm.collectionVariables.get(\"scholarGuid\"))).to.be.true;",
+									"});"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "5. Get Scholar Audit Log",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/Scholars/{{scholarGuid}}/auditLog",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"Scholars",
+								"{{scholarGuid}}",
+								"auditLog"
+							]
+						},
+						"description": "Newest-first trail of every mutation on this scholar so far: Created, Updated."
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status code is 200\", () => pm.response.to.have.status(200));",
+									"",
+									"const body = pm.response.json();",
+									"pm.test(\"At least 2 audit entries recorded (Created, Updated)\", () => {",
+									"    pm.expect(body).to.be.an(\"array\").with.lengthOf.at.least(2);",
+									"});"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "6. Delete Scholar",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/Scholars/{{scholarGuid}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"Scholars",
+								"{{scholarGuid}}"
+							]
+						},
+						"description": "Cascades to `PickUpSchedule`, `Attendance`, `Parents` via DB `ON DELETE CASCADE` — the controller doesn't delete children itself, see ai_docs/database.md."
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status code is 204\", () => pm.response.to.have.status(204));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "7. Get Scholar By Id (confirm deleted, expect 404)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/Scholars/{{scholarGuid}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"Scholars",
+								"{{scholarGuid}}"
+							]
+						}
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status code is 404\", () => pm.response.to.have.status(404));"
+								]
+							}
+						}
+					]
+				}
+			],
+			"description": "Run this folder top-to-bottom (or with Collection Runner). Each numbered step chains off the previous one via collection variables and the whole folder is self-cleaning — it deletes the scholar it creates in step 1, so it's safe to run repeatedly."
+		},
+		{
+			"name": "Attendance",
+			"item": [
+				{
+					"name": "1. Create Helper Scholar",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/Scholars",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"Scholars"
+							]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"firstName\": \"{{attendanceFirstName}}\",\n    \"lastName\": \"{{attendanceLastName}}\",\n    \"dateOfBirth\": \"2016-09-01\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"description": "Registers a throwaway scholar for this folder's attendance steps and captures its server-generated id. Independent of the Scholars folder (that folder deletes its own scholar), so this folder can be run on its own."
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"const rand = Date.now() + Math.floor(Math.random() * 1000);",
+									"pm.collectionVariables.set(\"attendanceFirstName\", \"Test\" + String(rand).slice(-6));",
+									"pm.collectionVariables.set(\"attendanceLastName\", \"Attend\" + String(rand).slice(-4));"
+								]
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status code is 201\", () => pm.response.to.have.status(201));",
+									"",
+									"const body = pm.response.json();",
+									"if (body && body.id) {",
+									"    pm.collectionVariables.set(\"attendanceScholarGuid\", body.id);",
+									"}"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "2. Save Attendance (Create/Update)",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/Scholars/{{attendanceScholarGuid}}/attendance",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"Scholars",
+								"{{attendanceScholarGuid}}",
+								"attendance"
+							]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "[\n    {\n        \"date\": \"2026-09-14\",\n        \"lunchCost\": 5.5,\n        \"transportCost\": 2.0,\n        \"present\": true,\n        \"lunchSelected\": true,\n        \"transportSelected\": true\n    },\n    {\n        \"date\": \"2026-09-15\",\n        \"lunchCost\": 5.5,\n        \"transportCost\": 2.0,\n        \"present\": false,\n        \"lunchSelected\": false,\n        \"transportSelected\": false\n    }\n]",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"description": "Upserts (replaces) the scholar's whole attendance list in one call — not a per-day patch. `present: false` requires both `lunchSelected`/`transportSelected` to also be `false`, or the API rejects the whole request with `400` (see Negative & Edge Cases)."
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status code is 200\", () => pm.response.to.have.status(200));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "3. Get Attendance For Scholar",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/Scholars/{{attendanceScholarGuid}}/attendance",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"Scholars",
+								"{{attendanceScholarGuid}}",
+								"attendance"
+							]
+						}
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status code is 200\", () => pm.response.to.have.status(200));",
+									"",
+									"const body = pm.response.json();",
+									"pm.test(\"Both saved records come back\", () => {",
+									"    pm.expect(body).to.be.an(\"array\").with.lengthOf(2);",
+									"});"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "4. Get All Attendance (every scholar)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/Scholars/attendance",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"Scholars",
+								"attendance"
+							]
+						},
+						"description": "Every scholar's attendance in one call, shape `[{ scholarId, attendance: AttendanceRecord[] }]`. Backs the attendance dashboard, not the per-scholar page."
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status code is 200\", () => pm.response.to.have.status(200));",
+									"",
+									"const body = pm.response.json();",
+									"pm.test(\"Response is an array including the helper scholar\", () => {",
+									"    pm.expect(body).to.be.an(\"array\");",
+									"    pm.expect(body.some(a => a.scholarId === pm.collectionVariables.get(\"attendanceScholarGuid\"))).to.be.true;",
+									"});"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "5. Delete Attendance",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/Scholars/{{attendanceScholarGuid}}/attendance",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"Scholars",
+								"{{attendanceScholarGuid}}",
+								"attendance"
+							]
+						}
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status code is 204\", () => pm.response.to.have.status(204));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "6. Delete Helper Scholar (cleanup)",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/Scholars/{{attendanceScholarGuid}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"Scholars",
+								"{{attendanceScholarGuid}}"
+							]
+						}
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status code is 204\", () => pm.response.to.have.status(204));"
+								]
+							}
+						}
+					]
+				}
+			],
+			"description": "Self-contained, self-cleaning walk through a helper scholar's attendance: save → get-for-scholar → get-all → delete → cleanup. Safe to run repeatedly."
+		},
+		{
+			"name": "Audit Log",
+			"item": [
+				{
+					"name": "Get Global Audit Log (paginated)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/Scholars/auditLog/all?pageNumber=1&pageSize=20",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"Scholars",
+								"auditLog",
+								"all"
+							],
+							"query": [
+								{
+									"key": "pageNumber",
+									"value": "1"
+								},
+								{
+									"key": "pageSize",
+									"value": "20"
+								}
+							]
+						},
+						"description": "Newest-first across every scholar. Rows for a since-deleted scholar still show up, with `firstName`/`lastName` as `null` rather than disappearing (LEFT JOIN against `Scholars`, see ai_docs/database.md)."
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status code is 200\", () => pm.response.to.have.status(200));",
+									"",
+									"const body = pm.response.json();",
+									"pm.test(\"Response is a paged list\", () => {",
+									"    pm.expect(body).to.have.property(\"items\").that.is.an(\"array\");",
+									"    pm.expect(body).to.have.property(\"totalItems\");",
+									"    pm.expect(body.pageNumber).to.eql(1);",
+									"});"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "Delete ALL Audit Log Entries (DESTRUCTIVE)",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/Scholars/auditLog/all",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"Scholars",
+								"auditLog",
+								"all"
+							]
+						},
+						"description": "**Destructive — permanently wipes every audit-log row for every scholar, no soft-delete, no confirmation, no auth (`DeleteAllAuditLogAsync`, a plain unconditional DELETE).** Not wired into any other flow in this collection; run it only when you actually mean to clear the log. See ai_docs/api.md."
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status code is 204\", () => pm.response.to.have.status(204));"
+								]
+							}
+						}
+					]
+				}
+			],
+			"description": "The global (cross-scholar) audit trail and its destructive clear-all action. See ai_docs/database.md's audit trail section."
+		},
+		{
+			"name": "Negative & Edge Cases",
+			"item": [
+				{
+					"name": "Create Scholar - Missing First Name (expect 400)",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/Scholars",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"Scholars"
+							]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"lastName\": \"NoFirstName\",\n    \"dateOfBirth\": \"2015-04-12\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"description": "`Scholar.FirstName` is `[Required]` — `ModelState` catches this before the data layer is ever touched."
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status code is 400\", () => pm.response.to.have.status(400));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "Create Scholar - Grade Out Of Range (expect 400)",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/Scholars",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"Scholars"
+							]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"firstName\": \"Bad\",\n    \"lastName\": \"Grade\",\n    \"dateOfBirth\": \"2015-04-12\",\n    \"grade\": 15\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"description": "`Scholar.Grade` is `[Range(0, 12)]`."
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status code is 400\", () => pm.response.to.have.status(400));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "Create Scholar - Date Of Birth In Future (expect 400)",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/Scholars",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"Scholars"
+							]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"firstName\": \"Future\",\n    \"lastName\": \"Birth\",\n    \"dateOfBirth\": \"2099-01-01\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"description": "`Scholar.ValidateDateOfBirth` rejects any date after `DateTime.UtcNow`."
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status code is 400\", () => pm.response.to.have.status(400));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "Create Scholar - Invalid PickUpSchedule Day (expect 400)",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/Scholars",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"Scholars"
+							]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"firstName\": \"Bad\",\n    \"lastName\": \"Day\",\n    \"dateOfBirth\": \"2015-04-12\",\n    \"pickUpSchedule\": {\n        \"funday\": \"15:00\"\n    }\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"description": "`Scholar.ValidatePickUpSchedule` only accepts the five lowercase weekday keys (`monday`…`friday`)."
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status code is 400\", () => pm.response.to.have.status(400));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "Create Scholar - Invalid PickUpSchedule Time Format (expect 400)",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/Scholars",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"Scholars"
+							]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"firstName\": \"Bad\",\n    \"lastName\": \"Time\",\n    \"dateOfBirth\": \"2015-04-12\",\n    \"pickUpSchedule\": {\n        \"monday\": \"not-a-time\"\n    }\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"description": "Must be strict 24-hour `HH:mm` (`DateTime.TryParseExact`) — chosen over `TimeSpan.TryParse`, which would silently accept a bare number as a duration instead of rejecting it, see ai_docs/api.md."
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status code is 400\", () => pm.response.to.have.status(400));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "Update Scholar - Id Mismatch (expect 400)",
+					"request": {
+						"method": "PUT",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/Scholars/00000000-0000-0000-0000-000000000001",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"Scholars",
+								"00000000-0000-0000-0000-000000000001"
+							]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"id\": \"00000000-0000-0000-0000-000000000002\",\n    \"firstName\": \"Mismatch\",\n    \"lastName\": \"Id\",\n    \"dateOfBirth\": \"2015-04-12\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"description": "The URL id and the body's `id` must match — checked before `ModelState` or the data layer, see ai_docs/api.md."
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status code is 400\", () => pm.response.to.have.status(400));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "Get Scholar - Not Found (expect 404)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/Scholars/00000000-0000-0000-0000-000000000000",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"Scholars",
+								"00000000-0000-0000-0000-000000000000"
+							]
+						},
+						"description": "Well-formed GUID, but no such row exists."
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status code is 404\", () => pm.response.to.have.status(404));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "Update Scholar - Not Found (expect 404)",
+					"request": {
+						"method": "PUT",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/Scholars/00000000-0000-0000-0000-000000000000",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"Scholars",
+								"00000000-0000-0000-0000-000000000000"
+							]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"id\": \"00000000-0000-0000-0000-000000000000\",\n    \"firstName\": \"Ghost\",\n    \"lastName\": \"Scholar\",\n    \"dateOfBirth\": \"2015-04-12\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"description": "URL id and body id match (so it passes that check) and the body is otherwise valid, but no such scholar exists to update."
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status code is 404\", () => pm.response.to.have.status(404));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "Delete Scholar - Not Found (expect 404)",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/Scholars/00000000-0000-0000-0000-000000000000",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"Scholars",
+								"00000000-0000-0000-0000-000000000000"
+							]
+						}
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status code is 404\", () => pm.response.to.have.status(404));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "Get Global Audit Log - Invalid Page Number (expect 400)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/Scholars/auditLog/all?pageNumber=0&pageSize=20",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"Scholars",
+								"auditLog",
+								"all"
+							],
+							"query": [
+								{
+									"key": "pageNumber",
+									"value": "0"
+								},
+								{
+									"key": "pageSize",
+									"value": "20"
+								}
+							]
+						},
+						"description": "`pageNumber` must be ≥1."
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status code is 400\", () => pm.response.to.have.status(400));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "Get Global Audit Log - Invalid Page Size (expect 400)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/Scholars/auditLog/all?pageNumber=1&pageSize=500",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"Scholars",
+								"auditLog",
+								"all"
+							],
+							"query": [
+								{
+									"key": "pageNumber",
+									"value": "1"
+								},
+								{
+									"key": "pageSize",
+									"value": "500"
+								}
+							]
+						},
+						"description": "`pageSize` must be 1-100."
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status code is 400\", () => pm.response.to.have.status(400));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "Attendance Conflict, Step 1: Create Helper (expect 201)",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/Scholars",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"Scholars"
+							]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"firstName\": \"{{negFirstName}}\",\n    \"lastName\": \"{{negLastName}}\",\n    \"dateOfBirth\": \"2016-09-01\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"description": "Registers a throwaway scholar to attach the next step's invalid attendance payload to."
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"const rand = Date.now() + Math.floor(Math.random() * 1000);",
+									"pm.collectionVariables.set(\"negFirstName\", \"Test\" + String(rand).slice(-6));",
+									"pm.collectionVariables.set(\"negLastName\", \"Neg\" + String(rand).slice(-4));"
+								]
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status code is 201\", () => pm.response.to.have.status(201));",
+									"",
+									"const body = pm.response.json();",
+									"if (body && body.id) {",
+									"    pm.collectionVariables.set(\"negScholarGuid\", body.id);",
+									"}"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "Attendance Conflict, Step 2: Lunch Selected While Absent (expect 400)",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/Scholars/{{negScholarGuid}}/attendance",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"Scholars",
+								"{{negScholarGuid}}",
+								"attendance"
+							]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "[\n    {\n        \"date\": \"2026-09-14\",\n        \"lunchCost\": 5.5,\n        \"transportCost\": 2.0,\n        \"present\": false,\n        \"lunchSelected\": true,\n        \"transportSelected\": false\n    }\n]",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"description": "A scholar can't have `lunchSelected`/`transportSelected: true` on a day they weren't `present` — checked in the controller, not a `ModelState`/DataAnnotations rule, see ai_docs/api.md."
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status code is 400\", () => pm.response.to.have.status(400));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "Attendance Conflict, Step 3: Cleanup Helper (expect 204)",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/Scholars/{{negScholarGuid}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"Scholars",
+								"{{negScholarGuid}}"
+							]
+						}
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status code is 204\", () => pm.response.to.have.status(204));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "Delete Attendance - Not Found (expect 404)",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/Scholars/00000000-0000-0000-0000-000000000000/attendance",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"Scholars",
+								"00000000-0000-0000-0000-000000000000",
+								"attendance"
+							]
+						},
+						"description": "No attendance record exists for this scholar id, so there's nothing to delete."
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status code is 404\", () => pm.response.to.have.status(404));"
+								]
+							}
+						}
+					]
+				}
+			],
+			"description": "Validation failures and not-found cases — the status-code conventions documented in ai_docs/api.md and ai_docs/database.md. Independent of the Scholars/Attendance folders (each scenario sets up its own state), so this folder can be run on its own."
+		},
+		{
+			"name": "Health",
+			"item": [
+				{
+					"name": "Get API Health",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/health",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"health"
+							]
+						},
+						"description": "Bare liveness check (`AddHealthChecks()`, no DB probe), mapped directly in `Program.cs`, not part of `ScholarsController`. Backs the Angular UI's \"API is not running\" banner."
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status code is 200\", () => pm.response.to.have.status(200));"
+								]
+							}
+						}
+					]
+				}
+			],
+			"description": "Unauthenticated liveness check backing the Angular UI's API-availability banner."
+		}
+	]
+}

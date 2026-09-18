@@ -7,9 +7,9 @@ A small full-stack CRUD app for tracking scholars (students), their pick-up sche
 
 | Layer | Folder | Tech | Doc |
 |---|---|---|---|
-| UI | `Frontend` | Angular 22 (SSR via `@angular/ssr`, Express server) | [angular-frontend](angular-frontend.md) |
-| API | `ImaloEducationApi` | .NET 10 / ASP.NET Core Web API, C# | [api](api.md) |
-| DB | `ImaloEducationDB` | SQL Server (SSDT `.sqlproj`, deployed via `sqlpackage`) | [database](database.md) |
+| UI | `UI` | Angular 22 (SSR via `@angular/ssr`, Express server) | [angular-frontend](angular-frontend.md) |
+| API | `API/ImaloEducationApi` | .NET 10 / ASP.NET Core Web API, C# | [api](api.md) |
+| DB | `DB` | SQL Server (SSDT `.sqlproj`, deployed via `sqlpackage`) | [database](database.md) |
 | Build/run | repo root | `build.sh`, `run.sh`, Docker | [build-and-run](build-and-run.md) |
 
 The three layers only talk over HTTP — nothing shares process or memory. Angular UI → ASP.NET Core API (parameterized ADO.NET, no ORM, no stored procs) → SQL Server. School reference data (name/color/prices) is static frontend JSON, not a DB table — see [angular-frontend](angular-frontend.md) and [database](database.md).
@@ -23,4 +23,4 @@ The three layers only talk over HTTP — nothing shares process or memory. Angul
 
 No authentication/authorization anywhere; CORS is wide open; API error responses leak exception text. Each doc above notes these again in its own Gotchas section where relevant — don't "fix" them without checking with the user first.
 
-Unit tests exist for both layers' pure business logic, plus `ScholarsController` (against a mocked `IScholarDataAccess`), a handful of pure Angular services, and one `TestBed` component spec (`AttendancePerScholarComponent`) (`ImaloEducationApi.Tests`, `Frontend/**/*.spec.ts`, run via `build.sh` — see [[build-and-run]]). Still no coverage for `ScholarDataAccess`'s actual SQL, the other 11 Angular components, or the remaining `HttpClient`-backed Angular services — see each doc's Gotchas section.
+Unit tests exist for both layers' pure business logic, plus `ScholarsController` (against a mocked `IScholarDataAccess`), a handful of pure Angular services, and one `TestBed` component spec (`AttendancePerScholarComponent`) (`API/ImaloEducationApi.Tests`, `UI/**/*.spec.ts`, run via `build.sh` — see [[build-and-run]]). Still no coverage for `ScholarDataAccess`'s actual SQL, the other 11 Angular components, or the remaining `HttpClient`-backed Angular services — see each doc's Gotchas section.
