@@ -1,18 +1,28 @@
 #!/usr/bin/env bash
-# Restores, builds and tests the .NET API, then does the same for the Angular
-# app. CI-style, one-shot: proves everything compiles and passes its tests.
-# The SQL database project is built too (it has no tests to run), last, so it
-# doesn't sit between the two primary build+test flows above.
+# Restores, builds, and tests the .NET solution and the SQL database project,
+# then installs dependencies, builds, and tests the Angular app.
+# Pass --skip-tests to skip both test steps for a faster sanity build.
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-API_PROJ="$ROOT_DIR/API/ImaloEducationApi/ImaloEducationApi/ImaloEducationApi.csproj"
-API_TEST_PROJ="$ROOT_DIR/API/ImaloEducationApi/ImaloEducationApi.Tests/ImaloEducationApi.Tests.csproj"
+API_SLN="$ROOT_DIR/API/ImaloEducationApi/ImaloEducationApi.slnx"
 DB_DIR="$ROOT_DIR/DB"
 DB_PROJ="ImaloEducationDB.sqlproj"
 UI_DIR="$ROOT_DIR/UI"
 
-echo "==> [1/6] Checking prerequisites"
+SKIP_TESTS=0
+for arg in "$@"; do
+  case "$arg" in
+    --skip-tests) SKIP_TESTS=1 ;;
+    *)
+      echo "Unknown option: $arg" >&2
+      echo "Usage: $0 [--skip-tests]" >&2
+      exit 1
+      ;;
+  esac
+done
+
+echo "==> [1/7] Checking prerequisites"
 missing=()
 for cmd in dotnet node npm; do
   command -v "$cmd" >/dev/null 2>&1 || missing+=("$cmd")
@@ -24,31 +34,41 @@ if [[ ${#missing[@]} -gt 0 ]]; then
   exit 1
 fi
 
-echo "==> [2/6] Building .NET API"
-dotnet restore "$API_PROJ"
-dotnet build "$API_PROJ" --no-restore --configuration Debug
+echo "==> [2/7] Restoring .NET solution"
+dotnet restore "$API_SLN"
 
-echo "==> [3/6] Testing .NET API"
-dotnet test "$API_TEST_PROJ" --configuration Debug
+echo "==> [3/7] Building .NET solution"
+dotnet build "$API_SLN" --no-restore --configuration Debug
 
-echo "==> [4/6] Building Angular app"
+echo "==> [4/7] Running .NET tests"
+if [[ "$SKIP_TESTS" -eq 1 ]]; then
+  echo "    Skipped (--skip-tests)"
+else
+  dotnet test "$API_SLN" --no-build --configuration Debug
+fi
+
+echo "==> [5/7] Building database project"
+(
+  cd "$DB_DIR"
+  dotnet restore "$DB_PROJ"
+  dotnet build "$DB_PROJ" --no-restore --configuration Debug
+)
+
+echo "==> [6/7] Building Angular app"
 (
   cd "$UI_DIR"
   npm ci
   npm run build
 )
 
-echo "==> [5/6] Testing Angular app"
-(
-  cd "$UI_DIR"
-  npm test -- --watch=false
-)
-
-echo "==> [6/6] Building database project"
-(
-  cd "$DB_DIR"
-  dotnet restore "$DB_PROJ"
-  dotnet build "$DB_PROJ" --no-restore --configuration Debug
-)
+echo "==> [7/7] Running Angular tests"
+if [[ "$SKIP_TESTS" -eq 1 ]]; then
+  echo "    Skipped (--skip-tests)"
+else
+  (
+    cd "$UI_DIR"
+    node_modules/.bin/ng test --watch=false
+  )
+fi
 
 echo "==> Build complete."
