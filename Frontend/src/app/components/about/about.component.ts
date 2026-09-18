@@ -142,8 +142,8 @@ function randomBirthdate(): Date {
 function randomPickUpSchedule(): PickUpSchedule {
   const schedule: PickUpSchedule = {};
   for (const day of WEEKDAY_KEYS) {
-    // Not every scholar is picked up every day.
-    schedule[day] = Math.random() < 0.6 ? pick(PICKUP_TIME_SLOTS) : '';
+    // Every test scholar has a pickup time every weekday.
+    schedule[day] = pick(PICKUP_TIME_SLOTS);
   }
   return schedule;
 }
@@ -259,7 +259,9 @@ export class AboutComponent {
   }
 
   private buildRandomScholar(schools: School[]): Scholar {
-    const mother = randomParent(0.7);
+    // Every test scholar has at least one parent with contact info; the
+    // other role is independently optional, same as the real data model.
+    const mother = randomParent(1);
     const father = randomParent(0.5);
     return {
       id: '00000000-0000-0000-0000-000000000000',

@@ -337,14 +337,44 @@ public class ScholarsControllerTests
     {
         var (controller, dataAccess) = MakeController();
         var id = Guid.NewGuid();
+        var date = new DateTime(2024, 3, 4);
         var records = new List<AttendanceRecord>
         {
-            new() { Date = DateTime.UtcNow, Present = false, LunchSelected = true },
+            new() { Date = date, Present = false, LunchSelected = true },
         };
 
         var result = await controller.CreateOrUpdateAttendance(id, records, CancellationToken.None);
 
-        Assert.IsType<BadRequestObjectResult>(result);
+        var badRequest = Assert.IsType<BadRequestObjectResult>(result);
+        var dates = Assert.IsAssignableFrom<IEnumerable<DateTime>>(
+            badRequest.Value!.GetType().GetProperty("dates")!.GetValue(badRequest.Value));
+        Assert.Equal([date], dates);
+        dataAccess.Verify(
+            d => d.CreateOrUpdateAttendanceAsync(It.IsAny<Guid>(), It.IsAny<List<AttendanceRecord>>(),
+                It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task CreateOrUpdateAttendance_MultipleOffendingRecords_ReturnsBadRequestListingAllDates()
+    {
+        var (controller, dataAccess) = MakeController();
+        var id = Guid.NewGuid();
+        var okDate = new DateTime(2024, 3, 4);
+        var badDate1 = new DateTime(2024, 3, 5);
+        var badDate2 = new DateTime(2024, 3, 6);
+        var records = new List<AttendanceRecord>
+        {
+            new() { Date = okDate, Present = true, LunchSelected = true },
+            new() { Date = badDate1, Present = false, LunchSelected = true },
+            new() { Date = badDate2, Present = false, TransportSelected = true },
+        };
+
+        var result = await controller.CreateOrUpdateAttendance(id, records, CancellationToken.None);
+
+        var badRequest = Assert.IsType<BadRequestObjectResult>(result);
+        var dates = Assert.IsAssignableFrom<IEnumerable<DateTime>>(
+            badRequest.Value!.GetType().GetProperty("dates")!.GetValue(badRequest.Value));
+        Assert.Equal([badDate1, badDate2], dates);
         dataAccess.Verify(
             d => d.CreateOrUpdateAttendanceAsync(It.IsAny<Guid>(), It.IsAny<List<AttendanceRecord>>(),
                 It.IsAny<CancellationToken>()), Times.Never);

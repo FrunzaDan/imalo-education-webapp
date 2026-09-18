@@ -187,7 +187,7 @@ describe('AttendancePerScholarComponent', () => {
   });
 
   describe('checking a day (DOM-level)', () => {
-    it('the Lunch checkbox is disabled until Present is checked, on an untouched day', () => {
+    it('Lunch, Transport, and Both are all disabled until Present is checked, on an untouched day', () => {
       const { fixture, component } = setup();
       const untouchedDate = getWeekdayDatesInMonth(2024, 3).find((d) => d !== EXISTING_DATE)!;
       const rowIndex = component.dayRows().findIndex((r) => r.date === untouchedDate);
@@ -196,15 +196,20 @@ describe('AttendancePerScholarComponent', () => {
       const checkboxes: NodeListOf<HTMLInputElement> = rowEls[rowIndex].querySelectorAll(
         'input[type="checkbox"]',
       );
-      const [presentCheckbox, lunchCheckbox] = checkboxes;
+      const [presentCheckbox, lunchCheckbox, transportCheckbox, bothCheckbox] = checkboxes;
 
+      expect(presentCheckbox.checked).toBe(false);
       expect(lunchCheckbox.disabled).toBe(true);
+      expect(transportCheckbox.disabled).toBe(true);
+      expect(bothCheckbox.disabled).toBe(true);
 
       presentCheckbox.checked = true;
       presentCheckbox.dispatchEvent(new Event('change'));
       fixture.detectChanges();
 
       expect(lunchCheckbox.disabled).toBe(false);
+      expect(transportCheckbox.disabled).toBe(false);
+      expect(bothCheckbox.disabled).toBe(false);
 
       lunchCheckbox.checked = true;
       lunchCheckbox.dispatchEvent(new Event('change'));
@@ -217,6 +222,19 @@ describe('AttendancePerScholarComponent', () => {
       expect(component.allAttendanceRecords).toContain(row.record);
       expect(component.hasUnsavedChanges()).toBe(true);
       expect(fixture.nativeElement.textContent).toContain('Unsaved changes');
+    });
+
+    it('the Present checkbox itself reflects the existing record for an already-persisted day', () => {
+      const { fixture, component } = setup();
+      const rowIndex = component.dayRows().findIndex((r) => r.date === EXISTING_DATE);
+
+      const rowEls = fixture.nativeElement.querySelectorAll('.attendance-table__row');
+      const [presentCheckbox]: NodeListOf<HTMLInputElement> = rowEls[rowIndex].querySelectorAll(
+        'input[type="checkbox"]',
+      );
+
+      expect(presentCheckbox.checked).toBe(true);
+      expect(presentCheckbox.disabled).toBe(false);
     });
   });
 
@@ -255,6 +273,28 @@ describe('AttendancePerScholarComponent', () => {
       expect(row.record.present).toBe(true);
       expect(row.isPersisted).toBe(true);
       expect(component.allAttendanceRecords).toContain(row.record);
+    });
+
+    it('unchecking Present on an untouched day (already false) does not persist it', () => {
+      const { component } = setup();
+      const row = dayRow(component, getWeekdayDatesInMonth(2024, 3).find((d) => d !== EXISTING_DATE)!);
+
+      component.onPresentChange(row, checkedEvent(false));
+
+      expect(row.record.present).toBe(false);
+      expect(row.isPersisted).toBe(false);
+      expect(component.allAttendanceRecords).not.toContain(row.record);
+    });
+
+    it('unchecking Present on an already-persisted day keeps it persisted, with Lunch/Transport cleared', () => {
+      const { component } = setup();
+      const row = dayRow(component, EXISTING_DATE); // present: true, lunchSelected: true, isPersisted: true
+
+      component.onPresentChange(row, checkedEvent(false));
+
+      expect(row.isPersisted).toBe(true);
+      expect(component.allAttendanceRecords).toContain(row.record);
+      expect(row.record.lunchSelected).toBe(false);
     });
   });
 
@@ -409,6 +449,23 @@ describe('AttendancePerScholarComponent', () => {
         expect.any(Array),
         component.dayRows(),
       );
+    });
+
+    it('includes a Present column, rendered as Yes/No, right after Date', () => {
+      const { component, csvExportService } = setup();
+
+      component.exportCsv();
+
+      const columns = csvExportService.export.mock.calls[0][1] as {
+        header: string;
+        value: (row: { record: { present: boolean } }) => string;
+      }[];
+      const headers = columns.map((c) => c.header);
+      expect(headers.indexOf('Present')).toBe(headers.indexOf('Date') + 1);
+
+      const presentColumn = columns.find((c) => c.header === 'Present')!;
+      expect(presentColumn.value({ record: { present: true } })).toBe('Yes');
+      expect(presentColumn.value({ record: { present: false } })).toBe('No');
     });
   });
 });
