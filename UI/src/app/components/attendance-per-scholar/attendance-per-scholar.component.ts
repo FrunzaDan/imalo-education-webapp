@@ -4,11 +4,11 @@ import {
   OnDestroy,
   computed,
   inject,
+  input,
   linkedSignal,
   signal,
 } from '@angular/core';
-import { FormField, form } from '@angular/forms/signals';
-import { ActivatedRoute } from '@angular/router';
+import { FieldTree, FormField, form } from '@angular/forms/signals';
 import { CurrencyPipe, DatePipe } from '@angular/common';
 import { Subscription } from 'rxjs';
 
@@ -19,18 +19,16 @@ import { CsvExportService } from '../../services/csv-export.service';
 import { NotificationService } from '../../services/notification.service';
 import { Scholar } from '../../interfaces/scholar';
 import { AttendanceRecord } from '../../interfaces/attendance-record';
-import { getWeekdayDatesInMonth } from '../../utils/weekday-dates';
-
-// One row per weekday of the selected month. `record` is always a real
-// AttendanceRecord object so checkboxes can bind to it directly — for a day
-// with no saved data yet it's a fresh, not-yet-persisted object that only
-// gets added to allAttendanceRecords (and so included in the next Save) once
-// the user actually checks a box for it.
-interface AttendanceDayRow {
-  date: string; // 'YYYY-MM-DD'
-  record: AttendanceRecord;
-  isPersisted: boolean;
-}
+import {
+  AttendanceDay,
+  attendanceFormSchema,
+  toAttendanceDays,
+  toAttendanceRecords,
+  toDateOnly,
+  toMonthString,
+  weekdaysOfMonth,
+  withWeekdayStubs,
+} from './attendance-form';
 
 @Component({
   selector: 'app-attendance-per-scholar',
@@ -39,7 +37,6 @@ interface AttendanceDayRow {
   styleUrl: './attendance-per-scholar.component.css',
 })
 export class AttendancePerScholarComponent implements OnInit, OnDestroy {
-  private readonly route = inject(ActivatedRoute);
   private readonly scholarsService = inject(ScholarsService);
   private readonly schoolsService = inject(SchoolsService);
   private readonly attendanceService = inject(AttendanceService);
@@ -49,49 +46,68 @@ export class AttendancePerScholarComponent implements OnInit, OnDestroy {
   private scholarSubscription: Subscription | undefined;
   private attendanceSubscription: Subscription | undefined;
 
+  // Bound from the `:id` route param by withComponentInputBinding() in app.config.ts.
+  readonly id = input<string>();
+
   scholar = signal<Scholar | null>(null);
   scholarId: string = '';
 
   // Standard per-day prices for this scholar's school, applied when a day is
   // marked for the first time. 0 until the school has loaded (or if the
-  // scholar has no school set). Not read directly by the template — only used
-  // internally when seeding a newly-checked day's cost — so a plain field is
-  // enough (same reasoning as ScholarTableComponent.scholars/schools).
+  // scholar has no school set). Only read inside event handlers, never by the
+  // template, so plain fields are enough.
   lunchPrice = 0;
   transportPrice = 0;
-
-  // The full, unfiltered list for this scholar, as loaded from (and sent
-  // back to) the API. Day rows for the selected month hold direct references
-  // into this array once a day has been touched, so editing a row mutates
-  // the record here too — Save just sends this array as-is. Not read
-  // directly by the template either, so it stays a plain field too.
-  allAttendanceRecords: AttendanceRecord[] = [];
 
   // 'YYYY-MM', the value format of <input type="month">. A one-field signal
   // form binds the picker; selectedMonth is its value.
   readonly monthForm = form(signal({ month: '' }));
   readonly selectedMonth = computed(() => this.monthForm.month().value());
 
-  // Rebuilt from allAttendanceRecords whenever the selected month changes,
-  // but still writable: the checkbox handlers re-set it after mutating a
-  // row's record in place (see onLunchChange).
-  readonly dayRows = linkedSignal<string, AttendanceDayRow[]>({
-    source: this.selectedMonth,
-    computation: (month) => this.buildDayRows(month),
+  // What the API returned for this scholar, across all months.
+  readonly loadedRecords = signal<AttendanceRecord[]>([]);
+
+  // The form model: every loaded record plus a stub for each weekday of every
+  // month looked at. A linkedSignal so that changing the month (or the load
+  // landing) *adds* stubs to the previous value — unsaved edits to other months
+  // survive a month switch — while still being writable for the form.
+  readonly days = linkedSignal<
+    { month: string; loaded: AttendanceRecord[] },
+    AttendanceDay[]
+  >({
+    source: () => ({ month: this.selectedMonth(), loaded: this.loadedRecords() }),
+    computation: ({ month, loaded }, previous) =>
+      withWeekdayStubs(
+        previous && previous.source.loaded === loaded
+          ? previous.value
+          : toAttendanceDays(loaded),
+        month,
+      ),
   });
 
-  // Derived from dayRows — a checkbox handler mutates a row's record in place
-  // (so the checkbox stays bound to a stable object) and then re-sets dayRows
-  // to a fresh array to both notify these and re-render.
+  readonly attendanceForm = form(this.days, attendanceFormSchema);
+
+  // Indexes into days() of the selected month's weekdays, in date order — the
+  // template binds each row's checkboxes to attendanceForm[index].
+  readonly visibleIndexes = computed(() => {
+    const wanted = new Set(weekdaysOfMonth(this.selectedMonth()));
+    return this.days()
+      .map((day, index) => ({ date: toDateOnly(day.date), index }))
+      .filter((entry) => wanted.has(entry.date))
+      .sort((a, b) => a.date.localeCompare(b.date))
+      .map((entry) => entry.index);
+  });
+  readonly dayRows = computed(() => this.visibleIndexes().map((i) => this.days()[i]));
+
+  // What Save sends: loaded records plus every day the user has marked.
+  readonly recordsToSave = computed(() => toAttendanceRecords(this.days()));
+
   readonly totalSelectedLunchCost = computed(() =>
-    this.dayRows().reduce(
-      (sum, row) => sum + (row.record.lunchSelected ? row.record.lunchCost : 0),
-      0,
-    ),
+    this.dayRows().reduce((sum, day) => sum + (day.lunchSelected ? day.lunchCost : 0), 0),
   );
   readonly totalSelectedTransportCost = computed(() =>
     this.dayRows().reduce(
-      (sum, row) => sum + (row.record.transportSelected ? row.record.transportCost : 0),
+      (sum, day) => sum + (day.transportSelected ? day.transportCost : 0),
       0,
     ),
   );
@@ -102,8 +118,10 @@ export class AttendancePerScholarComponent implements OnInit, OnDestroy {
   isSaving = signal(false);
   hasUnsavedChanges = signal(false);
 
+  protected readonly toDateOnly = toDateOnly;
+
   ngOnInit(): void {
-    const scholarId = this.route.snapshot.paramMap.get('id');
+    const scholarId = this.id();
     if (!scholarId) {
       console.error('Scholar ID not found in route parameters.');
       return;
@@ -133,13 +151,11 @@ export class AttendancePerScholarComponent implements OnInit, OnDestroy {
           .getAttendanceByScholarId(scholarId)
           .subscribe({
             next: (attendanceData: AttendanceRecord[] | undefined) => {
-              this.allAttendanceRecords = attendanceData ?? [];
-              this.monthForm.month().value.set(this.pickDefaultMonth());
+              this.showRecords(attendanceData ?? []);
             },
             error: (err) => {
               console.error('Error fetching attendance data:', err);
-              this.allAttendanceRecords = [];
-              this.monthForm.month().value.set(this.pickDefaultMonth());
+              this.showRecords([]);
             },
           });
       },
@@ -155,138 +171,104 @@ export class AttendancePerScholarComponent implements OnInit, OnDestroy {
     this.attendanceSubscription?.unsubscribe();
   }
 
+  private showRecords(records: AttendanceRecord[]): void {
+    this.loadedRecords.set(records);
+    this.monthForm.month().value.set(this.pickDefaultMonth(records));
+  }
+
   // Defaults to the most recent month that already has data, or the current
   // real-world month if this scholar has no attendance yet.
-  private pickDefaultMonth(): string {
-    if (this.allAttendanceRecords.length === 0) {
-      return this.toMonthString(new Date());
+  private pickDefaultMonth(records: AttendanceRecord[]): string {
+    if (records.length === 0) {
+      return toMonthString(new Date());
     }
-    const latest = this.allAttendanceRecords
+    const latest = records
       .map((r) => new Date(r.date))
       .sort((a, b) => b.getTime() - a.getTime())[0];
-    return this.toMonthString(latest);
+    return toMonthString(latest);
   }
 
-  private toMonthString(date: Date): string {
-    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+  // Adds a day to what Save sends, the first time it's marked. Once persisted
+  // it stays persisted (even if later unchecked) — same as before.
+  private markPersisted(day: FieldTree<AttendanceDay>): void {
+    day.persisted().value.set(true);
   }
 
-  private toDateOnly(dateStr: string): string {
-    return dateStr.substring(0, 10);
-  }
+  // The three handlers below run on `change`, which the browser fires *after*
+  // `input` — the event [formField] listens to — so by the time they run the
+  // checkbox's own field already holds its new value. They apply the rules that
+  // are reactions to a change (the gating itself is the schema's `disabled()`).
 
-  private buildDayRows(selectedMonth: string): AttendanceDayRow[] {
-    if (!selectedMonth) return [];
+  // Unchecking Present clears Lunch/Transport (rather than just disabling their
+  // checkboxes going forward) so a day can never be saved with Present false
+  // but Lunch/Transport true — the API rejects that combination too (see [[api]]).
+  onPresentChange(index: number): void {
+    const day = this.attendanceForm[index];
 
-    const [year, month] = selectedMonth.split('-').map(Number);
-    return getWeekdayDatesInMonth(year, month).map((date) => {
-      const existing = this.allAttendanceRecords.find(
-        (r) => this.toDateOnly(r.date) === date,
-      );
-      if (existing) {
-        return { date, record: existing, isPersisted: true };
-      }
-      return {
-        date,
-        record: {
-          date,
-          lunchCost: 0,
-          transportCost: 0,
-          present: false,
-          lunchSelected: false,
-          transportSelected: false,
-        },
-        isPersisted: false,
-      };
-    });
-  }
-
-  // Adds a day's record to the list that actually gets saved, the first time
-  // it's touched. A no-op if it's already in there.
-  private ensurePersisted(row: AttendanceDayRow): void {
-    if (!row.isPersisted) {
-      this.allAttendanceRecords.push(row.record);
-      row.isPersisted = true;
-    }
-  }
-
-  // Present gates Lunch/Transport: neither can be selected on a day the
-  // scholar wasn't there. Unchecking Present clears both (rather than just
-  // disabling their checkboxes going forward) so a day can never be saved
-  // with Present false but Lunch/Transport true — the API rejects that
-  // combination too (see [[api]]).
-  onPresentChange(row: AttendanceDayRow, event: Event): void {
-    const isChecked = (event.target as HTMLInputElement).checked;
-    row.record.present = isChecked;
-
-    if (!isChecked) {
-      row.record.lunchSelected = false;
-      row.record.transportSelected = false;
+    if (day.present().value()) {
+      this.markPersisted(day);
     } else {
-      this.ensurePersisted(row);
+      day.lunchSelected().value.set(false);
+      day.transportSelected().value.set(false);
     }
 
     this.hasUnsavedChanges.set(true);
-    this.dayRows.update((rows) => [...rows]);
   }
 
-  // Mutates row.record in place (so the checkbox's [checked] binding and any
-  // other reference to this row stay pointed at the same object), then
-  // re-sets dayRows to a new array so the totalSelected*/grandTotal computed
-  // signals — and the template — pick the change up.
-  //
   // Lunch and Transport are independent: toggling one never touches the
   // other. The "Both" checkbox (onBothChange) is the only thing that sets
   // both at once, and it's a plain reflection of "are both currently
   // checked", not a cascade rule — see its [checked] binding in the template.
-  onLunchChange(row: AttendanceDayRow, event: Event): void {
-    const isChecked = (event.target as HTMLInputElement).checked;
-    if (isChecked && !row.record.present) return; // template also disables this checkbox
+  onLunchChange(index: number): void {
+    const day = this.attendanceForm[index];
 
-    row.record.lunchSelected = isChecked;
-
-    if (isChecked) {
-      if (row.record.lunchCost === 0) {
-        row.record.lunchCost = this.lunchPrice;
+    if (day.lunchSelected().value()) {
+      if (!day.present().value()) {
+        day.lunchSelected().value.set(false); // the field is disabled too; belt and braces
+        return;
       }
-      this.ensurePersisted(row);
+      if (day.lunchCost().value() === 0) day.lunchCost().value.set(this.lunchPrice);
+      this.markPersisted(day);
     }
 
     this.hasUnsavedChanges.set(true);
-    this.dayRows.update((rows) => [...rows]);
   }
 
-  onTransportChange(row: AttendanceDayRow, event: Event): void {
-    const isChecked = (event.target as HTMLInputElement).checked;
-    if (isChecked && !row.record.present) return; // template also disables this checkbox
+  onTransportChange(index: number): void {
+    const day = this.attendanceForm[index];
 
-    row.record.transportSelected = isChecked;
-
-    if (isChecked) {
-      if (row.record.transportCost === 0) {
-        row.record.transportCost = this.transportPrice;
+    if (day.transportSelected().value()) {
+      if (!day.present().value()) {
+        day.transportSelected().value.set(false);
+        return;
       }
-      this.ensurePersisted(row);
+      if (day.transportCost().value() === 0) {
+        day.transportCost().value.set(this.transportPrice);
+      }
+      this.markPersisted(day);
     }
 
     this.hasUnsavedChanges.set(true);
-    this.dayRows.update((rows) => [...rows]);
   }
 
-  onBothChange(row: AttendanceDayRow, event: Event): void {
+  // "Both" isn't a field of the model — it's a shortcut that sets two fields,
+  // so it stays a plain [checked] + (change) control.
+  onBothChange(index: number, event: Event): void {
+    const day = this.attendanceForm[index];
     const isChecked = (event.target as HTMLInputElement).checked;
-    if (isChecked && !row.record.present) return; // template also disables this checkbox
+    if (isChecked && !day.present().value()) return; // template also disables this checkbox
 
-    row.record.lunchSelected = isChecked;
-    row.record.transportSelected = isChecked;
+    day.lunchSelected().value.set(isChecked);
+    day.transportSelected().value.set(isChecked);
     if (isChecked) {
-      if (row.record.lunchCost === 0) row.record.lunchCost = this.lunchPrice;
-      if (row.record.transportCost === 0)
-        row.record.transportCost = this.transportPrice;
-      this.ensurePersisted(row);
+      if (day.lunchCost().value() === 0) day.lunchCost().value.set(this.lunchPrice);
+      if (day.transportCost().value() === 0) {
+        day.transportCost().value.set(this.transportPrice);
+      }
+      this.markPersisted(day);
     }
+
     this.hasUnsavedChanges.set(true);
-    this.dayRows.update((rows) => [...rows]);
   }
 
   save(): void {
@@ -294,7 +276,7 @@ export class AttendancePerScholarComponent implements OnInit, OnDestroy {
 
     this.isSaving.set(true);
     this.attendanceService
-      .saveAttendance(this.scholarId, this.allAttendanceRecords)
+      .saveAttendance(this.scholarId, this.recordsToSave())
       .subscribe({
         next: () => {
           this.isSaving.set(false);
@@ -312,10 +294,6 @@ export class AttendancePerScholarComponent implements OnInit, OnDestroy {
       });
   }
 
-  trackByDayRow(index: number, row: AttendanceDayRow): string {
-    return row.date;
-  }
-
   exportCsv(): void {
     const scholar = this.scholar();
     const scholarName = scholar ? `${scholar.firstName}_${scholar.lastName}` : this.scholarId;
@@ -323,21 +301,21 @@ export class AttendancePerScholarComponent implements OnInit, OnDestroy {
     this.csvExportService.export(
       `attendance_${scholarName}_${this.selectedMonth()}`,
       [
-        { header: 'Date', value: (r: AttendanceDayRow) => r.date },
+        { header: 'Date', value: (r: AttendanceDay) => toDateOnly(r.date) },
         {
           header: 'Present',
-          value: (r: AttendanceDayRow) => (r.record.present ? 'Yes' : 'No'),
+          value: (r: AttendanceDay) => (r.present ? 'Yes' : 'No'),
         },
         {
           header: 'Lunch Selected',
-          value: (r: AttendanceDayRow) => (r.record.lunchSelected ? 'Yes' : 'No'),
+          value: (r: AttendanceDay) => (r.lunchSelected ? 'Yes' : 'No'),
         },
         {
           header: 'Transport Selected',
-          value: (r: AttendanceDayRow) => (r.record.transportSelected ? 'Yes' : 'No'),
+          value: (r: AttendanceDay) => (r.transportSelected ? 'Yes' : 'No'),
         },
-        { header: 'Lunch Cost', value: (r: AttendanceDayRow) => r.record.lunchCost },
-        { header: 'Transport Cost', value: (r: AttendanceDayRow) => r.record.transportCost },
+        { header: 'Lunch Cost', value: (r: AttendanceDay) => r.lunchCost },
+        { header: 'Transport Cost', value: (r: AttendanceDay) => r.transportCost },
       ],
       this.dayRows(),
     );

@@ -1,5 +1,5 @@
 <div class="create-update-scholar-page">
-  <h2>{{ isEditMode ? 'Update Scholar' : 'Create New Scholar' }}</h2>
+  <h2>{{ isEditMode() ? 'Update Scholar' : 'Create New Scholar' }}</h2>
 
   <form [formRoot]="scholarForm" class="space-y-6">
     @if (invalidSummary(); as summary) {
@@ -189,7 +189,7 @@
         {{
           scholarForm().submitting()
             ? 'Saving...'
-            : isEditMode
+            : isEditMode()
               ? 'Update Scholar'
               : 'Create Scholar'
         }}

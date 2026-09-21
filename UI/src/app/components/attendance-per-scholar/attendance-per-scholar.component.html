@@ -34,69 +34,61 @@
         </tr>
       </thead>
       <tbody class="attendance-table__body">
-        @for (row of dayRows(); track trackByDayRow($index, row)) {
+        @for (index of visibleIndexes(); track index) {
+          @let day = attendanceForm[index];
+          @let row = day().value();
           <tr
             class="attendance-table__row"
             [class.attendance-table__row--unsaved]="
-              !row.isPersisted &&
-              (row.record.lunchSelected || row.record.transportSelected)
+              !row.persisted && (row.lunchSelected || row.transportSelected)
             "
           >
             <td class="attendance-table__data-cell">
-              {{ row.date | date: 'EEE, mediumDate' }}
+              {{ toDateOnly(row.date) | date: 'EEE, mediumDate' }}
             </td>
             <td class="attendance-table__data-cell">
               <input
                 type="checkbox"
-                [checked]="row.record.present"
-                (change)="onPresentChange(row, $event)"
+                [formField]="day.present"
+                (change)="onPresentChange(index)"
                 class="attendance-table__checkbox"
               />
             </td>
             <td class="attendance-table__data-cell">
               <input
                 type="checkbox"
-                [checked]="row.record.lunchSelected"
-                [disabled]="!row.record.present"
-                (change)="onLunchChange(row, $event)"
+                [formField]="day.lunchSelected"
+                (change)="onLunchChange(index)"
                 class="attendance-table__checkbox"
               />
             </td>
             <td class="attendance-table__data-cell">
               <input
                 type="checkbox"
-                [checked]="row.record.transportSelected"
-                [disabled]="!row.record.present"
-                (change)="onTransportChange(row, $event)"
+                [formField]="day.transportSelected"
+                (change)="onTransportChange(index)"
                 class="attendance-table__checkbox"
               />
             </td>
             <td class="attendance-table__data-cell">
               <input
                 type="checkbox"
-                [checked]="
-                  row.record.lunchSelected && row.record.transportSelected
-                "
-                [disabled]="!row.record.present"
-                (change)="onBothChange(row, $event)"
+                [checked]="row.lunchSelected && row.transportSelected"
+                [disabled]="!row.present"
+                (change)="onBothChange(index, $event)"
                 class="attendance-table__checkbox"
               />
             </td>
             <td class="attendance-table__data-cell">
-              @if (row.record.lunchSelected) {
-                {{
-                  row.record.lunchCost | currency: 'RON' : 'symbol' : '1.2-2'
-                }}
+              @if (row.lunchSelected) {
+                {{ row.lunchCost | currency: 'RON' : 'symbol' : '1.2-2' }}
               } @else {
                 <span class="attendance-table__muted">&mdash;</span>
               }
             </td>
             <td class="attendance-table__data-cell">
-              @if (row.record.transportSelected) {
-                {{
-                  row.record.transportCost
-                    | currency: 'RON' : 'symbol' : '1.2-2'
-                }}
+              @if (row.transportSelected) {
+                {{ row.transportCost | currency: 'RON' : 'symbol' : '1.2-2' }}
               } @else {
                 <span class="attendance-table__muted">&mdash;</span>
               }

@@ -1,6 +1,6 @@
 import { provideZonelessChangeDetection } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { ActivatedRoute, Router, convertToParamMap } from '@angular/router';
+import { Router } from '@angular/router';
 import { of, throwError } from 'rxjs';
 import { ScholarFormComponent } from './scholar-form.component';
 import { ScholarsService } from '../../services/scholars.service';
@@ -40,9 +40,10 @@ const EXISTING: Scholar = {
 interface SetupOptions {
   routeId?: string | null;
   saveResult?: 'success' | 'error';
+  loadResult?: 'success' | 'error';
 }
 
-function setup(options: SetupOptions = {}) {
+async function setup(options: SetupOptions = {}) {
   const saved: Scholar = { ...EXISTING, id: 'saved-id' };
   const createScholar = vi.fn(() =>
     options.saveResult === 'error'
@@ -50,7 +51,11 @@ function setup(options: SetupOptions = {}) {
       : of(saved),
   );
   const updateScholar = vi.fn(() => of(saved));
-  const getScholarById = vi.fn(() => of(EXISTING));
+  const getScholarById = vi.fn(() =>
+    options.loadResult === 'error'
+      ? throwError(() => new Error('getScholarById id=scholar-1 failed: Scholar not found.'))
+      : of(EXISTING),
+  );
   const notificationService = { show: vi.fn() };
   const navigate = vi.fn().mockResolvedValue(true);
 
@@ -58,10 +63,6 @@ function setup(options: SetupOptions = {}) {
     imports: [ScholarFormComponent],
     providers: [
       provideZonelessChangeDetection(),
-      {
-        provide: ActivatedRoute,
-        useValue: { snapshot: { paramMap: convertToParamMap(options.routeId ? { id: options.routeId } : {}) } },
-      },
       { provide: Router, useValue: { navigate } },
       { provide: ScholarsService, useValue: { createScholar, updateScholar, getScholarById } },
       { provide: SchoolsService, useValue: { getSchools: () => of(SCHOOLS) } },
@@ -70,7 +71,10 @@ function setup(options: SetupOptions = {}) {
   });
 
   const fixture: ComponentFixture<ScholarFormComponent> = TestBed.createComponent(ScholarFormComponent);
+  // The route's :id reaches the component as an input (withComponentInputBinding()).
+  if (options.routeId) fixture.componentRef.setInput('id', options.routeId);
   fixture.detectChanges();
+  await fixture.whenStable(); // let the scholar rxResource load in edit mode
   return { fixture, component: fixture.componentInstance, createScholar, updateScholar, getScholarById, notificationService, navigate };
 }
 
@@ -85,8 +89,8 @@ const VALID_MODEL = {
 
 describe('ScholarFormComponent', () => {
   describe('validation', () => {
-    it('requires name, school, grade and birth date, and leaves parents/schedule optional', () => {
-      const { component } = setup();
+    it('requires name, school, grade and birth date, and leaves parents/schedule optional', async () => {
+      const { component } = await setup();
 
       expect(component.scholarForm().valid()).toBe(false);
       expect(component.scholarForm.firstName().errors()[0].message).toBe('First Name is required.');
@@ -101,8 +105,8 @@ describe('ScholarFormComponent', () => {
       expect(component.scholarForm().valid()).toBe(true);
     });
 
-    it('accepts grade 0 (a valid grade, not "empty") and rejects values outside 0-12', () => {
-      const { component } = setup();
+    it('accepts grade 0 (a valid grade, not "empty") and rejects values outside 0-12', async () => {
+      const { component } = await setup();
 
       component.model.set({ ...VALID_MODEL, grade: 0 });
       expect(component.scholarForm.grade().valid()).toBe(true);
@@ -113,8 +117,8 @@ describe('ScholarFormComponent', () => {
       }
     });
 
-    it('rejects a future or unparseable birth date', () => {
-      const { component } = setup();
+    it('rejects a future or unparseable birth date', async () => {
+      const { component } = await setup();
 
       component.model.set({ ...VALID_MODEL, dateOfBirth: '2999-01-01' });
       expect(component.scholarForm.dateOfBirth().errors()[0].message).toBe(
@@ -125,8 +129,8 @@ describe('ScholarFormComponent', () => {
       expect(component.scholarForm.dateOfBirth().invalid()).toBe(true);
     });
 
-    it('rejects names over 100 characters and malformed parent phone numbers', () => {
-      const { component } = setup();
+    it('rejects names over 100 characters and malformed parent phone numbers', async () => {
+      const { component } = await setup();
 
       component.model.set({
         ...VALID_MODEL,
@@ -143,7 +147,7 @@ describe('ScholarFormComponent', () => {
 
   describe('create mode', () => {
     it('does not call the API and reports the error count when the form is invalid', async () => {
-      const { fixture, component, createScholar } = setup();
+      const { fixture, component, createScholar } = await setup();
 
       fixture.nativeElement.querySelector('form').dispatchEvent(new Event('submit'));
       await fixture.whenStable();
@@ -155,7 +159,7 @@ describe('ScholarFormComponent', () => {
     });
 
     it('creates the scholar, notifies, and navigates to the saved scholar', async () => {
-      const { fixture, createScholar, updateScholar, notificationService, navigate } = setup();
+      const { fixture, createScholar, updateScholar, notificationService, navigate } = await setup();
       fixture.componentInstance.model.set(VALID_MODEL);
 
       fixture.nativeElement.querySelector('form').dispatchEvent(new Event('submit'));
@@ -175,7 +179,7 @@ describe('ScholarFormComponent', () => {
     });
 
     it('shows the API error and stays on the page when saving fails', async () => {
-      const { fixture, notificationService, navigate } = setup({ saveResult: 'error' });
+      const { fixture, notificationService, navigate } = await setup({ saveResult: 'error' });
       fixture.componentInstance.model.set(VALID_MODEL);
 
       fixture.nativeElement.querySelector('form').dispatchEvent(new Event('submit'));
@@ -190,11 +194,11 @@ describe('ScholarFormComponent', () => {
   });
 
   describe('edit mode', () => {
-    it('loads the scholar into the form, mapping ids/dates to strings and nulls to blanks', () => {
-      const { component, getScholarById } = setup({ routeId: 'scholar-1' });
+    it('loads the scholar into the form, mapping ids/dates to strings and nulls to blanks', async () => {
+      const { component, getScholarById } = await setup({ routeId: 'scholar-1' });
 
       expect(getScholarById).toHaveBeenCalledWith('scholar-1');
-      expect(component.isEditMode).toBe(true);
+      expect(component.isEditMode()).toBe(true);
       expect(component.model()).toMatchObject({
         firstName: 'Ana',
         schoolId: '2',
@@ -207,8 +211,21 @@ describe('ScholarFormComponent', () => {
       });
     });
 
+    it('notifies and leaves the form blank when the scholar fails to load', async () => {
+      const { component, notificationService } = await setup({
+        routeId: 'scholar-1',
+        loadResult: 'error',
+      });
+
+      expect(notificationService.show).toHaveBeenCalledWith(
+        'Failed to load scholar. Check console for details.',
+        'error',
+      );
+      expect(component.model()).toEqual(emptyScholarForm());
+    });
+
     it('updates (not creates) the scholar under its existing id', async () => {
-      const { fixture, createScholar, updateScholar, notificationService } = setup({ routeId: 'scholar-1' });
+      const { fixture, createScholar, updateScholar, notificationService } = await setup({ routeId: 'scholar-1' });
 
       fixture.nativeElement.querySelector('form').dispatchEvent(new Event('submit'));
       await fixture.whenStable();
@@ -221,7 +238,7 @@ describe('ScholarFormComponent', () => {
 
   describe('template wiring', () => {
     it('writes typed/selected DOM input through [formField] into the model', async () => {
-      const { fixture, component } = setup();
+      const { fixture, component } = await setup();
       const el: HTMLElement = fixture.nativeElement;
       const input = (id: string) => el.querySelector<HTMLInputElement>(`#${id}`)!;
 
@@ -248,8 +265,8 @@ describe('ScholarFormComponent', () => {
       });
     });
 
-    it('renders all five weekday time inputs and the mother/father fields', () => {
-      const { fixture } = setup();
+    it('renders all five weekday time inputs and the mother/father fields', async () => {
+      const { fixture } = await setup();
       const el: HTMLElement = fixture.nativeElement;
 
       for (const day of ['monday', 'tuesday', 'wednesday', 'thursday', 'friday']) {
@@ -260,7 +277,7 @@ describe('ScholarFormComponent', () => {
   });
 
   describe('mapping', () => {
-    it('round-trips a scholar through toFormModel/toScholar', () => {
+    it('round-trips a scholar through toFormModel/toScholar', async () => {
       const roundTripped = toScholar(toFormModel(EXISTING), EXISTING.id);
 
       expect(roundTripped).toMatchObject({

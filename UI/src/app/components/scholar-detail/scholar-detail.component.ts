@@ -1,17 +1,14 @@
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, computed, effect, inject, input, untracked } from '@angular/core';
+import { rxResource } from '@angular/core/rxjs-interop';
 import { DatePipe, TitleCasePipe } from '@angular/common';
-import { ActivatedRoute, Router, RouterModule } from '@angular/router';
+import { Router, RouterModule } from '@angular/router';
 import { ScholarsService } from '../../services/scholars.service';
 import { SchoolsService } from '../../services/schools.service';
 import { NotificationService } from '../../services/notification.service';
 import { ConfirmModalService } from '../../services/confirm-modal.service';
 import { AuditLogService } from '../../services/audit-log.service';
-import { Scholar } from '../../interfaces/scholar';
-import { School } from '../../interfaces/school';
 import { WeekDays } from '../../constants/week-days';
 import { PickUpSchedule } from '../../interfaces/pick-up-schedule';
-import { switchMap, map, filter, tap } from 'rxjs/operators';
-import { of } from 'rxjs';
 
 @Component({
   selector: 'app-scholar-detail',
@@ -19,8 +16,7 @@ import { of } from 'rxjs';
   templateUrl: './scholar-detail.component.html',
   styleUrl: './scholar-detail.component.css',
 })
-export class ScholarDetailComponent implements OnInit {
-  private readonly route = inject(ActivatedRoute);
+export class ScholarDetailComponent {
   private readonly scholarsService = inject(ScholarsService);
   private readonly schoolsService = inject(SchoolsService);
   private readonly router = inject(Router);
@@ -28,8 +24,29 @@ export class ScholarDetailComponent implements OnInit {
   private readonly confirmModalService = inject(ConfirmModalService);
   private readonly auditLogService = inject(AuditLogService);
 
-  scholar = signal<Scholar | null>(null);
-  school = signal<School | null>(null);
+  // Bound from the `:id` route param by withComponentInputBinding() in
+  // app.config.ts — and, unlike route.snapshot, follows the param if it changes.
+  readonly id = input<string>();
+
+  // reading a resource's value() while it is in the error state throws, so
+  // scholar()/school() go through hasValue() and fall back to null.
+  private readonly scholarResource = rxResource({
+    params: () => this.id(),
+    stream: ({ params: id }) => this.scholarsService.getScholarById(id),
+  });
+  readonly scholar = computed(() =>
+    this.scholarResource.hasValue() ? this.scholarResource.value() : null,
+  );
+  readonly loadError = computed(() => this.scholarResource.error()?.message ?? null);
+
+  // Idle (no request) until the scholar has loaded and has a school.
+  private readonly schoolResource = rxResource({
+    params: () => this.scholar()?.schoolId || undefined,
+    stream: ({ params: schoolId }) => this.schoolsService.getSchoolById(schoolId),
+  });
+  readonly school = computed(() =>
+    this.schoolResource.hasValue() ? this.schoolResource.value() : null,
+  );
 
   readonly auditLog = this.auditLogService.entries;
   readonly auditLogLoading = this.auditLogService.loading;
@@ -37,46 +54,11 @@ export class ScholarDetailComponent implements OnInit {
 
   daysOfWeek: (keyof PickUpSchedule)[] = Object.values(WeekDays);
 
-  ngOnInit(): void {
-    this.route.paramMap
-      .pipe(
-        // First switchMap: Get scholarId and fetch scholar
-        switchMap((params) => {
-          const scholarId = params.get('id');
-          if (!scholarId) {
-            console.error('Scholar ID not found in route parameters.');
-            return of(null); // Return observable of null if no ID
-          }
-          this.auditLogService.loadAuditLog(scholarId);
-          return this.scholarsService.getScholarById(scholarId);
-        }),
-        // tap: Assign scholar to component property
-        tap((fetchedScholar) => {
-          this.scholar.set(fetchedScholar);
-          if (!fetchedScholar) {
-            console.warn('Scholar not found for the given ID.');
-          }
-        }),
-        // Second switchMap: If scholar found, fetch their school using getSchoolById
-        switchMap((scholar) => {
-          if (!scholar || !scholar.schoolId) {
-            // Check if scholar or schoolId is missing
-            return of(null); // If no scholar or schoolId, no school to fetch
-          }
-          return this.schoolsService.getSchoolById(scholar.schoolId);
-        }),
-        // tap: Assign school to component property
-        tap((fetchedSchool) => {
-          const scholar = this.scholar();
-          this.school.set(fetchedSchool);
-          if (!fetchedSchool && scholar) {
-            console.warn(
-              `School with ID ${scholar.schoolId} not found for scholar ${scholar.firstName} ${scholar.lastName}.`,
-            );
-          }
-        }),
-      )
-      .subscribe();
+  constructor() {
+    effect(() => {
+      const id = this.id();
+      if (id) untracked(() => this.auditLogService.loadAuditLog(id));
+    });
   }
 
   // Composes whatever's actually present — a parent may have a name, a

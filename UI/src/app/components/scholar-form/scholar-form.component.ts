@@ -1,10 +1,19 @@
 import { TitleCasePipe } from '@angular/common';
-import { Component, OnInit, inject, signal } from '@angular/core';
+import {
+  Component,
+  computed,
+  effect,
+  inject,
+  input,
+  linkedSignal,
+  signal,
+  untracked,
+} from '@angular/core';
+import { rxResource, toSignal } from '@angular/core/rxjs-interop';
 import { FormField, FormRoot, form } from '@angular/forms/signals';
-import { ActivatedRoute, Router, RouterModule } from '@angular/router';
+import { Router, RouterModule } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { WeekDays } from '../../constants/week-days';
-import { School } from '../../interfaces/school';
 import { ScholarsService } from '../../services/scholars.service';
 import { SchoolsService } from '../../services/schools.service';
 import { NotificationService } from '../../services/notification.service';
@@ -26,22 +35,35 @@ import {
   templateUrl: './scholar-form.component.html',
   styleUrl: './scholar-form.component.css',
 })
-export class ScholarFormComponent implements OnInit {
-  private readonly route = inject(ActivatedRoute);
+export class ScholarFormComponent {
   private readonly router = inject(Router);
   private readonly scholarsService = inject(ScholarsService);
   private readonly schoolsService = inject(SchoolsService);
   private readonly notificationService = inject(NotificationService);
 
-  readonly scholarId = this.route.snapshot.paramMap.get('id');
-  readonly isEditMode = this.scholarId !== null;
+  // Bound from the `:id` route param by withComponentInputBinding() in
+  // app.config.ts; absent on the create route.
+  readonly id = input<string>();
+  readonly isEditMode = computed(() => !!this.id());
 
-  readonly schools = signal<School[]>([]);
+  // SchoolsService swallows errors into [], so this never errors.
+  readonly schools = toSignal(this.schoolsService.getSchools(), { initialValue: [] });
   readonly weekDays = Object.values(WeekDays);
 
-  // The form model is a plain signal; the form is a view over it. Loading an
-  // existing scholar is just model.set(...) — no patchValue copy step.
-  readonly model = signal<ScholarFormModel>(emptyScholarForm());
+  // Only loads in edit mode (params() is undefined on the create route, which
+  // leaves the resource idle).
+  private readonly scholarResource = rxResource({
+    params: () => this.id(),
+    stream: ({ params: id }) => this.scholarsService.getScholarById(id),
+  });
+
+  // The form model is a signal that re-derives from the loaded scholar and
+  // stays writable for the user's edits — no patchValue copy step.
+  readonly model = linkedSignal<ScholarFormModel>(() =>
+    this.scholarResource.hasValue()
+      ? toFormModel(this.scholarResource.value())
+      : emptyScholarForm(),
+  );
   readonly invalidSummary = signal<string | null>(null);
 
   readonly scholarForm = form(this.model, scholarFormSchema, {
@@ -80,40 +102,36 @@ export class ScholarFormComponent implements OnInit {
     },
   ] as const;
 
-  ngOnInit(): void {
-    this.schoolsService.getSchools().subscribe((schools) => {
-      this.schools.set(schools);
-    });
-
-    if (this.scholarId) {
-      this.scholarsService.getScholarById(this.scholarId).subscribe({
-        next: (scholar) => this.model.set(toFormModel(scholar)),
-        error: (err) => {
-          console.error('Failed to load scholar:', err.message);
-          this.notificationService.show(
-            'Failed to load scholar. Check console for details.',
-            'error',
-          );
-        },
+  constructor() {
+    effect(() => {
+      const error = this.scholarResource.error();
+      if (!error) return;
+      untracked(() => {
+        console.error('Failed to load scholar:', error.message);
+        this.notificationService.show(
+          'Failed to load scholar. Check console for details.',
+          'error',
+        );
       });
-    }
+    });
   }
 
   // Runs only when the form is valid (FormRoot -> submit()); the form's own
   // submitting() state replaces the old hand-rolled isSubmitting signal.
   private async save(): Promise<void> {
     this.invalidSummary.set(null);
-    const scholar = toScholar(this.model(), this.scholarId);
-    const verb = this.isEditMode ? 'update' : 'create';
+    const scholar = toScholar(this.model(), this.id() ?? null);
+    const isEditMode = this.isEditMode();
+    const verb = isEditMode ? 'update' : 'create';
 
     try {
       const savedScholar = await firstValueFrom(
-        this.isEditMode
+        isEditMode
           ? this.scholarsService.updateScholar(scholar)
           : this.scholarsService.createScholar(scholar),
       );
       this.notificationService.show(
-        this.isEditMode
+        isEditMode
           ? 'Scholar updated successfully!'
           : 'Scholar created successfully!',
       );
@@ -121,7 +139,7 @@ export class ScholarFormComponent implements OnInit {
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       console.error(
-        `Error ${this.isEditMode ? 'updating' : 'creating'} scholar:`,
+        `Error ${isEditMode ? 'updating' : 'creating'} scholar:`,
         message,
       );
       this.notificationService.show(`Failed to ${verb} scholar. ${message}`, 'error');

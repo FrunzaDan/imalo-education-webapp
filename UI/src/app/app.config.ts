@@ -1,5 +1,5 @@
 import { ApplicationConfig, provideZonelessChangeDetection } from '@angular/core';
-import { provideRouter } from '@angular/router';
+import { provideRouter, withComponentInputBinding } from '@angular/router';
 
 import { routes } from './app.routes';
 import {
@@ -17,7 +17,8 @@ import { apiLoggerInterceptor } from './services/api-logger.interceptor';
 export const appConfig: ApplicationConfig = {
   providers: [
     provideZonelessChangeDetection(),
-    provideRouter(routes),
+    // Binds route params (:id) straight onto components' input()s.
+    provideRouter(routes, withComponentInputBinding()),
     provideClientHydration(withEventReplay(), withNoIncrementalHydration()),
     provideHttpClient(withFetch(), withInterceptors([apiLoggerInterceptor])),
   ],
