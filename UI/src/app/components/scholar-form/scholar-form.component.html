@@ -1,301 +1,198 @@
 <div class="create-update-scholar-page">
   <h2>{{ isEditMode ? 'Update Scholar' : 'Create New Scholar' }}</h2>
 
-  <form [formGroup]="scholarForm" (ngSubmit)="onSubmit()" class="space-y-6">
+  <form [formRoot]="scholarForm" class="space-y-6">
+    @if (invalidSummary(); as summary) {
+      <div class="app-error-message" role="alert">{{ summary }}</div>
+    }
+
     <!-- First Name -->
+    @let firstName = scholarForm.firstName();
+    @let firstNameError = firstName.touched() && firstName.invalid();
     <div class="create-update-scholar-entry">
       <label for="firstName" class="app-label">First Name</label>
       <input
         type="text"
         id="firstName"
-        formControlName="firstName"
         class="app-input"
-        [class.error]="
-          scholarForm.get('firstName')?.invalid &&
-          (scholarForm.get('firstName')?.dirty ||
-            scholarForm.get('firstName')?.touched)
-        "
         placeholder="Enter first name"
+        [formField]="scholarForm.firstName"
+        [class.error]="firstNameError"
+        [attr.aria-invalid]="firstNameError"
+        [attr.aria-describedby]="firstNameError ? 'firstName-error' : null"
       />
-      @if (scholarForm.get('firstName')?.invalid &&
-      (scholarForm.get('firstName')?.dirty ||
-      scholarForm.get('firstName')?.touched)) {
-      <div class="app-error-message">
-        @if (scholarForm.get('firstName')?.errors?.['required']) {
-        <span>First Name is required.</span>
-        } @if (scholarForm.get('firstName')?.errors?.['maxlength']) {
-        <span>First Name can't exceed 100 characters.</span>
-        }
-      </div>
+      @if (firstNameError) {
+        <div class="app-error-message" id="firstName-error">
+          {{ firstName.errors()[0].message }}
+        </div>
       }
     </div>
 
     <!-- Last Name -->
+    @let lastName = scholarForm.lastName();
+    @let lastNameError = lastName.touched() && lastName.invalid();
     <div class="create-update-scholar-entry">
       <label for="lastName" class="app-label">Last Name</label>
       <input
         type="text"
         id="lastName"
-        formControlName="lastName"
         class="app-input"
-        [class.error]="
-          scholarForm.get('lastName')?.invalid &&
-          (scholarForm.get('lastName')?.dirty ||
-            scholarForm.get('lastName')?.touched)
-        "
         placeholder="Enter last name"
+        [formField]="scholarForm.lastName"
+        [class.error]="lastNameError"
+        [attr.aria-invalid]="lastNameError"
+        [attr.aria-describedby]="lastNameError ? 'lastName-error' : null"
       />
-      @if (scholarForm.get('lastName')?.invalid &&
-      (scholarForm.get('lastName')?.dirty ||
-      scholarForm.get('lastName')?.touched)) {
-      <div class="app-error-message">
-        @if (scholarForm.get('lastName')?.errors?.['required']) {
-        <span>Last Name is required.</span>
-        } @if (scholarForm.get('lastName')?.errors?.['maxlength']) {
-        <span>Last Name can't exceed 100 characters.</span>
-        }
-      </div>
+      @if (lastNameError) {
+        <div class="app-error-message" id="lastName-error">
+          {{ lastName.errors()[0].message }}
+        </div>
       }
     </div>
 
     <!-- School -->
+    @let school = scholarForm.schoolId();
+    @let schoolError = school.touched() && school.invalid();
     <div class="create-update-scholar-entry">
       <label for="schoolId" class="app-label">School</label>
       <select
         id="schoolId"
-        formControlName="schoolId"
         class="app-input"
-        [class.error]="
-          scholarForm.get('schoolId')?.invalid &&
-          (scholarForm.get('schoolId')?.dirty ||
-            scholarForm.get('schoolId')?.touched)
-        "
+        [formField]="scholarForm.schoolId"
+        [class.error]="schoolError"
+        [attr.aria-invalid]="schoolError"
+        [attr.aria-describedby]="schoolError ? 'schoolId-error' : null"
       >
-        <option [ngValue]="null" disabled>Select a school</option>
+        <option value="" disabled>Select a school</option>
         @for (school of schools(); track school.id) {
-        <option [ngValue]="school.id">{{ school.name }}</option>
+          <option [value]="school.id">{{ school.name }}</option>
         }
       </select>
-      @if (scholarForm.get('schoolId')?.invalid &&
-      (scholarForm.get('schoolId')?.dirty ||
-      scholarForm.get('schoolId')?.touched)) {
-      <div class="app-error-message">School is required.</div>
+      @if (schoolError) {
+        <div class="app-error-message" id="schoolId-error">
+          {{ school.errors()[0].message }}
+        </div>
       }
     </div>
 
     <!-- Grade -->
+    @let grade = scholarForm.grade();
+    @let gradeError = grade.touched() && grade.invalid();
     <div class="create-update-scholar-entry">
       <label for="grade" class="app-label">Grade</label>
       <input
         type="number"
         id="grade"
-        formControlName="grade"
         class="app-input"
-        [class.error]="
-          scholarForm.get('grade')?.invalid &&
-          (scholarForm.get('grade')?.dirty || scholarForm.get('grade')?.touched)
-        "
         placeholder="Enter grade (0-12)"
+        [formField]="scholarForm.grade"
+        [class.error]="gradeError"
+        [attr.aria-invalid]="gradeError"
+        [attr.aria-describedby]="gradeError ? 'grade-error' : null"
       />
-      @if (scholarForm.get('grade')?.invalid && (scholarForm.get('grade')?.dirty
-      || scholarForm.get('grade')?.touched)) {
-      <div class="app-error-message">
-        @if (scholarForm.get('grade')?.errors?.['required']) {
-        <span>Grade is required.</span>
-        } @if (scholarForm.get('grade')?.errors?.['min'] ||
-        scholarForm.get('grade')?.errors?.['max']) {
-        <span>Grade must be between 0 and 12.</span>
-        }
-      </div>
+      @if (gradeError) {
+        <div class="app-error-message" id="grade-error">
+          {{ grade.errors()[0].message }}
+        </div>
       }
     </div>
 
     <!-- Date of Birth -->
+    @let dateOfBirth = scholarForm.dateOfBirth();
+    @let dateOfBirthError = dateOfBirth.touched() && dateOfBirth.invalid();
     <div class="create-update-scholar-entry">
       <label for="dateOfBirth" class="app-label">Birth Date</label>
       <input
         type="date"
         id="dateOfBirth"
-        formControlName="dateOfBirth"
         class="app-input"
-        [class.error]="
-          scholarForm.get('dateOfBirth')?.invalid &&
-          (scholarForm.get('dateOfBirth')?.dirty ||
-            scholarForm.get('dateOfBirth')?.touched)
-        "
+        [formField]="scholarForm.dateOfBirth"
+        [class.error]="dateOfBirthError"
+        [attr.aria-invalid]="dateOfBirthError"
+        [attr.aria-describedby]="dateOfBirthError ? 'dateOfBirth-error' : null"
       />
-      @if (scholarForm.get('dateOfBirth')?.invalid &&
-      (scholarForm.get('dateOfBirth')?.dirty ||
-      scholarForm.get('dateOfBirth')?.touched)) {
-      <div class="app-error-message">
-        @if (scholarForm.get('dateOfBirth')?.errors?.['required']) {
-        <span>Birth Date is required.</span>
-        } @if (scholarForm.get('dateOfBirth')?.errors?.['invalidDate']) {
-        <span>Please enter a valid date (not in the future).</span>
-        }
-      </div>
+      @if (dateOfBirthError) {
+        <div class="app-error-message" id="dateOfBirth-error">
+          {{ dateOfBirth.errors()[0].message }}
+        </div>
       }
     </div>
 
     <!-- Parents -->
-    <div class="create-update-scholar-entry">
-      <label class="app-label block mb-2">Parents (Optional)</label>
+    <fieldset class="create-update-scholar-entry">
+      <legend class="app-label block mb-2">Parents (Optional)</legend>
       <div class="grid gap-6 md:grid-cols-2">
-        <div>
-          <p class="parent-subheading">Mother</p>
-          <div class="grid gap-2">
-            <input
-              id="motherFirstName"
-              type="text"
-              formControlName="motherFirstName"
-              class="app-input"
-              [class.error]="
-                scholarForm.get('motherFirstName')?.invalid &&
-                (scholarForm.get('motherFirstName')?.dirty ||
-                  scholarForm.get('motherFirstName')?.touched)
-              "
-              placeholder="First name"
-            />
-            <input
-              id="motherLastName"
-              type="text"
-              formControlName="motherLastName"
-              class="app-input"
-              [class.error]="
-                scholarForm.get('motherLastName')?.invalid &&
-                (scholarForm.get('motherLastName')?.dirty ||
-                  scholarForm.get('motherLastName')?.touched)
-              "
-              placeholder="Last name"
-            />
-            <input
-              id="motherPhoneNumber"
-              type="tel"
-              formControlName="motherPhoneNumber"
-              class="app-input"
-              [class.error]="
-                scholarForm.get('motherPhoneNumber')?.invalid &&
-                (scholarForm.get('motherPhoneNumber')?.dirty ||
-                  scholarForm.get('motherPhoneNumber')?.touched)
-              "
-              placeholder="Phone, e.g. 0722 111 222"
-            />
+        @for (parent of parents; track parent.key) {
+          <div>
+            <p class="parent-subheading">{{ parent.label }}</p>
+            <div class="grid gap-2">
+              <input
+                type="text"
+                class="app-input"
+                placeholder="First name"
+                [attr.aria-label]="parent.label + ' first name'"
+                [formField]="parent.firstName"
+                [class.error]="parent.firstName().touched() && parent.firstName().invalid()"
+              />
+              <input
+                type="text"
+                class="app-input"
+                placeholder="Last name"
+                [attr.aria-label]="parent.label + ' last name'"
+                [formField]="parent.lastName"
+                [class.error]="parent.lastName().touched() && parent.lastName().invalid()"
+              />
+              <input
+                type="tel"
+                class="app-input"
+                [placeholder]="parent.phonePlaceholder"
+                [attr.aria-label]="parent.label + ' phone number'"
+                [formField]="parent.phoneNumber"
+                [class.error]="parent.phoneNumber().touched() && parent.phoneNumber().invalid()"
+              />
+            </div>
+            @for (field of [parent.firstName, parent.lastName, parent.phoneNumber]; track $index) {
+              @if (field().touched() && field().invalid()) {
+                <div class="app-error-message">{{ field().errors()[0].message }}</div>
+              }
+            }
           </div>
-          @if (scholarForm.get('motherPhoneNumber')?.invalid &&
-          (scholarForm.get('motherPhoneNumber')?.dirty ||
-          scholarForm.get('motherPhoneNumber')?.touched)) {
-          <div class="app-error-message">Not a valid phone number.</div>
-          }
-        </div>
-        <div>
-          <p class="parent-subheading">Father</p>
-          <div class="grid gap-2">
-            <input
-              id="fatherFirstName"
-              type="text"
-              formControlName="fatherFirstName"
-              class="app-input"
-              [class.error]="
-                scholarForm.get('fatherFirstName')?.invalid &&
-                (scholarForm.get('fatherFirstName')?.dirty ||
-                  scholarForm.get('fatherFirstName')?.touched)
-              "
-              placeholder="First name"
-            />
-            <input
-              id="fatherLastName"
-              type="text"
-              formControlName="fatherLastName"
-              class="app-input"
-              [class.error]="
-                scholarForm.get('fatherLastName')?.invalid &&
-                (scholarForm.get('fatherLastName')?.dirty ||
-                  scholarForm.get('fatherLastName')?.touched)
-              "
-              placeholder="Last name"
-            />
-            <input
-              id="fatherPhoneNumber"
-              type="tel"
-              formControlName="fatherPhoneNumber"
-              class="app-input"
-              [class.error]="
-                scholarForm.get('fatherPhoneNumber')?.invalid &&
-                (scholarForm.get('fatherPhoneNumber')?.dirty ||
-                  scholarForm.get('fatherPhoneNumber')?.touched)
-              "
-              placeholder="Phone, e.g. 0733 444 555"
-            />
-          </div>
-          @if (scholarForm.get('fatherPhoneNumber')?.invalid &&
-          (scholarForm.get('fatherPhoneNumber')?.dirty ||
-          scholarForm.get('fatherPhoneNumber')?.touched)) {
-          <div class="app-error-message">Not a valid phone number.</div>
-          }
-        </div>
+        }
       </div>
-    </div>
+    </fieldset>
 
     <!-- Pick Up Schedule -->
-    <div class="create-update-scholar-entry">
-      <label class="app-label block mb-2">Pick Up Schedule (Optional)</label>
-      <div [formGroup]="pickUpScheduleGroup" class="grid gap-4 md:grid-cols-2">
-        <div>
-          <label for="monday" class="block mb-1">Monday</label>
-          <input
-            id="monday"
-            type="time"
-            formControlName="monday"
-            class="app-input"
-          />
-        </div>
-        <div>
-          <label for="tuesday" class="block mb-1">Tuesday</label>
-          <input
-            id="tuesday"
-            type="time"
-            formControlName="tuesday"
-            class="app-input"
-          />
-        </div>
-        <div>
-          <label for="wednesday" class="block mb-1">Wednesday</label>
-          <input
-            id="wednesday"
-            type="time"
-            formControlName="wednesday"
-            class="app-input"
-          />
-        </div>
-        <div>
-          <label for="thursday" class="block mb-1">Thursday</label>
-          <input
-            id="thursday"
-            type="time"
-            formControlName="thursday"
-            class="app-input"
-          />
-        </div>
-        <div>
-          <label for="friday" class="block mb-1">Friday</label>
-          <input
-            id="friday"
-            type="time"
-            formControlName="friday"
-            class="app-input"
-          />
-        </div>
+    <fieldset class="create-update-scholar-entry">
+      <legend class="app-label block mb-2">Pick Up Schedule (Optional)</legend>
+      <div class="grid gap-4 md:grid-cols-2">
+        @for (day of weekDays; track day) {
+          <div>
+            <label [for]="day" class="block mb-1">{{ day | titlecase }}</label>
+            <input
+              type="time"
+              class="app-input"
+              [id]="day"
+              [formField]="scholarForm.pickUpSchedule[day]"
+            />
+          </div>
+        }
       </div>
-    </div>
+    </fieldset>
 
     <!-- Submit Button -->
     <div>
       <button
         type="submit"
-        [disabled]="scholarForm.invalid || isSubmitting()"
+        [disabled]="scholarForm().submitting()"
         class="app-button app-button--accent"
       >
-        {{ isSubmitting() ? 'Saving...' : (isEditMode ? 'Update Scholar' : 'Create Scholar') }}
+        {{
+          scholarForm().submitting()
+            ? 'Saving...'
+            : isEditMode
+              ? 'Update Scholar'
+              : 'Create Scholar'
+        }}
       </button>
     </div>
   </form>

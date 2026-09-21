@@ -3,8 +3,7 @@
     type="search"
     class="app-input scholar-table-toolbar__search"
     placeholder="Search by name..."
-    [value]="searchTerm"
-    (input)="onSearchTermChange($any($event.target).value)"
+    [formField]="searchForm.term"
     aria-label="Search scholars by name"
   />
   <button [routerLink]="['/create-scholar']" class="app-button app-button--accent">
@@ -33,7 +32,7 @@
         <input
           type="checkbox"
           aria-label="Select all scholars"
-          [checked]="allSelected"
+          [checked]="allSelected()"
           (change)="toggleSelectAll($any($event.target).checked)"
         />
       </th>
@@ -91,7 +90,7 @@
     </tr>
   </thead>
   <tbody>
-    @for (scholar of displayedScholarData; track scholar.id) {
+    @for (scholar of displayedScholarData(); track scholar.id) {
     <tr
       class="table-row"
       [routerLink]="['/scholars', scholar.id]"
@@ -121,8 +120,8 @@
     } @empty {
     <tr class="table-row">
       <td colspan="5" class="table-cell">
-        @if (searchTerm) {
-          No scholars match "{{ searchTerm }}".
+        @if (searchTerm()) {
+          No scholars match "{{ searchTerm() }}".
         } @else {
           No scholars yet.
         }

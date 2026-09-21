@@ -393,7 +393,7 @@ describe('AttendancePerScholarComponent', () => {
     it('rebuilds dayRows for the new month, with nothing persisted outside March', () => {
       const { component } = setup();
 
-      component.onMonthChange({ target: { value: '2024-04' } } as unknown as Event);
+      component.monthForm.month().value.set('2024-04');
 
       expect(component.selectedMonth()).toBe('2024-04');
       expect(component.dayRows().length).toBe(getWeekdayDatesInMonth(2024, 4).length);

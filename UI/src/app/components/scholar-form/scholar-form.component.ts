@@ -1,16 +1,20 @@
+import { TitleCasePipe } from '@angular/common';
 import { Component, OnInit, inject, signal } from '@angular/core';
-import {
-  FormBuilder,
-  FormGroup,
-  ReactiveFormsModule,
-  Validators,
-} from '@angular/forms';
+import { FormField, FormRoot, form } from '@angular/forms/signals';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
-import { Scholar } from '../../interfaces/scholar';
+import { firstValueFrom } from 'rxjs';
+import { WeekDays } from '../../constants/week-days';
 import { School } from '../../interfaces/school';
 import { ScholarsService } from '../../services/scholars.service';
 import { SchoolsService } from '../../services/schools.service';
 import { NotificationService } from '../../services/notification.service';
+import {
+  ScholarFormModel,
+  emptyScholarForm,
+  scholarFormSchema,
+  toFormModel,
+  toScholar,
+} from './scholar-form';
 
 // Handles both "create a scholar" (no :id in the route) and "edit a scholar"
 // (:id present) — the two forms were previously two near-identical
@@ -18,42 +22,72 @@ import { NotificationService } from '../../services/notification.service';
 // flows the same School dropdown and error handling.
 @Component({
   selector: 'app-scholar-form',
-  imports: [ReactiveFormsModule, RouterModule],
+  imports: [FormField, FormRoot, RouterModule, TitleCasePipe],
   templateUrl: './scholar-form.component.html',
   styleUrl: './scholar-form.component.css',
 })
 export class ScholarFormComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
-  private readonly fb = inject(FormBuilder);
   private readonly scholarsService = inject(ScholarsService);
   private readonly schoolsService = inject(SchoolsService);
   private readonly notificationService = inject(NotificationService);
 
-  scholarForm!: FormGroup;
-  schools = signal<School[]>([]);
-  isEditMode = false;
-  scholarId: string | null = null;
-  isSubmitting = signal(false);
+  readonly scholarId = this.route.snapshot.paramMap.get('id');
+  readonly isEditMode = this.scholarId !== null;
 
-  // Matches the backend's ValidatePhoneNumber — loose on purpose (no
-  // country-specific format assumed), just enough to catch obviously wrong
-  // input (e.g. text typed into the field) before a round-trip to the API.
-  private static readonly PHONE_PATTERN = /^\+?[0-9 ()-]{6,20}$/;
+  readonly schools = signal<School[]>([]);
+  readonly weekDays = Object.values(WeekDays);
+
+  // The form model is a plain signal; the form is a view over it. Loading an
+  // existing scholar is just model.set(...) — no patchValue copy step.
+  readonly model = signal<ScholarFormModel>(emptyScholarForm());
+  readonly invalidSummary = signal<string | null>(null);
+
+  readonly scholarForm = form(this.model, scholarFormSchema, {
+    submission: {
+      action: () => this.save(),
+      onInvalid: (field) => {
+        const errors = field().errorSummary();
+        this.invalidSummary.set(
+          `The form has ${errors.length} ${errors.length === 1 ? 'error' : 'errors'}. Please correct the highlighted fields.`,
+        );
+        // Move focus to the first problem so keyboard/screen-reader users land on it.
+        errors[0]?.fieldTree().focusBoundControl();
+      },
+    },
+  });
+
+  // Mother and father are the same three fields; this lets the template loop
+  // over them instead of repeating the markup (declared after scholarForm,
+  // which it reads).
+  protected readonly parents = [
+    {
+      key: 'mother',
+      label: 'Mother',
+      firstName: this.scholarForm.motherFirstName,
+      lastName: this.scholarForm.motherLastName,
+      phoneNumber: this.scholarForm.motherPhoneNumber,
+      phonePlaceholder: 'Phone, e.g. 0722 111 222',
+    },
+    {
+      key: 'father',
+      label: 'Father',
+      firstName: this.scholarForm.fatherFirstName,
+      lastName: this.scholarForm.fatherLastName,
+      phoneNumber: this.scholarForm.fatherPhoneNumber,
+      phonePlaceholder: 'Phone, e.g. 0733 444 555',
+    },
+  ] as const;
 
   ngOnInit(): void {
-    this.initForm();
-
     this.schoolsService.getSchools().subscribe((schools) => {
       this.schools.set(schools);
     });
 
-    this.scholarId = this.route.snapshot.paramMap.get('id');
-    this.isEditMode = !!this.scholarId;
-
-    if (this.isEditMode && this.scholarId) {
+    if (this.scholarId) {
       this.scholarsService.getScholarById(this.scholarId).subscribe({
-        next: (scholar) => this.populateForm(scholar),
+        next: (scholar) => this.model.set(toFormModel(scholar)),
         error: (err) => {
           console.error('Failed to load scholar:', err.message);
           this.notificationService.show(
@@ -65,113 +99,32 @@ export class ScholarFormComponent implements OnInit {
     }
   }
 
-  private initForm(): void {
-    this.scholarForm = this.fb.group({
-      firstName: ['', [Validators.required, Validators.maxLength(100)]],
-      lastName: ['', [Validators.required, Validators.maxLength(100)]],
-      schoolId: [null, Validators.required],
-      grade: [
-        null,
-        [Validators.required, Validators.min(0), Validators.max(12)],
-      ],
-      dateOfBirth: ['', [Validators.required, this.dateValidator]],
-      motherFirstName: ['', [Validators.maxLength(100)]],
-      motherLastName: ['', [Validators.maxLength(100)]],
-      motherPhoneNumber: ['', [Validators.pattern(ScholarFormComponent.PHONE_PATTERN)]],
-      fatherFirstName: ['', [Validators.maxLength(100)]],
-      fatherLastName: ['', [Validators.maxLength(100)]],
-      fatherPhoneNumber: ['', [Validators.pattern(ScholarFormComponent.PHONE_PATTERN)]],
-      pickUpSchedule: this.fb.group({
-        monday: [''],
-        tuesday: [''],
-        wednesday: [''],
-        thursday: [''],
-        friday: [''],
-      }),
-    });
-  }
+  // Runs only when the form is valid (FormRoot -> submit()); the form's own
+  // submitting() state replaces the old hand-rolled isSubmitting signal.
+  private async save(): Promise<void> {
+    this.invalidSummary.set(null);
+    const scholar = toScholar(this.model(), this.scholarId);
+    const verb = this.isEditMode ? 'update' : 'create';
 
-  private populateForm(scholar: Scholar): void {
-    this.scholarForm.patchValue({
-      firstName: scholar.firstName,
-      lastName: scholar.lastName,
-      schoolId: scholar.schoolId,
-      grade: scholar.grade,
-      dateOfBirth: scholar.dateOfBirth
-        ? new Date(scholar.dateOfBirth).toISOString().substring(0, 10)
-        : '',
-      motherFirstName: scholar.motherFirstName ?? '',
-      motherLastName: scholar.motherLastName ?? '',
-      motherPhoneNumber: scholar.motherPhoneNumber ?? '',
-      fatherFirstName: scholar.fatherFirstName ?? '',
-      fatherLastName: scholar.fatherLastName ?? '',
-      fatherPhoneNumber: scholar.fatherPhoneNumber ?? '',
-      pickUpSchedule: scholar.pickUpSchedule || {},
-    });
-  }
-
-  dateValidator(control: { value: string | number | Date }) {
-    if (!control.value) return null;
-    const date = new Date(control.value);
-    return isNaN(date.getTime()) || date > new Date()
-      ? { invalidDate: true }
-      : null;
-  }
-
-  onSubmit(): void {
-    if (this.scholarForm.invalid) {
-      this.scholarForm.markAllAsTouched();
-      console.warn('Form is invalid. Please correct the errors.');
-      return;
+    try {
+      const savedScholar = await firstValueFrom(
+        this.isEditMode
+          ? this.scholarsService.updateScholar(scholar)
+          : this.scholarsService.createScholar(scholar),
+      );
+      this.notificationService.show(
+        this.isEditMode
+          ? 'Scholar updated successfully!'
+          : 'Scholar created successfully!',
+      );
+      await this.router.navigate(['/scholars', savedScholar.id]);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      console.error(
+        `Error ${this.isEditMode ? 'updating' : 'creating'} scholar:`,
+        message,
+      );
+      this.notificationService.show(`Failed to ${verb} scholar. ${message}`, 'error');
     }
-
-    const formValue = this.scholarForm.value;
-    const scholar: Scholar = {
-      id: this.scholarId ?? '00000000-0000-0000-0000-000000000000',
-      firstName: formValue.firstName,
-      lastName: formValue.lastName,
-      schoolId: formValue.schoolId,
-      grade: formValue.grade,
-      dateOfBirth: new Date(formValue.dateOfBirth),
-      motherFirstName: formValue.motherFirstName || null,
-      motherLastName: formValue.motherLastName || null,
-      motherPhoneNumber: formValue.motherPhoneNumber || null,
-      fatherFirstName: formValue.fatherFirstName || null,
-      fatherLastName: formValue.fatherLastName || null,
-      fatherPhoneNumber: formValue.fatherPhoneNumber || null,
-      pickUpSchedule: formValue.pickUpSchedule,
-    };
-
-    this.isSubmitting.set(true);
-    const save$ = this.isEditMode
-      ? this.scholarsService.updateScholar(scholar)
-      : this.scholarsService.createScholar(scholar);
-
-    save$.subscribe({
-      next: (savedScholar) => {
-        this.isSubmitting.set(false);
-        this.notificationService.show(
-          this.isEditMode
-            ? 'Scholar updated successfully!'
-            : 'Scholar created successfully!',
-        );
-        this.router.navigate(['/scholars', savedScholar.id]);
-      },
-      error: (err) => {
-        this.isSubmitting.set(false);
-        console.error(
-          `Error ${this.isEditMode ? 'updating' : 'creating'} scholar:`,
-          err.message,
-        );
-        this.notificationService.show(
-          `Failed to ${this.isEditMode ? 'update' : 'create'} scholar. ${err.message}`,
-          'error',
-        );
-      },
-    });
-  }
-
-  get pickUpScheduleGroup(): FormGroup {
-    return this.scholarForm.get('pickUpSchedule') as FormGroup;
   }
 }

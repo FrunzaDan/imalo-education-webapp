@@ -9,8 +9,7 @@
       <input
         id="monthPicker"
         type="month"
-        [value]="selectedMonth()"
-        (change)="onMonthChange($event)"
+        [formField]="monthForm.month"
         class="controls__month-input"
       />
       <button

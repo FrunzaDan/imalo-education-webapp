@@ -1,4 +1,13 @@
-import { Component, OnInit, OnDestroy, computed, inject, signal } from '@angular/core';
+import {
+  Component,
+  OnInit,
+  OnDestroy,
+  computed,
+  inject,
+  linkedSignal,
+  signal,
+} from '@angular/core';
+import { FormField, form } from '@angular/forms/signals';
 import { ActivatedRoute } from '@angular/router';
 import { CurrencyPipe, DatePipe } from '@angular/common';
 import { Subscription } from 'rxjs';
@@ -25,7 +34,7 @@ interface AttendanceDayRow {
 
 @Component({
   selector: 'app-attendance-per-scholar',
-  imports: [CurrencyPipe, DatePipe],
+  imports: [CurrencyPipe, DatePipe, FormField],
   templateUrl: './attendance-per-scholar.component.html',
   styleUrl: './attendance-per-scholar.component.css',
 })
@@ -58,8 +67,18 @@ export class AttendancePerScholarComponent implements OnInit, OnDestroy {
   // directly by the template either, so it stays a plain field too.
   allAttendanceRecords: AttendanceRecord[] = [];
 
-  selectedMonth = signal(''); // 'YYYY-MM', bound to <input type="month">
-  dayRows = signal<AttendanceDayRow[]>([]);
+  // 'YYYY-MM', the value format of <input type="month">. A one-field signal
+  // form binds the picker; selectedMonth is its value.
+  readonly monthForm = form(signal({ month: '' }));
+  readonly selectedMonth = computed(() => this.monthForm.month().value());
+
+  // Rebuilt from allAttendanceRecords whenever the selected month changes,
+  // but still writable: the checkbox handlers re-set it after mutating a
+  // row's record in place (see onLunchChange).
+  readonly dayRows = linkedSignal<string, AttendanceDayRow[]>({
+    source: this.selectedMonth,
+    computation: (month) => this.buildDayRows(month),
+  });
 
   // Derived from dayRows — a checkbox handler mutates a row's record in place
   // (so the checkbox stays bound to a stable object) and then re-sets dayRows
@@ -115,14 +134,12 @@ export class AttendancePerScholarComponent implements OnInit, OnDestroy {
           .subscribe({
             next: (attendanceData: AttendanceRecord[] | undefined) => {
               this.allAttendanceRecords = attendanceData ?? [];
-              this.selectedMonth.set(this.pickDefaultMonth());
-              this.rebuildDayRows();
+              this.monthForm.month().value.set(this.pickDefaultMonth());
             },
             error: (err) => {
               console.error('Error fetching attendance data:', err);
               this.allAttendanceRecords = [];
-              this.selectedMonth.set(this.pickDefaultMonth());
-              this.rebuildDayRows();
+              this.monthForm.month().value.set(this.pickDefaultMonth());
             },
           });
       },
@@ -158,19 +175,11 @@ export class AttendancePerScholarComponent implements OnInit, OnDestroy {
     return dateStr.substring(0, 10);
   }
 
-  onMonthChange(event: Event): void {
-    this.selectedMonth.set((event.target as HTMLInputElement).value);
-    this.rebuildDayRows();
-  }
+  private buildDayRows(selectedMonth: string): AttendanceDayRow[] {
+    if (!selectedMonth) return [];
 
-  private rebuildDayRows(): void {
-    if (!this.selectedMonth()) {
-      this.dayRows.set([]);
-      return;
-    }
-
-    const [year, month] = this.selectedMonth().split('-').map(Number);
-    const rows = getWeekdayDatesInMonth(year, month).map((date) => {
+    const [year, month] = selectedMonth.split('-').map(Number);
+    return getWeekdayDatesInMonth(year, month).map((date) => {
       const existing = this.allAttendanceRecords.find(
         (r) => this.toDateOnly(r.date) === date,
       );
@@ -190,8 +199,6 @@ export class AttendancePerScholarComponent implements OnInit, OnDestroy {
         isPersisted: false,
       };
     });
-
-    this.dayRows.set(rows);
   }
 
   // Adds a day's record to the list that actually gets saved, the first time

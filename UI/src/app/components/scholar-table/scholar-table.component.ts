@@ -1,4 +1,5 @@
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { FormField, form } from '@angular/forms/signals';
 import { ScholarsService } from '../../services/scholars.service';
 import { SchoolsService } from '../../services/schools.service';
 import { SortingService } from '../../services/sorting.service';
@@ -23,7 +24,7 @@ interface TransformedScholarData {
 }
 
 @Component({
-  imports: [NgStyle, RouterModule],
+  imports: [FormField, NgStyle, RouterModule],
   selector: 'app-scholar-table',
   templateUrl: './scholar-table.component.html',
   styleUrl: './scholar-table.component.css',
@@ -43,7 +44,9 @@ export class ScholarTableComponent implements OnInit {
   currentSortColumn: string = '';
   isAscending: boolean = true;
 
-  searchTerm: string = '';
+  // A one-field signal form for the search box; searchTerm is its value.
+  readonly searchForm = form(signal({ term: '' }));
+  readonly searchTerm = computed(() => this.searchForm.term().value());
 
   selectedIds = signal<Set<string>>(new Set());
   bulkDeleteInProgress = signal(false);
@@ -127,23 +130,18 @@ export class ScholarTableComponent implements OnInit {
   // this dataset is small enough that a server round-trip per keystroke (the
   // pattern Customer_Management_System uses, justified there by server-side
   // pagination) would just be unnecessary latency here.
-  get displayedScholarData(): TransformedScholarData[] {
-    const term = this.searchTerm.trim().toLowerCase();
+  readonly displayedScholarData = computed(() => {
+    const term = this.searchTerm().trim().toLowerCase();
     const scholarData = this.scholarData();
     if (!term) return scholarData;
     return scholarData.filter((s) => s.name.toLowerCase().includes(term));
-  }
+  });
 
-  onSearchTermChange(value: string): void {
-    this.searchTerm = value;
-  }
-
-  get allSelected(): boolean {
-    return (
-      this.displayedScholarData.length > 0 &&
-      this.displayedScholarData.every((s) => this.selectedIds().has(s.id))
-    );
-  }
+  readonly allSelected = computed(
+    () =>
+      this.displayedScholarData().length > 0 &&
+      this.displayedScholarData().every((s) => this.selectedIds().has(s.id)),
+  );
 
   isSelected(id: string): boolean {
     return this.selectedIds().has(id);
@@ -163,7 +161,7 @@ export class ScholarTableComponent implements OnInit {
   // selections made under a different search term aren't silently touched.
   toggleSelectAll(checked: boolean): void {
     const next = new Set(this.selectedIds());
-    for (const s of this.displayedScholarData) {
+    for (const s of this.displayedScholarData()) {
       if (checked) {
         next.add(s.id);
       } else {
@@ -224,7 +222,7 @@ export class ScholarTableComponent implements OnInit {
         { header: 'Grade', value: (s: TransformedScholarData) => s.grade },
         { header: 'Birth Date', value: (s: TransformedScholarData) => s.birthDate },
       ],
-      this.displayedScholarData,
+      this.displayedScholarData(),
     );
   }
 }
