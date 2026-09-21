@@ -12,6 +12,7 @@ import { NgStyle } from '@angular/common';
 import { forkJoin, from, of } from 'rxjs';
 import { catchError, concatMap, map, toArray } from 'rxjs/operators';
 import { RouterModule } from '@angular/router';
+import { contrastTextColor } from '../../utils/contrast-color';
 
 interface TransformedScholarData {
   id: string;
@@ -70,7 +71,7 @@ export class ScholarTableComponent implements OnInit {
             const school = schoolsMap.get(scholar.schoolId?.toString() ?? '');
             const schoolName = school ? school.name : 'Unknown';
             const schoolColor = school ? school.color : '#FFFFFF';
-            const textColor = this.getTextColor(schoolColor);
+            const textColor = contrastTextColor(schoolColor);
 
             return {
               id: scholar.id,
@@ -97,15 +98,6 @@ export class ScholarTableComponent implements OnInit {
         // rows that may no longer exist or may have shifted.
         this.selectedIds.set(new Set());
       });
-  }
-
-  public getTextColor(backgroundColor: string): string {
-    const hex = backgroundColor.replace('#', '');
-    const r = parseInt(hex.substring(0, 2), 16);
-    const g = parseInt(hex.substring(2, 4), 16);
-    const b = parseInt(hex.substring(4, 6), 16);
-    const brightness = 0.2126 * r + 0.7152 * g + 0.0722 * b;
-    return brightness < 128 ? 'white' : 'black';
   }
 
   sortData(column: string, type: 'string' | 'number' | 'date'): void {

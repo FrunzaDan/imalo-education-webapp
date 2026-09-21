@@ -1,6 +1,7 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
-import { CurrencyPipe, DatePipe } from '@angular/common';
+import { DatePipe } from '@angular/common';
 import { RouterModule } from '@angular/router';
+import { RonPipe } from '../../pipes/ron.pipe';
 import { forkJoin } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { ScholarsService } from '../../services/scholars.service';
@@ -21,7 +22,7 @@ interface AttendanceRow {
 
 @Component({
   selector: 'app-attendance',
-  imports: [DatePipe, CurrencyPipe, RouterModule],
+  imports: [DatePipe, RonPipe, RouterModule],
   templateUrl: './attendance.component.html',
   styleUrl: './attendance.component.css',
 })

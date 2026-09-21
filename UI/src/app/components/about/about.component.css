@@ -1,14 +1,13 @@
 .about-page {
   max-width: 800px;
-  margin: var(--space-6) auto;
-  padding: 0 var(--space-5);
+  margin: 0 auto;
 }
 
 .about-lead {
+  margin: 0 0 var(--space-5);
   font-size: 1.1rem;
   color: var(--dark-main-color);
   opacity: 0.8;
-  margin-bottom: var(--space-5);
 }
 
 .about-card {
@@ -18,6 +17,10 @@
   overflow: hidden;
   background-color: #ffffff;
   box-shadow: var(--card-shadow);
+}
+
+.about-card:last-child {
+  margin-bottom: 0;
 }
 
 .about-card__header {
@@ -31,17 +34,33 @@
   padding: var(--space-5);
 }
 
-.about-card__body p {
+.about-card__body p,
+.about-card__body ul,
+.about-card__body pre {
   margin: 0 0 var(--space-3);
 }
 
 .about-card__body ul {
-  margin: 0 0 var(--space-3);
   padding-left: var(--space-5);
 }
 
-.about-card__body-last {
-  margin-bottom: 0 !important;
+.about-card__body li + li {
+  margin-top: var(--space-1);
+}
+
+/* Trailing element of a card needs no bottom margin — the card's own padding
+   already provides the space. */
+.about-card__body > :last-child {
+  margin-bottom: 0;
+}
+
+/* Inline code / key names in prose */
+.about-card__body code,
+.about-card__body kbd {
+  padding: 0.1em var(--space-1);
+  border-radius: var(--radius-sm);
+  background-color: var(--light-main-color);
+  font-size: 0.9em;
 }
 
 .about-code {
@@ -53,8 +72,11 @@
   font-size: 0.85rem;
 }
 
-.about-button--off {
-  background-color: rgba(var(--cyan-darker-color-for-alpha), 0.4);
+/* Reset the inline-code chip inside a code block */
+.about-code code {
+  padding: 0;
+  background: none;
+  font-size: inherit;
 }
 
 .about-result {

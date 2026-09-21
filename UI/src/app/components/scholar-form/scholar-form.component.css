@@ -1,7 +1,85 @@
-/* Styling comes from the global .app-* classes in src/styles.css. */
+/* Field/label/input/button styling comes from the global .app-* classes in
+   src/styles.css; this file only lays the form out. */
+
+.scholar-form-page {
+  max-width: 700px;
+  margin: 0 auto;
+  padding: var(--space-5);
+}
+
+.scholar-form-page .page-title {
+  margin-bottom: var(--space-5);
+}
+
+/* One gap value drives the rhythm between every block of the form. */
+.scholar-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
+.scholar-form__field {
+  display: flex;
+  flex-direction: column;
+}
+
+/* <fieldset> ships with a native border, padding and min-width — reset it so
+   the group looks like the plain fields around it. */
+.scholar-form__group {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+}
+
+.scholar-form__legend {
+  padding: 0;
+  margin-bottom: var(--space-3);
+}
+
+.scholar-form__columns,
+.scholar-form__days {
+  display: grid;
+  gap: var(--space-4) var(--space-5);
+}
+
+.scholar-form__parent,
+.scholar-form__stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
 
 .parent-subheading {
-  margin: 0 0 var(--space-2);
+  margin: 0 0 var(--space-1);
   font-weight: 600;
   color: var(--cyan-dark-color);
+}
+
+.scholar-form__day {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.scholar-form__day-label {
+  font-weight: 500;
+  color: var(--dark-main-color);
+}
+
+.scholar-form__actions {
+  display: flex;
+  gap: var(--space-3);
+  padding-top: var(--space-2);
+}
+
+/* Two columns from tablet width up; single column on phones. */
+@media (min-width: 600px) {
+  .scholar-form__columns {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .scholar-form__days {
+    grid-template-columns: repeat(3, 1fr);
+  }
 }

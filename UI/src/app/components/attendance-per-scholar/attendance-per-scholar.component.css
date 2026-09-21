@@ -1,6 +1,6 @@
 .attendance-container {
   max-width: 900px;
-  margin: var(--space-6) auto;
+  margin: 0 auto;
   padding: var(--space-5);
   border: var(--border-width) solid var(--border-color);
   border-radius: var(--radius-lg);
@@ -9,44 +9,32 @@
 }
 
 .attendance-container__title {
-  font-size: 1.8rem;
   margin-bottom: var(--space-4);
-  color: var(--cyan-dark-color);
 }
 
 .controls {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: var(--space-3);
 }
 
-.controls__month-input {
-  padding: var(--space-2) var(--space-3);
-  border: var(--border-width-thick) solid rgba(var(--cyan-main-color-for-alpha), 0.5);
-  border-radius: var(--radius-md);
-  font-size: 1rem;
-  font-family: inherit;
-  color: var(--dark-main-color);
-}
-
-.attendance-table {
-  width: 100%;
-  border-collapse: collapse;
-  margin-top: var(--space-4);
-  background-color: white;
-}
-
-.attendance-table th,
-.attendance-table td {
-  padding: var(--space-3) var(--space-4);
-  border-bottom: var(--border-width) solid rgba(var(--cyan-main-color-for-alpha), 0.15);
-  text-align: left;
-}
-
-.attendance-table thead th {
-  background-color: var(--light-main-color);
+.controls__label {
+  font-weight: 600;
   color: var(--cyan-dark-color);
-  font-weight: bold;
+}
+
+/* .app-input is width:100% by default; the month picker should hug its content. */
+.controls__month-input {
+  width: auto;
+}
+
+/* Table chrome (.app-table / .table-header / .table-row / .table-cell) comes
+   from the global stylesheet, so this table matches the other data tables.
+   Only what is specific to the attendance grid lives here. */
+.attendance-container .attendance-table {
+  margin-top: var(--space-4);
+  box-shadow: none; /* already inside a card */
 }
 
 .attendance-table__muted {
@@ -58,7 +46,8 @@
   cursor: not-allowed;
 }
 
-.attendance-table__row--unsaved {
+/* Two classes deep so it outranks the shared zebra/hover row backgrounds. */
+.attendance-table .attendance-table__row--unsaved {
   background-color: rgba(var(--orange-main-color-for-alpha), 0.12);
 }
 
@@ -84,7 +73,7 @@
 }
 
 .attendance-container__unsaved-note {
-  color: var(--orange-main-color);
+  color: var(--orange-text-color);
   font-style: italic;
   font-size: 0.9rem;
 }

@@ -8,10 +8,14 @@
   --cyan-light-color-for-alpha: 60, 208, 225;
   --cyan-dark-color: #155b5a;
   --orange-main-color: #ffa726;
-  --orange-main-color-for-alpha: 255, 176, 38;
+  --orange-main-color-for-alpha: 255, 167, 38;
   --orange-light-color: #ffb347;
   --orange-light-color-for-alpha: 255, 179, 71;
+  /* #ffa726 is only ~2:1 against white — fine as a fill/border, unreadable
+     as text. Use this darker shade whenever the orange has to carry copy. */
+  --orange-text-color: #a35a00;
   --light-main-color: #fdf1e8;
+  --light-main-color-for-alpha: 253, 241, 232;
   --dark-main-color: #394546;
   --primary-font: 'Main', sans-serif;
 
@@ -36,25 +40,12 @@
   --border-width-thick: 2px;
   --border-color: rgba(var(--cyan-main-color-for-alpha), 0.2);
   --card-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-
-  --bs-breakpoint-xs: 0;
-  --bs-breakpoint-sm: 576px;
-  --bs-breakpoint-md: 768px;
-  --bs-breakpoint-lg: 992px;
-  --bs-breakpoint-xl: 1200px;
-  --bs-breakpoint-xxl: 1400px;
-
-  --bs-body-font-size: 1rem;
-  --bs-body-font-weight: 400;
-  --bs-body-line-height: 1.5;
-  --bs-body-color: #212529;
-  --bs-body-color-rgb: 33, 37, 41;
-  --bs-body-bg: #fff;
 }
 
 @font-face {
   font-family: 'Main';
   src: url('/assets/fonts/Lora-Medium.ttf');
+  font-display: swap;
 }
 
 body {
@@ -62,6 +53,45 @@ body {
   font-family: var(--primary-font);
   background-color: var(--light-main-color);
   color: var(--dark-main-color);
+}
+
+/* Every routed page lives in the host element Angular inserts right after
+   <router-outlet>. Hosts are display:inline by default, so give them one shared
+   block wrapper: the same vertical rhythm under the navbar on every page, and
+   no page needs its own top/bottom margin. Horizontal edges stay flush with the
+   navbar's. */
+router-outlet + * {
+  display: block;
+  padding: var(--space-5) 0;
+}
+
+.page-title {
+  margin: 0 0 var(--space-4);
+  font-size: 1.75rem;
+  color: var(--cyan-dark-color);
+}
+
+/* Row of page-level actions (search, create, export...). Buttons carry no
+   margin of their own — spacing comes from this gap, so groups line up with
+   the content edge and centre/right-align correctly. */
+.page-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
+}
+
+input[type='checkbox'] {
+  width: 1.05rem;
+  height: 1.05rem;
+  accent-color: var(--cyan-dark-color);
+  cursor: pointer;
+  vertical-align: middle;
+}
+
+input[type='checkbox']:disabled {
+  cursor: not-allowed;
 }
 
 /* Shared card surface: white background, hairline border, consistent
@@ -76,8 +106,7 @@ body {
 
 /* General Button Style */
 .app-button {
-  display: inline-block; /* Allows padding and margin, and centers text */
-  margin: var(--space-1) var(--space-2) var(--space-1) 0;
+  display: inline-block; /* Allows padding and centers text */
   padding: var(--space-2) var(--space-4);
   background-color: var(--cyan-dark-color);
   color: var(--light-main-color);
@@ -98,8 +127,8 @@ body {
   appearance: none;
 }
 
-/* Hover Effect */
-.app-button:hover {
+/* Hover Effect (not while disabled — a disabled button must not react) */
+.app-button:hover:not(:disabled) {
   filter: brightness(
     0.88
   ); /* Darken the current background a step, whatever it is */
@@ -108,16 +137,10 @@ body {
 }
 
 /* Active/Click Effect */
-.app-button:active {
+.app-button:active:not(:disabled) {
   filter: brightness(0.75); /* Darken further when clicked */
   transform: translateY(0); /* Press button down */
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); /* Smaller shadow when pressed */
-}
-
-/* Focus State (for keyboard navigation accessibility) */
-.app-button:focus {
-  outline: none; /* Remove default focus outline */
-  box-shadow: 0 0 0 3px rgba(var(--cyan-light-color-for-alpha), 0.5); /* Custom focus ring */
 }
 
 .app-button:disabled {
@@ -134,13 +157,9 @@ body {
   color: var(--dark-main-color);
 }
 
-.app-button--accent:hover {
+.app-button--accent:hover:not(:disabled) {
   filter: none;
   background-color: var(--orange-light-color);
-}
-
-.app-button--accent:focus {
-  box-shadow: 0 0 0 3px rgba(var(--orange-main-color-for-alpha), 0.4);
 }
 
 /* Ghost variant: secondary utility actions (export, navigate) */
@@ -150,7 +169,7 @@ body {
   color: var(--cyan-darker-color);
 }
 
-.app-button--ghost:hover {
+.app-button--ghost:hover:not(:disabled) {
   filter: none;
   background-color: rgba(var(--cyan-main-color-for-alpha), 0.18);
   box-shadow: none;
@@ -164,7 +183,7 @@ body {
   border-color: var(--dark-main-color);
 }
 
-.app-button--danger:hover {
+.app-button--danger:hover:not(:disabled) {
   filter: none;
   background-color: var(--dark-main-color);
   color: var(--light-main-color);
@@ -175,11 +194,21 @@ body {
   color: rgba(var(--cyan-darker-color-for-alpha), 0.35);
 }
 
+/* Focus ring for keyboard navigation only (:focus-visible), declared after the
+   variants so a hovered-and-focused button still shows it. */
+.app-button:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(var(--cyan-light-color-for-alpha), 0.5);
+}
+
+.app-button--accent:focus-visible {
+  box-shadow: 0 0 0 3px rgba(var(--orange-main-color-for-alpha), 0.4);
+}
+
 /* General Input Style */
 .app-input {
   width: 100%;
   padding: var(--space-2) var(--space-3);
-  margin-bottom: var(--space-2);
   font-size: 16px;
   font-weight: 400;
   color: var(--dark-main-color);
@@ -192,6 +221,17 @@ body {
     box-shadow 0.3s ease;
   font-family: inherit;
   appearance: none;
+}
+
+/* appearance:none strips the native dropdown arrow, so a <select> would look
+   like a text box. Draw our own chevron. */
+select.app-input {
+  padding-right: var(--space-6);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5 6 6.5l5-5' fill='none' stroke='%23155b5a' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right var(--space-3) center;
+  background-size: 0.75rem;
+  cursor: pointer;
 }
 
 /* Placeholder text */
@@ -232,34 +272,20 @@ body {
 }
 
 .app-label.error {
-  color: var(--orange-main-color);
+  color: var(--orange-text-color);
 }
 
 .app-error-message {
-  color: var(--orange-main-color);
+  color: var(--orange-text-color);
   font-size: 0.875rem;
-  margin-top: var(--space-1);
-  margin-bottom: var(--space-2);
-}
-
-.create-update-scholar-page {
-  max-width: 700px;
-  margin: var(--space-6) auto;
-  padding: var(--space-5);
-  border: var(--border-width-thick) solid var(--cyan-dark-color);
-  border-radius: var(--radius-lg);
-  background-color: #ffffff;
-}
-
-.create-update-scholar-entry {
-  padding: var(--space-2) 0;
+  margin: var(--space-1) 0 0;
 }
 
 /* Shared sortable data table, used by scholar-table and attendance dashboard */
 .app-table {
   width: 100%;
   border-collapse: collapse;
-  margin: var(--space-6) 0;
+  margin: 0;
   font-family: inherit;
   border-radius: var(--radius-lg);
   overflow: hidden;
@@ -274,14 +300,23 @@ body {
   padding: var(--space-3) var(--space-4);
   text-align: left;
   font-weight: bold;
-  cursor: pointer;
   position: relative;
   vertical-align: middle;
   line-height: 1.5;
 }
 
+.table-header.sortable {
+  cursor: pointer;
+  user-select: none;
+}
+
+.table-header.sortable:hover {
+  background-color: var(--cyan-darker-color);
+}
+
 .sort-icon {
   display: inline-block;
+  vertical-align: middle;
   margin-left: var(--space-2);
   font-size: 0.8em;
   color: var(--light-main-color);
@@ -303,17 +338,31 @@ body {
   border-bottom: var(--border-width) solid rgba(var(--cyan-main-color-for-alpha), 0.15);
 }
 
-.table-row:hover {
-  background-color: rgba(var(--cyan-main-color-for-alpha), 0.08);
-}
-
 .table-cell {
   padding: var(--space-2) var(--space-4);
   text-align: left;
 }
 
+.table-cell--empty {
+  padding: var(--space-5) var(--space-4);
+  text-align: center;
+  font-style: italic;
+  opacity: 0.65;
+}
+
 .table-row:nth-child(even) {
   background-color: var(--light-main-color);
+}
+
+/* After the zebra rule: at equal specificity the later rule wins, and hover
+   used to lose to it on every even row. */
+.table-row:hover {
+  background-color: rgba(var(--cyan-main-color-for-alpha), 0.08);
+}
+
+/* Whole row is a link to a detail page */
+.table-row--link {
+  cursor: pointer;
 }
 
 @media screen and (max-width: 600px) {
@@ -329,7 +378,7 @@ body {
 
 .loading-message {
   text-align: center;
-  margin-top: var(--space-6);
+  margin: var(--space-6) 0;
   font-style: italic;
   color: var(--dark-main-color);
   opacity: 0.65;

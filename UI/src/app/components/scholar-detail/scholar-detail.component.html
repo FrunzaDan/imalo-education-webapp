@@ -1,38 +1,41 @@
 @if (scholar(); as scholarValue) {
-  <button
-    type="button"
-    class="app-button"
-    (click)="navigateToUpdateScholar()"
-    [disabled]="!scholarValue"
-  >
-    Edit Scholar
-  </button>
-  <button
-    type="button"
-    class="app-button app-button--danger"
-    (click)="deleteScholar()"
-    [disabled]="!scholarValue"
-  >
-    Delete Scholar
-  </button>
+ <div class="scholar-detail-page">
+  <div class="page-toolbar">
+    <button
+      type="button"
+      class="app-button"
+      (click)="navigateToUpdateScholar()"
+    >
+      Edit Scholar
+    </button>
+    <button
+      type="button"
+      class="app-button app-button--danger"
+      (click)="deleteScholar()"
+    >
+      Delete Scholar
+    </button>
+    <button
+      type="button"
+      [routerLink]="['/attendance', scholarValue.id]"
+      class="app-button app-button--ghost"
+    >
+      View Attendance
+    </button>
+  </div>
 
-  <button
-    [routerLink]="['/attendance', scholar()?.id]"
-    class="app-button app-button--ghost"
-  >
-    View Attendance
-  </button>
-
-  <div class="scholar-detail-container">
-    <h2>{{ scholarValue.firstName }} {{ scholarValue.lastName }}</h2>
-    <div class="detail-card">
-      <p><strong>Grade:</strong> {{ scholarValue.grade }}</p>
-      <p>
-        <strong>Birth Date:</strong>
-        {{ scholarValue.dateOfBirth | date: 'longDate' }}
-      </p>
-      <p><strong>School:</strong> {{ school()?.name || 'Unknown' }}</p>
-    </div>
+  <div class="scholar-detail-container app-card">
+    <h2 class="page-title">{{ scholarValue.firstName }} {{ scholarValue.lastName }}</h2>
+    <section class="detail-section">
+      <dl class="detail-list">
+        <dt>Grade</dt>
+        <dd>{{ scholarValue.grade }}</dd>
+        <dt>Birth Date</dt>
+        <dd>{{ scholarValue.dateOfBirth | date: 'longDate' }}</dd>
+        <dt>School</dt>
+        <dd>{{ school()?.name || 'Unknown' }}</dd>
+      </dl>
+    </section>
     @if (
       scholarValue.motherFirstName ||
       scholarValue.motherLastName ||
@@ -41,46 +44,48 @@
       scholarValue.fatherLastName ||
       scholarValue.fatherPhoneNumber
     ) {
-      <div class="detail-card">
+      <section class="detail-section">
         <h3>Parents</h3>
-        @if (
-          scholarValue.motherFirstName ||
-          scholarValue.motherLastName ||
-          scholarValue.motherPhoneNumber
-        ) {
-          <p>
-            <strong>Mother:</strong>
-            {{
-              formatParent(
-                scholarValue.motherFirstName,
-                scholarValue.motherLastName,
-                scholarValue.motherPhoneNumber
-              )
-            }}
-          </p>
-        }
-        @if (
-          scholarValue.fatherFirstName ||
-          scholarValue.fatherLastName ||
-          scholarValue.fatherPhoneNumber
-        ) {
-          <p>
-            <strong>Father:</strong>
-            {{
-              formatParent(
-                scholarValue.fatherFirstName,
-                scholarValue.fatherLastName,
-                scholarValue.fatherPhoneNumber
-              )
-            }}
-          </p>
-        }
-      </div>
+        <dl class="detail-list">
+          @if (
+            scholarValue.motherFirstName ||
+            scholarValue.motherLastName ||
+            scholarValue.motherPhoneNumber
+          ) {
+            <dt>Mother</dt>
+            <dd>
+              {{
+                formatParent(
+                  scholarValue.motherFirstName,
+                  scholarValue.motherLastName,
+                  scholarValue.motherPhoneNumber
+                )
+              }}
+            </dd>
+          }
+          @if (
+            scholarValue.fatherFirstName ||
+            scholarValue.fatherLastName ||
+            scholarValue.fatherPhoneNumber
+          ) {
+            <dt>Father</dt>
+            <dd>
+              {{
+                formatParent(
+                  scholarValue.fatherFirstName,
+                  scholarValue.fatherLastName,
+                  scholarValue.fatherPhoneNumber
+                )
+              }}
+            </dd>
+          }
+        </dl>
+      </section>
     }
     @if (scholarValue.pickUpSchedule) {
-      <div class="pickup-schedule">
+      <section class="detail-section">
         <h3>Pick-Up Schedule</h3>
-        <table>
+        <table class="pickup-schedule">
           <thead>
             <tr>
               <th>Day</th>
@@ -91,25 +96,26 @@
             @for (day of daysOfWeek; track day) {
               <tr>
                 <td>{{ day | titlecase }}</td>
-                <td>{{ scholarValue.pickUpSchedule[day] }}</td>
+                <td>{{ scholarValue.pickUpSchedule[day] || '—' }}</td>
               </tr>
             }
           </tbody>
         </table>
-      </div>
+      </section>
     } @else {
-      <div class="pickup-schedule-unavailable">
-        <p class="text-gray-600 italic">Pick-Up Schedule not available.</p>
-      </div>
+      <section class="detail-section">
+        <h3>Pick-Up Schedule</h3>
+        <p class="detail-muted">Pick-Up Schedule not available.</p>
+      </section>
     }
-    <div class="detail-card">
+    <section class="detail-section">
       <h3>Audit Trail</h3>
       @if (auditLogLoading()) {
-        <p>Loading audit trail...</p>
+        <p class="detail-muted">Loading audit trail...</p>
       } @else if (auditLogError(); as errorMessage) {
-        <p class="audit-trail-error">{{ errorMessage }}</p>
+        <p class="app-error-message">{{ errorMessage }}</p>
       } @else if (auditLog().length === 0) {
-        <p>No recorded actions yet.</p>
+        <p class="detail-muted">No recorded actions yet.</p>
       } @else {
         <ul class="audit-trail-list">
           @for (entry of auditLog(); track entry.auditId) {
@@ -123,14 +129,15 @@
           }
         </ul>
       }
-    </div>
+    </section>
   </div>
+ </div>
 }
 
 @if (!scholar()) {
   @if (loadError(); as error) {
-    <div class="loading" role="alert">Failed to load scholar. {{ error }}</div>
+    <div class="loading-message" role="alert">Failed to load scholar. {{ error }}</div>
   } @else {
-    <div class="loading">Loading scholar details...</div>
+    <div class="loading-message">Loading scholar details...</div>
   }
 }

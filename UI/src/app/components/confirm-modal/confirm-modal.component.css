@@ -48,43 +48,12 @@
   gap: var(--space-3);
 }
 
-.confirm-modal-btn {
-  padding: var(--space-2) var(--space-4);
-  border-radius: var(--radius-md);
-  border: var(--border-width-thick) solid transparent;
-  font-family: inherit;
-  font-size: 0.95rem;
-  cursor: pointer;
-  transition: background-color 0.15s ease, border-color 0.15s ease;
-}
-
-.confirm-modal-btn-cancel {
-  background-color: transparent;
-  border-color: var(--cyan-dark-color);
-  color: var(--cyan-dark-color);
-}
-
-.confirm-modal-btn-cancel:hover {
-  background-color: rgba(var(--cyan-main-color-for-alpha), 0.08);
-}
-
-.confirm-modal-btn-confirm {
-  background-color: var(--cyan-dark-color);
-  color: var(--light-main-color);
-}
-
-.confirm-modal-btn-confirm:hover {
-  filter: brightness(0.88);
-}
-
-/* No red in the palette: the final, irreversible confirmation is told
-   apart by switching to the ink color rather than a danger hue. */
-.confirm-modal-btn-confirm.confirm-modal-btn-danger {
+/* Buttons are the shared .app-button (ghost for cancel). The palette has no
+   red, so the final, irreversible confirmation is told apart by switching the
+   fill to the ink color rather than a danger hue. */
+.confirm-modal-btn-danger {
   background-color: var(--dark-main-color);
-}
-
-.confirm-modal-btn-confirm.confirm-modal-btn-danger:hover {
-  filter: brightness(1.2);
+  border-color: var(--dark-main-color);
 }
 
 @keyframes confirm-overlay-fade-in {

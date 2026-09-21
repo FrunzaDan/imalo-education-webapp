@@ -1,17 +1,13 @@
-.audit-log-toolbar {
-  display: flex;
-  justify-content: flex-end;
-  margin-bottom: var(--space-4);
-}
-
-.audit-log-error {
-  color: var(--orange-main-color);
-}
-
 .audit-log-link {
   cursor: pointer;
   text-decoration: underline;
   color: var(--cyan-dark-color);
+}
+
+.audit-log-link:focus-visible {
+  outline: var(--border-width-thick) solid rgba(var(--cyan-light-color-for-alpha), 0.7);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
 }
 
 .audit-log-deleted {

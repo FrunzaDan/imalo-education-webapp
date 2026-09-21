@@ -1,7 +1,7 @@
-<div class="create-update-scholar-page">
-  <h2>{{ isEditMode() ? 'Update Scholar' : 'Create New Scholar' }}</h2>
+<div class="scholar-form-page app-card">
+  <h2 class="page-title">{{ isEditMode() ? 'Update Scholar' : 'Create New Scholar' }}</h2>
 
-  <form [formRoot]="scholarForm" class="space-y-6">
+  <form [formRoot]="scholarForm" class="scholar-form">
     @if (invalidSummary(); as summary) {
       <div class="app-error-message" role="alert">{{ summary }}</div>
     }
@@ -9,7 +9,7 @@
     <!-- First Name -->
     @let firstName = scholarForm.firstName();
     @let firstNameError = firstName.touched() && firstName.invalid();
-    <div class="create-update-scholar-entry">
+    <div class="scholar-form__field">
       <label for="firstName" class="app-label">First Name</label>
       <input
         type="text"
@@ -31,7 +31,7 @@
     <!-- Last Name -->
     @let lastName = scholarForm.lastName();
     @let lastNameError = lastName.touched() && lastName.invalid();
-    <div class="create-update-scholar-entry">
+    <div class="scholar-form__field">
       <label for="lastName" class="app-label">Last Name</label>
       <input
         type="text"
@@ -53,7 +53,7 @@
     <!-- School -->
     @let school = scholarForm.schoolId();
     @let schoolError = school.touched() && school.invalid();
-    <div class="create-update-scholar-entry">
+    <div class="scholar-form__field">
       <label for="schoolId" class="app-label">School</label>
       <select
         id="schoolId"
@@ -78,7 +78,7 @@
     <!-- Grade -->
     @let grade = scholarForm.grade();
     @let gradeError = grade.touched() && grade.invalid();
-    <div class="create-update-scholar-entry">
+    <div class="scholar-form__field">
       <label for="grade" class="app-label">Grade</label>
       <input
         type="number"
@@ -100,7 +100,7 @@
     <!-- Date of Birth -->
     @let dateOfBirth = scholarForm.dateOfBirth();
     @let dateOfBirthError = dateOfBirth.touched() && dateOfBirth.invalid();
-    <div class="create-update-scholar-entry">
+    <div class="scholar-form__field">
       <label for="dateOfBirth" class="app-label">Birth Date</label>
       <input
         type="date"
@@ -119,13 +119,13 @@
     </div>
 
     <!-- Parents -->
-    <fieldset class="create-update-scholar-entry">
-      <legend class="app-label block mb-2">Parents (Optional)</legend>
-      <div class="grid gap-6 md:grid-cols-2">
+    <fieldset class="scholar-form__group">
+      <legend class="app-label scholar-form__legend">Parents (Optional)</legend>
+      <div class="scholar-form__columns">
         @for (parent of parents; track parent.key) {
-          <div>
+          <div class="scholar-form__parent">
             <p class="parent-subheading">{{ parent.label }}</p>
-            <div class="grid gap-2">
+            <div class="scholar-form__stack">
               <input
                 type="text"
                 class="app-input"
@@ -162,12 +162,12 @@
     </fieldset>
 
     <!-- Pick Up Schedule -->
-    <fieldset class="create-update-scholar-entry">
-      <legend class="app-label block mb-2">Pick Up Schedule (Optional)</legend>
-      <div class="grid gap-4 md:grid-cols-2">
+    <fieldset class="scholar-form__group">
+      <legend class="app-label scholar-form__legend">Pick Up Schedule (Optional)</legend>
+      <div class="scholar-form__days">
         @for (day of weekDays; track day) {
-          <div>
-            <label [for]="day" class="block mb-1">{{ day | titlecase }}</label>
+          <div class="scholar-form__day">
+            <label [for]="day" class="scholar-form__day-label">{{ day | titlecase }}</label>
             <input
               type="time"
               class="app-input"
@@ -180,7 +180,7 @@
     </fieldset>
 
     <!-- Submit Button -->
-    <div>
+    <div class="scholar-form__actions">
       <button
         type="submit"
         [disabled]="scholarForm().submitting()"

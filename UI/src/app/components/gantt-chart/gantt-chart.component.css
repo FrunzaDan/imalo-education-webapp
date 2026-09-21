@@ -4,7 +4,19 @@
   border: var(--border-width-thick) solid var(--cyan-main-color);
   box-shadow: var(--card-shadow);
   overflow-x: auto;
-  margin: var(--space-4);
+}
+
+.gantt-container + .gantt-container {
+  margin-top: var(--space-5);
+}
+
+.gantt-day-title {
+  margin: 0;
+  padding: var(--space-3) var(--space-4);
+  font-family: inherit;
+  font-size: 1.15rem;
+  font-weight: 600;
+  color: var(--cyan-dark-color);
 }
 
 .gantt-chart {
@@ -21,10 +33,10 @@
   display: grid;
   grid-template-columns: 150px repeat(var(--slot-count), minmax(60px, 1fr));
   background-color: var(--light-main-color);
+  border-top: var(--border-width) solid var(--border-color);
   border-bottom: var(--border-width-thick) solid var(--cyan-dark-color);
   font-weight: 600;
   color: var(--dark-main-color);
-  border-top: var(--border-width-thick) solid var(--cyan-main-color);
 }
 
 .gantt-row {
@@ -34,7 +46,7 @@
 }
 
 .name-cell {
-  padding: var(--space-2);
+  padding: var(--space-2) var(--space-3);
   text-align: left;
   background-color: var(--light-main-color);
   border-right: var(--border-width-thick) solid var(--cyan-dark-color);
@@ -44,11 +56,23 @@
   align-items: center;
 }
 
+/* Row separators run under the name column too, not just the time cells. */
+.gantt-row .name-cell {
+  border-bottom: var(--border-width) solid rgba(var(--cyan-main-color-for-alpha), 0.15);
+}
+
 .time-slot {
+  box-sizing: border-box;
+  min-height: 2.75rem;
+  padding: var(--space-1);
   text-align: center;
-  font-size: 0.7rem;
+  font-size: 0.75rem;
+  line-height: 1.25;
+  /* Default ink for empty cells; occupied cells override it inline with
+     black/white picked against the school color. No opacity here — it used to
+     wash the fill out, so the cell no longer matched the school color (or the
+     scholar table) and any contrast maths done on the raw color was wrong. */
   color: var(--dark-main-color);
-  opacity: 0.85;
   position: relative;
   background-color: #ffffff;
   display: flex;
@@ -57,6 +81,17 @@
   border-right: var(--border-width) solid rgba(var(--cyan-main-color-for-alpha), 0.15);
   border-bottom: var(--border-width) solid rgba(var(--cyan-main-color-for-alpha), 0.15);
   white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+
+.gantt-header .time-slot {
+  min-height: 0;
+  padding: var(--space-2) var(--space-1);
+  background-color: var(--light-main-color);
+  border-bottom: 0;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--cyan-dark-color);
 }
 
 .schedule-tooltip {
@@ -79,12 +114,4 @@
 
 .time-slot:hover .schedule-tooltip {
   opacity: 0.95;
-}
-
-.gantt-day-title {
-  text-align: center;
-  padding: var(--space-2);
-  font-family: inherit;
-  font-weight: 600;
-  color: var(--cyan-dark-color);
 }

@@ -1,6 +1,6 @@
-<h2>Audit Log</h2>
+<h2 class="page-title">Audit Log</h2>
 
-<div class="audit-log-toolbar">
+<div class="page-toolbar">
   <button
     type="button"
     class="app-button app-button--danger"
@@ -14,7 +14,7 @@
 @if (loading()) {
 <div class="loading-message">Loading audit log...</div>
 } @else if (error(); as errorMessage) {
-<div class="audit-log-error">{{ errorMessage }}</div>
+<div class="app-error-message" role="alert">{{ errorMessage }}</div>
 } @else {
 <table class="app-table">
   <thead>
@@ -33,8 +33,10 @@
         @if (entry.firstName || entry.lastName) {
         <a
           (click)="navigateToScholar(entry)"
+          (keydown.enter)="navigateToScholar(entry)"
           class="audit-log-link"
-          role="button"
+          role="link"
+          tabindex="0"
         >{{ scholarLabel(entry) }}</a>
         } @else {
         <span class="audit-log-deleted">{{ scholarLabel(entry) }}</span>
@@ -45,7 +47,7 @@
     </tr>
     } @empty {
     <tr class="table-row">
-      <td colspan="4" class="table-cell">No recorded actions yet.</td>
+      <td colspan="4" class="table-cell table-cell--empty">No recorded actions yet.</td>
     </tr>
     }
   </tbody>

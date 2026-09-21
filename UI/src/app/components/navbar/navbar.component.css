@@ -2,6 +2,8 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-3) var(--space-5);
   background-color: var(--cyan-dark-color);
   padding: var(--space-4);
   font-family: inherit;
@@ -20,6 +22,7 @@
 .navbar-links {
   list-style: none;
   display: flex;
+  flex-wrap: wrap;
   gap: var(--space-2);
   margin: 0;
   padding: 0;
@@ -28,7 +31,8 @@
 .nav-link {
   display: inline-block;
   text-decoration: none;
-  color: rgba(var(--cyan-light-color-for-alpha), 0.85);
+  /* Cream, not cyan-light: cyan-light on this teal is only ~3.9:1. */
+  color: rgba(var(--light-main-color-for-alpha), 0.85);
   font-weight: 500;
   padding: var(--space-2) var(--space-3);
   border-radius: var(--radius-md);

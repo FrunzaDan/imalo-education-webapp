@@ -1,5 +1,5 @@
 <div class="about-page">
-  <h2>About This Application</h2>
+  <h2 class="page-title">About This Application</h2>
   <p class="about-lead">
     Imalo Education Webapp is a small full-stack learning project: an Angular
     single-page frontend talking to an ASP.NET Core Web API, which persists
@@ -31,7 +31,7 @@ docker run -e "ACCEPT_EULA=1" -e "MSSQL_SA_PASSWORD=MyStrongPassw0rd?" -p 1433:1
           dev server in the foreground. <kbd>Ctrl+C</kbd> stops both.
         </li>
       </ul>
-      <p class="about-card__body-last">
+      <p>
         Both the API and the Angular dev server must be running at the same
         time — the UI has no data of its own; everything it shows comes live
         from the API.
@@ -51,7 +51,7 @@ docker run -e "ACCEPT_EULA=1" -e "MSSQL_SA_PASSWORD=MyStrongPassw0rd?" -p 1433:1
         <li><code>PickUpSchedule</code> — one row per scholar, storing their Monday&ndash;Friday pickup times as a JSON blob.</li>
         <li><code>Attendance</code> — one row per scholar, storing every recorded day's lunch/transport cost and selection state as a JSON blob.</li>
       </ul>
-      <p class="about-card__body-last">
+      <p>
         All reads and writes go through raw ADO.NET <code>SqlCommand</code>s in
         <code>ScholarDataAccess</code>, with every input passed as a bound
         parameter — nothing is built by string-concatenating SQL.
@@ -62,7 +62,7 @@ docker run -e "ACCEPT_EULA=1" -e "MSSQL_SA_PASSWORD=MyStrongPassw0rd?" -p 1433:1
   <div class="about-card">
     <div class="about-card__header">No Authentication</div>
     <div class="about-card__body">
-      <p class="about-card__body-last">
+      <p>
         Unlike a real production app, there's no login here — every API
         endpoint is open, and CORS accepts requests from any origin. That's a
         deliberate, appropriate choice for this project's current
@@ -88,7 +88,8 @@ docker run -e "ACCEPT_EULA=1" -e "MSSQL_SA_PASSWORD=MyStrongPassw0rd?" -p 1433:1
       <button
         type="button"
         class="app-button"
-        [class.about-button--off]="!apiLoggingEnabled()"
+        [class.app-button--ghost]="!apiLoggingEnabled()"
+        [attr.aria-pressed]="apiLoggingEnabled()"
         (click)="toggleApiLogging()"
       >
         API call logging: {{ apiLoggingEnabled() ? 'On' : 'Off' }}
@@ -130,7 +131,7 @@ docker run -e "ACCEPT_EULA=1" -e "MSSQL_SA_PASSWORD=MyStrongPassw0rd?" -p 1433:1
   <div class="about-card">
     <div class="about-card__header">What You Can Do In The UI</div>
     <div class="about-card__body">
-      <ul class="about-card__body-last">
+      <ul>
         <li>Browse the scholar table, sortable by name, school, grade, or birth date.</li>
         <li>Create a new scholar, or edit an existing one, through a validated form.</li>
         <li>View a scholar's details, including their pickup schedule.</li>

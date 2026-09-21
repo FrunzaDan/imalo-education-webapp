@@ -1,4 +1,6 @@
-<div class="scholar-table-toolbar">
+<h2 class="page-title">Scholars</h2>
+
+<div class="page-toolbar">
   <input
     type="search"
     class="app-input scholar-table-toolbar__search"
@@ -92,9 +94,8 @@
   <tbody>
     @for (scholar of displayedScholarData(); track scholar.id) {
     <tr
-      class="table-row"
+      class="table-row table-row--link"
       [routerLink]="['/scholars', scholar.id]"
-      style="cursor: pointer"
     >
       <td class="table-cell" (click)="$event.stopPropagation()">
         <input
@@ -109,7 +110,7 @@
         class="table-cell"
         [ngStyle]="{
           'background-color': scholar.schoolColor,
-          color: getTextColor(scholar.schoolColor)
+          color: scholar.textColor
         }"
       >
         {{ scholar.schoolName }}
@@ -119,7 +120,7 @@
     </tr>
     } @empty {
     <tr class="table-row">
-      <td colspan="5" class="table-cell">
+      <td colspan="5" class="table-cell table-cell--empty">
         @if (searchTerm()) {
           No scholars match "{{ searchTerm() }}".
         } @else {

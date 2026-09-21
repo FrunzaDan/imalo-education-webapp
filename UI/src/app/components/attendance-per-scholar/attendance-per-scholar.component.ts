@@ -9,7 +9,7 @@ import {
   signal,
 } from '@angular/core';
 import { FieldTree, FormField, form } from '@angular/forms/signals';
-import { CurrencyPipe, DatePipe } from '@angular/common';
+import { DatePipe } from '@angular/common';
 import { Subscription } from 'rxjs';
 
 import { ScholarsService } from '../../services/scholars.service';
@@ -29,10 +29,11 @@ import {
   weekdaysOfMonth,
   withWeekdayStubs,
 } from './attendance-form';
+import { RonPipe } from '../../pipes/ron.pipe';
 
 @Component({
   selector: 'app-attendance-per-scholar',
-  imports: [CurrencyPipe, DatePipe, FormField],
+  imports: [DatePipe, FormField, RonPipe],
   templateUrl: './attendance-per-scholar.component.html',
   styleUrl: './attendance-per-scholar.component.css',
 })

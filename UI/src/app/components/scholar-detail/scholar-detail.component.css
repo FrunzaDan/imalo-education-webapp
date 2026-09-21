@@ -1,106 +1,96 @@
-.scholar-detail-container {
+/* Actions and card share one centred column, so the buttons sit on the same
+   left edge as the card instead of hugging the viewport. */
+.scholar-detail-page {
   max-width: 600px;
-  margin: var(--space-6) auto;
+  margin: 0 auto;
+}
+
+.scholar-detail-container {
   padding: var(--space-5);
-  border: var(--border-width) solid var(--border-color);
-  border-radius: var(--radius-lg);
-  background-color: #ffffff;
-  box-shadow: var(--card-shadow);
+  /* One gap between every section — no per-section margin to forget. */
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
 }
 
-h2 {
-  text-align: center;
-  margin-bottom: var(--space-4);
-  color: var(--cyan-dark-color);
+.scholar-detail-container .page-title {
+  margin: 0;
 }
 
-.detail-card p {
-  margin: var(--space-2) 0;
-  color: var(--dark-main-color);
-}
-
-.detail-card h3 {
-  margin: 0 0 var(--space-1);
+.detail-section h3 {
+  margin: 0 0 var(--space-3);
   color: var(--cyan-dark-color);
   font-size: 1.05rem;
 }
 
-.detail-card + .detail-card {
-  margin-top: var(--space-4);
+/* Label / value pairs: a fixed label column so values line up. */
+.detail-list {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: var(--space-2) var(--space-5);
+  margin: 0;
 }
 
-/* Pick-Up Schedule Section Styling */
-.pickup-schedule {
-  margin-top: var(--space-6);
-  background-color: #ffffff; /* White background for the table area */
-  border: var(--border-width) solid var(--border-color);
-  border-radius: var(--radius-lg); /* Same scale as every other card/table */
-  overflow: hidden; /* Ensures table borders don't overflow rounded corners */
-  box-shadow: var(--card-shadow);
-}
-
-.pickup-schedule h3 {
-  text-align: center;
-  margin-bottom: var(--space-4);
-  padding: var(--space-4) 0;
+.detail-list dt {
+  font-weight: 600;
   color: var(--cyan-dark-color);
-  background-color: var(--light-main-color); /* Light background for the sub-heading */
-  border-bottom: var(--border-width) solid rgba(var(--cyan-main-color-for-alpha), 0.15); /* Separator for the heading */
 }
 
-.pickup-schedule table {
+.detail-list dd {
+  margin: 0;
+  color: var(--dark-main-color);
+}
+
+.detail-muted {
+  margin: 0;
+  font-style: italic;
+  color: var(--dark-main-color);
+  opacity: 0.65;
+}
+
+/* Pick-up schedule: same look as the app's other data tables. */
+.pickup-schedule {
   width: 100%;
-  border-collapse: collapse; /* Ensures single, crisp borders */
-  font-size: 0.95rem; /* Slightly smaller font for table content */
+  border-collapse: collapse;
+  border: var(--border-width) solid var(--border-color);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  font-size: 0.95rem;
 }
 
 .pickup-schedule th,
 .pickup-schedule td {
-  padding: var(--space-3) var(--space-4); /* Generous padding for better spacing */
+  padding: var(--space-2) var(--space-4);
   text-align: left;
 }
 
-/* Table Header Styling */
 .pickup-schedule th {
-  background-color: var(--cyan-dark-color); /* Theme color for header background */
-  color: var(--light-main-color); /* Light text for header */
-  font-weight: 600; /* Slightly bolder header text */
-  text-transform: uppercase; /* Uppercase for header text */
-  letter-spacing: 0.05em; /* A little spacing for uppercase letters */
+  background-color: var(--cyan-dark-color);
+  color: var(--light-main-color);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
-/* Table Body Row Styling */
 .pickup-schedule tbody tr {
-  border-bottom: var(--border-width) solid rgba(var(--cyan-main-color-for-alpha), 0.12); /* Lighter border for rows */
+  border-bottom: var(--border-width) solid rgba(var(--cyan-main-color-for-alpha), 0.12);
 }
 
 .pickup-schedule tbody tr:last-child {
-  border-bottom: none; /* No border for the last row */
+  border-bottom: none;
 }
 
-/* Zebra Striping for Readability */
 .pickup-schedule tbody tr:nth-child(even) {
-  background-color: rgba(var(--cyan-main-color-for-alpha), 0.05); /* Very light lagoon tint for even rows */
+  background-color: rgba(var(--cyan-main-color-for-alpha), 0.05);
 }
 
-/* Hover effect on table rows */
 .pickup-schedule tbody tr:hover {
-  background-color: rgba(var(--cyan-main-color-for-alpha), 0.1); /* Slightly deeper lagoon tint on hover */
-  cursor: default; /* Indicate rows are not clickable (unless intended) */
+  background-color: rgba(var(--cyan-main-color-for-alpha), 0.1);
 }
 
-/* Specific cell styling if needed, e.g., for times */
 .pickup-schedule td:last-child {
-  font-weight: 500; /* Make the time stand out a bit */
-  color: var(--cyan-darker-color); /* A darker shade of the theme color */
-}
-
-.loading {
-  text-align: center;
-  margin-top: var(--space-6);
-  font-style: italic;
-  color: var(--dark-main-color);
-  opacity: 0.65;
+  font-weight: 500;
+  color: var(--cyan-darker-color);
 }
 
 .audit-trail-list {
@@ -110,12 +100,17 @@ h2 {
 }
 
 .audit-trail-list li {
-  padding: var(--space-2) 0;
+  padding: var(--space-3) 0;
   border-bottom: var(--border-width) solid rgba(var(--cyan-main-color-for-alpha), 0.12);
   color: var(--dark-main-color);
 }
 
+.audit-trail-list li:first-child {
+  padding-top: 0;
+}
+
 .audit-trail-list li:last-child {
+  padding-bottom: 0;
   border-bottom: none;
 }
 
@@ -124,8 +119,4 @@ h2 {
   font-size: 0.85rem;
   color: var(--dark-main-color);
   opacity: 0.65;
-}
-
-.audit-trail-error {
-  color: var(--orange-main-color);
 }

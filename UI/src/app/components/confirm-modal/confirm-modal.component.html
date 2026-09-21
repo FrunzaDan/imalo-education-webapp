@@ -20,14 +20,14 @@
     <div class="confirm-modal-actions">
       <button
         type="button"
-        class="confirm-modal-btn confirm-modal-btn-cancel"
+        class="app-button app-button--ghost"
         (click)="cancel()"
       >
         {{ s.cancelText }}
       </button>
       <button
         type="button"
-        class="confirm-modal-btn confirm-modal-btn-confirm"
+        class="app-button"
         [class.confirm-modal-btn-danger]="s.variant === 'danger'"
         (click)="confirm()"
       >

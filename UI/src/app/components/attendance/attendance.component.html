@@ -1,7 +1,9 @@
 @if (loading()) {
 <div class="loading-message">Loading attendance...</div>
 } @else {
-<div class="attendance-toolbar">
+<h2 class="page-title">Attendance</h2>
+
+<div class="page-toolbar">
   <button type="button" class="app-button app-button--ghost" (click)="exportCsv()">
     Export CSV
   </button>
@@ -44,15 +46,14 @@
   <tbody>
     @for (row of rows(); track row.scholarId + row.date) {
     <tr
-      class="table-row"
+      class="table-row table-row--link"
       [routerLink]="['/attendance', row.scholarId]"
-      style="cursor: pointer"
     >
       <td class="table-cell">{{ row.scholarName }}</td>
       <td class="table-cell">{{ row.date | date : 'longDate' }}</td>
       <td class="table-cell">{{ row.present ? 'Yes' : 'No' }}</td>
-      <td class="table-cell">{{ row.lunchCost | currency : 'RON' : 'symbol' : '1.2-2' }}</td>
-      <td class="table-cell">{{ row.transportCost | currency : 'RON' : 'symbol' : '1.2-2' }}</td>
+      <td class="table-cell">{{ row.lunchCost | ron }}</td>
+      <td class="table-cell">{{ row.transportCost | ron }}</td>
       <td class="table-cell">
         @if (row.lunchSelected && row.transportSelected) { Both }
         @else if (row.lunchSelected) { Lunch only }
@@ -62,7 +63,7 @@
     </tr>
     } @empty {
     <tr class="table-row">
-      <td colspan="6" class="table-cell">No attendance records found.</td>
+      <td colspan="6" class="table-cell table-cell--empty">No attendance records found.</td>
     </tr>
     }
   </tbody>

@@ -1,14 +1,6 @@
 /* Table styling (.app-table, .table-header, .table-row, .table-cell, .sort-icon)
-   lives in the global src/styles.css so it can be shared with the attendance
-   dashboard's table too. Nothing page-specific left to scope here. */
-
-.scholar-table-toolbar {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: var(--space-3);
-  padding: var(--space-4) 0;
-}
+   and the toolbar row (.page-toolbar) live in the global src/styles.css so they
+   can be shared with the attendance dashboard and audit log. */
 
 .scholar-table-toolbar__search {
   /* .app-input is width:100% by default, which would otherwise consume the
@@ -16,5 +8,4 @@
   width: auto;
   flex: 1 1 240px;
   max-width: 320px;
-  margin-bottom: 0;
 }

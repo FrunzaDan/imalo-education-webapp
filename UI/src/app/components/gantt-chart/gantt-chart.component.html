@@ -1,6 +1,8 @@
+<h2 class="page-title">Pickup Time</h2>
+
 @for (day of weekDays; track day) {
-  <div class="gantt-container">
-    <h2 class="gantt-day-title">{{ formatDayTitle(day) }}</h2>
+  <section class="gantt-container">
+    <h3 class="gantt-day-title">{{ formatDayTitle(day) }}</h3>
     <div class="gantt-chart">
       <!-- Header -->
       <div class="gantt-header" [style.--slot-count]="timeSlots.length">
@@ -19,16 +21,10 @@
             <div
               class="time-slot"
               [ngStyle]="getSlotStyle(scholar, slot, day)"
-              >
+            >
               @if (isTimeOccupied(scholar, slot, day)) {
-                <span>
-                  {{ getTimeRange(scholar, slot, day) }}
-                </span>
-              }
-              @if (isTimeOccupied(scholar, slot, day)) {
-                <div
-                  class="schedule-tooltip"
-                  >
+                <span>{{ getTimeRange(scholar, slot, day) }}</span>
+                <div class="schedule-tooltip">
                   {{ getTimeRange(scholar, slot, day) }}
                 </div>
               }
@@ -37,5 +33,5 @@
         </div>
       }
     </div>
-  </div>
+  </section>
 }

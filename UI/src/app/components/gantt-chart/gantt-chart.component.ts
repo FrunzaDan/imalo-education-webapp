@@ -9,6 +9,7 @@ import { WeekDays } from '../../constants/week-days';
 import { forkJoin } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { PickUpSchedule } from '../../interfaces/pick-up-schedule';
+import { contrastTextColor } from '../../utils/contrast-color';
 
 interface GanttCell {
   style: Record<string, string>;
@@ -33,6 +34,7 @@ export class GanttChartComponent implements OnInit {
   ) as (keyof PickUpSchedule)[];
   private readonly SLOT_DURATION = 10;
   private static readonly EMPTY_STYLE: Record<string, string> = {};
+  private static readonly UNKNOWN_SCHOOL_COLOR = '#a0a0a0';
 
   // Built once per scholars() change instead of being recomputed per-cell on
   // every change-detection pass (this grid is days × scholars × timeSlots
@@ -56,9 +58,16 @@ export class GanttChartComponent implements OnInit {
         const slot = slotsByMinutes.get(this.timeToMinutes(pickupTime));
         if (!slot) continue;
 
+        const backgroundColor =
+          school?.color || GanttChartComponent.UNKNOWN_SCHOOL_COLOR;
+
         map.set(this.cellKey(scholar.id, day, slot.start), {
           style: {
-            backgroundColor: school?.color || '#a0a0a0',
+            backgroundColor,
+            // Black on bright fills, white on dark ones — school colors run
+            // from lime/amber to near-black brown, so a fixed text color is
+            // unreadable on one end or the other.
+            color: contrastTextColor(backgroundColor),
             gridColumn: `span ${columnsSpan}`,
           },
           label: `${pickupTime} - ${this.calculateEndTime(pickupTime)}\n${
