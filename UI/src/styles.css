@@ -281,7 +281,7 @@ select.app-input {
   margin: var(--space-1) 0 0;
 }
 
-/* Shared sortable data table, used by scholar-table and attendance dashboard */
+/* Shared data table, used by scholar-table (sortable) and the attendance grid */
 .app-table {
   width: 100%;
   border-collapse: collapse;

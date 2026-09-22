@@ -15,3 +15,24 @@ export function getWeekdayDatesInMonth(year: number, month: number): string[] {
   }
   return dates;
 }
+
+// 'YYYY-MM', the value format of <input type="month">.
+export const toMonthString = (date: Date): string =>
+  `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+
+// The weekdays ('YYYY-MM-DD') of a 'YYYY-MM' month — matches PickUpSchedule's
+// Mon-Fri convention. Empty for an empty/invalid month.
+export function weekdaysOfMonth(month: string): string[] {
+  if (!month) return [];
+  const [year, monthNumber] = month.split('-').map(Number);
+  return getWeekdayDatesInMonth(year, monthNumber);
+}
+
+// Shifts a 'YYYY-MM' month string by `delta` months (negative for earlier).
+export function shiftMonth(month: string, delta: number): string {
+  const [year, monthNumber] = month.split('-').map(Number);
+  return toMonthString(new Date(year, monthNumber - 1 + delta, 1));
+}
+
+// Dates come back from the API as 'YYYY-MM-DD' or a full ISO timestamp.
+export const toDateOnly = (date: string): string => date.substring(0, 10);

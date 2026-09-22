@@ -30,7 +30,9 @@
           <th class="table-header attendance-table__header-cell">Transport</th>
           <th class="table-header attendance-table__header-cell">Both</th>
           <th class="table-header attendance-table__header-cell">Lunch Cost</th>
-          <th class="table-header attendance-table__header-cell">Transport Cost</th>
+          <th class="table-header attendance-table__header-cell">
+            Transport Cost
+          </th>
         </tr>
       </thead>
       <tbody class="attendance-table__body">
@@ -111,19 +113,17 @@
             colspan="5"
             class="table-cell attendance-table__data-cell attendance-table__data-cell--total-label"
           >
-            <strong>Total for the month (food and transport)</strong>
+            <strong>Total for the month (lunch and transport)</strong>
           </td>
           <td
             class="table-cell attendance-table__data-cell attendance-table__data-cell--total-value"
           >
-            <strong>{{
-              totalSelectedLunchCost() | ron }}</strong>
+            <strong>{{ totalSelectedLunchCost() | ron }}</strong>
           </td>
           <td
             class="table-cell attendance-table__data-cell attendance-table__data-cell--total-value"
           >
-            <strong>{{
-              totalSelectedTransportCost() | ron }}</strong>
+            <strong>{{ totalSelectedTransportCost() | ron }}</strong>
           </td>
         </tr>
         <tr
@@ -139,8 +139,7 @@
             colspan="2"
             class="table-cell attendance-table__data-cell attendance-table__data-cell--total-value"
           >
-            <strong>{{
-              grandTotal() | ron }}</strong>
+            <strong>{{ grandTotal() | ron }}</strong>
           </td>
         </tr>
       </tfoot>

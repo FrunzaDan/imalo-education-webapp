@@ -1,6 +1,8 @@
 import { applyEach, disabled, schema } from '@angular/forms/signals';
 import { AttendanceRecord } from '../../interfaces/attendance-record';
-import { getWeekdayDatesInMonth } from '../../utils/weekday-dates';
+import { toDateOnly, toMonthString, weekdaysOfMonth } from '../../utils/weekday-dates';
+
+export { toDateOnly, toMonthString, weekdaysOfMonth };
 
 // One entry per day the attendance form knows about: every record loaded from
 // the API, plus a stub for each weekday of every month the user has looked at.
@@ -24,12 +26,6 @@ export const attendanceFormSchema = schema<AttendanceDay[]>((days) => {
   });
 });
 
-// Dates come back from the API as 'YYYY-MM-DD' or a full ISO timestamp.
-export const toDateOnly = (date: string): string => date.substring(0, 10);
-
-export const toMonthString = (date: Date): string =>
-  `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-
 export function toAttendanceDays(records: AttendanceRecord[]): AttendanceDay[] {
   return records.map((record) => ({ ...record, persisted: true }));
 }
@@ -48,14 +44,6 @@ export function toAttendanceRecords(days: AttendanceDay[]): AttendanceRecord[] {
       lunchSelected: day.lunchSelected,
       transportSelected: day.transportSelected,
     }));
-}
-
-// The weekdays ('YYYY-MM-DD') of a 'YYYY-MM' month — matches PickUpSchedule's
-// Mon–Fri convention. Empty for an empty/invalid month.
-export function weekdaysOfMonth(month: string): string[] {
-  if (!month) return [];
-  const [year, monthNumber] = month.split('-').map(Number);
-  return getWeekdayDatesInMonth(year, monthNumber);
 }
 
 // Returns `days` plus a not-yet-persisted stub for each weekday of `month` that

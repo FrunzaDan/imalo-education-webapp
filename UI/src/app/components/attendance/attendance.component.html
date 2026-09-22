@@ -4,68 +4,93 @@
 <h2 class="page-title">Attendance</h2>
 
 <div class="page-toolbar">
+  <div class="month-nav">
+    <button
+      type="button"
+      class="app-button app-button--ghost month-nav__arrow"
+      (click)="previousMonth()"
+      aria-label="Previous month"
+    >
+      ‹
+    </button>
+    <input
+      id="monthPicker"
+      type="month"
+      [formField]="monthForm.month"
+      class="app-input month-nav__input"
+    />
+    <button
+      type="button"
+      class="app-button app-button--ghost month-nav__arrow"
+      (click)="nextMonth()"
+      aria-label="Next month"
+    >
+      ›
+    </button>
+  </div>
+
+  <div class="attendance-legend">
+    <span class="attendance-legend__item"
+      ><span class="badge badge--present badge--active"></span>Present</span
+    >
+    <span class="attendance-legend__item"
+      ><span class="badge badge--lunch badge--active">L</span>Lunch</span
+    >
+    <span class="attendance-legend__item"
+      ><span class="badge badge--transport badge--active">T</span>Transport</span
+    >
+  </div>
+
   <button type="button" class="app-button app-button--ghost" (click)="exportCsv()">
     Export CSV
   </button>
 </div>
-<table class="app-table">
-  <thead>
-    <tr>
-      <th class="table-header sortable" (click)="sortData('scholarName', 'string')">
-        Scholar
-        <span class="sort-icon">
-          <span [class.active]="currentSortColumn === 'scholarName' && isAscending">↑</span>
-          <span [class.active]="currentSortColumn === 'scholarName' && !isAscending">↓</span>
-        </span>
-      </th>
-      <th class="table-header sortable" (click)="sortData('date', 'date')">
-        Date
-        <span class="sort-icon">
-          <span [class.active]="currentSortColumn === 'date' && isAscending">↑</span>
-          <span [class.active]="currentSortColumn === 'date' && !isAscending">↓</span>
-        </span>
-      </th>
-      <th class="table-header">Present</th>
-      <th class="table-header sortable" (click)="sortData('lunchCost', 'number')">
-        Lunch Cost
-        <span class="sort-icon">
-          <span [class.active]="currentSortColumn === 'lunchCost' && isAscending">↑</span>
-          <span [class.active]="currentSortColumn === 'lunchCost' && !isAscending">↓</span>
-        </span>
-      </th>
-      <th class="table-header sortable" (click)="sortData('transportCost', 'number')">
-        Transport Cost
-        <span class="sort-icon">
-          <span [class.active]="currentSortColumn === 'transportCost' && isAscending">↑</span>
-          <span [class.active]="currentSortColumn === 'transportCost' && !isAscending">↓</span>
-        </span>
-      </th>
-      <th class="table-header">Selected</th>
-    </tr>
-  </thead>
-  <tbody>
-    @for (row of rows(); track row.scholarId + row.date) {
-    <tr
-      class="table-row table-row--link"
-      [routerLink]="['/attendance', row.scholarId]"
-    >
-      <td class="table-cell">{{ row.scholarName }}</td>
-      <td class="table-cell">{{ row.date | date : 'longDate' }}</td>
-      <td class="table-cell">{{ row.present ? 'Yes' : 'No' }}</td>
-      <td class="table-cell">{{ row.lunchCost | ron }}</td>
-      <td class="table-cell">{{ row.transportCost | ron }}</td>
-      <td class="table-cell">
-        @if (row.lunchSelected && row.transportSelected) { Both }
-        @else if (row.lunchSelected) { Lunch only }
-        @else if (row.transportSelected) { Transport only }
-        @else { None }
-      </td>
-    </tr>
-    } @empty {
-    <tr class="table-row">
-      <td colspan="6" class="table-cell table-cell--empty">No attendance records found.</td>
-    </tr>
-    }
-  </tbody>
-</table>
+
+<div class="attendance-grid__scroll">
+  <table class="app-table attendance-grid">
+    <thead>
+      <tr>
+        <th class="table-header attendance-grid__name-header">Scholar</th>
+        @for (date of weekdayDates(); track date) {
+        <th class="table-header attendance-grid__day-header">
+          {{ date | date : 'EEE d' }}
+        </th>
+        }
+      </tr>
+    </thead>
+    <tbody>
+      @for (row of rows(); track row.scholarId) {
+      <tr class="table-row">
+        <td class="table-cell attendance-grid__name-cell">
+          <a class="attendance-grid__name-link" [routerLink]="['/attendance', row.scholarId]">
+            {{ row.scholarName }}
+          </a>
+        </td>
+        @for (cell of row.cells; track $index) {
+        <td class="table-cell attendance-grid__day-cell">
+          <span class="attendance-cell">
+            <span class="badge badge--present" [class.badge--active]="cell?.present"></span>
+            <span class="badge badge--lunch" [class.badge--active]="cell?.lunchSelected">L</span>
+            <span
+              class="badge badge--transport"
+              [class.badge--active]="cell?.transportSelected"
+              >T</span
+            >
+          </span>
+        </td>
+        }
+      </tr>
+      } @empty {
+      <tr class="table-row">
+        <td
+          [attr.colspan]="weekdayDates().length + 1"
+          class="table-cell table-cell--empty"
+        >
+          No scholars found.
+        </td>
+      </tr>
+      }
+    </tbody>
+  </table>
+</div>
 }

@@ -1,0 +1,106 @@
+.month-nav {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.month-nav__arrow {
+  padding: var(--space-2) var(--space-3);
+  line-height: 1;
+}
+
+/* .app-input is width:100% by default; the month picker should hug its content. */
+.month-nav__input {
+  width: auto;
+}
+
+.attendance-legend {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  font-size: 0.85rem;
+  color: var(--dark-main-color);
+  opacity: 0.85;
+}
+
+.attendance-legend__item {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+/* Table chrome (.app-table / .table-header / .table-row / .table-cell) comes
+   from the global stylesheet; the wrapper only adds horizontal scrolling for
+   months with many weekday columns. */
+.attendance-grid__scroll {
+  overflow-x: auto;
+}
+
+.attendance-grid__name-header,
+.attendance-grid__name-cell {
+  white-space: nowrap;
+}
+
+.attendance-grid__day-header,
+.attendance-grid__day-cell {
+  text-align: center;
+}
+
+.attendance-grid__day-header {
+  font-size: 0.8rem;
+}
+
+.attendance-grid__name-link {
+  color: inherit;
+  text-decoration: none;
+}
+
+.attendance-grid__name-link:hover {
+  text-decoration: underline;
+}
+
+.attendance-cell {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.1rem;
+  height: 1.1rem;
+  padding: 0 var(--space-1);
+  border-radius: var(--radius-sm);
+  border: var(--border-width) solid rgba(var(--cyan-main-color-for-alpha), 0.3);
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: transparent;
+  background-color: transparent;
+}
+
+.badge--present {
+  min-width: 0.55rem;
+  width: 0.55rem;
+  height: 0.55rem;
+  padding: 0;
+  border-radius: 50%;
+}
+
+.badge--present.badge--active {
+  background-color: var(--cyan-dark-color);
+  border-color: var(--cyan-dark-color);
+}
+
+.badge--lunch.badge--active {
+  background-color: var(--orange-main-color);
+  border-color: var(--orange-main-color);
+  color: var(--dark-main-color);
+}
+
+.badge--transport.badge--active {
+  background-color: var(--cyan-light-color);
+  border-color: var(--cyan-light-color);
+  color: var(--dark-main-color);
+}
