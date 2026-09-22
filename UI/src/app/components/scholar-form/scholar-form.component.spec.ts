@@ -27,7 +27,7 @@ const EXISTING: Scholar = {
   lastName: 'Popescu',
   schoolId: 2,
   grade: 0,
-  dateOfBirth: new Date('2016-01-01'),
+  dateOfBirth: '2016-01-01',
   motherFirstName: 'Maria',
   motherLastName: null,
   motherPhoneNumber: '0722 111 222',
@@ -287,7 +287,7 @@ describe('ScholarFormComponent', () => {
         motherFirstName: 'Maria',
         motherLastName: null,
       });
-      expect(roundTripped.dateOfBirth.toISOString().substring(0, 10)).toBe('2016-01-01');
+      expect(roundTripped.dateOfBirth).toBe('2016-01-01');
     });
   });
 });

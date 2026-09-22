@@ -13,6 +13,7 @@ import { forkJoin, from, of } from 'rxjs';
 import { catchError, concatMap, map, toArray } from 'rxjs/operators';
 import { RouterModule } from '@angular/router';
 import { contrastTextColor } from '../../utils/contrast-color';
+import { parseDateOnly } from '../../utils/weekday-dates';
 
 interface TransformedScholarData {
   id: string;
@@ -79,14 +80,11 @@ export class ScholarTableComponent implements OnInit {
               schoolName,
               grade: scholar.grade,
               schoolColor,
-              birthDate: new Date(scholar.dateOfBirth).toLocaleDateString(
-                'en-GB',
-                {
-                  day: '2-digit',
-                  month: 'short',
-                  year: 'numeric',
-                },
-              ),
+              birthDate: parseDateOnly(scholar.dateOfBirth).toLocaleDateString('en-GB', {
+                day: '2-digit',
+                month: 'short',
+                year: 'numeric',
+              }),
               textColor,
             };
           });

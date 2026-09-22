@@ -147,19 +147,13 @@ function monthsInRange(
   return months;
 }
 
-function randomBirthdate(): Date {
+// 'YYYY-MM-DD' — matches Scholar.dateOfBirth (the API's DateOnly).
+function randomBirthdate(): string {
   const now = new Date();
-  const end = new Date(
-    now.getFullYear() - 5,
-    now.getMonth(),
-    now.getDate(),
-  ).getTime();
-  const start = new Date(
-    now.getFullYear() - 12,
-    now.getMonth(),
-    now.getDate(),
-  ).getTime();
-  return new Date(start + Math.random() * (end - start));
+  const end = new Date(now.getFullYear() - 5, now.getMonth(), now.getDate()).getTime();
+  const start = new Date(now.getFullYear() - 12, now.getMonth(), now.getDate()).getTime();
+  const date = new Date(start + Math.random() * (end - start));
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
 }
 
 function randomPickUpSchedule(): PickUpSchedule {

@@ -12,7 +12,7 @@ public class ScholarModelValidationTests
     {
         FirstName = "Ana",
         LastName = "Popescu",
-        DateOfBirth = DateTime.UtcNow.AddYears(-8),
+        DateOfBirth = DateOnly.FromDateTime(DateTime.UtcNow).AddYears(-8),
         SchoolId = 1,
         Grade = 3,
         PickUpSchedule = new Dictionary<string, string?> { ["monday"] = "13:00" },
@@ -39,7 +39,7 @@ public class ScholarModelValidationTests
         {
             FirstName = "Ana",
             LastName = "Popescu",
-            DateOfBirth = DateTime.UtcNow.AddYears(-8),
+            DateOfBirth = DateOnly.FromDateTime(DateTime.UtcNow).AddYears(-8),
         };
 
         Assert.True(TryValidate(scholar, out var results));
@@ -80,7 +80,7 @@ public class ScholarModelValidationTests
     public void FutureDateOfBirth_FailsValidation()
     {
         var scholar = ValidScholar();
-        scholar.DateOfBirth = DateTime.UtcNow.AddDays(5);
+        scholar.DateOfBirth = DateOnly.FromDateTime(DateTime.UtcNow).AddDays(5);
 
         // CustomValidationAttribute results don't carry MemberNames the way built-in
         // attributes (Required/Range/...) do, so this asserts on message content instead.

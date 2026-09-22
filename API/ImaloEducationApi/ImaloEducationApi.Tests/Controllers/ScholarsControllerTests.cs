@@ -17,7 +17,7 @@ public class ScholarsControllerTests
         Id = id ?? Guid.NewGuid(),
         FirstName = "Ana",
         LastName = "Popescu",
-        DateOfBirth = DateTime.UtcNow.AddYears(-8),
+        DateOfBirth = DateOnly.FromDateTime(DateTime.UtcNow).AddYears(-8),
     };
 
     private static (ScholarsController controller, Mock<IScholarDataAccess> dataAccess) MakeController()

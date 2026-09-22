@@ -8,8 +8,8 @@ CREATE TABLE [dbo].[Scholars]
     [Id] UNIQUEIDENTIFIER NOT NULL DEFAULT NEWID(), -- Primary key, automatically generated GUID
     [FirstName] NVARCHAR(100) NOT NULL,
     [LastName] NVARCHAR(100) NOT NULL,
-    [DateOfBirth] DATETIME2 NOT NULL,
-    [Grade] INT NULL,
+    [DateOfBirth] DATE NOT NULL, -- date-only, never a time component (API: Scholar.DateOfBirth is DateOnly)
+    [Grade] TINYINT NULL, -- 0-12 range enforced app-side, fits a single byte
     [SchoolId] INT NULL,
 
     -- Define the Primary Key constraint

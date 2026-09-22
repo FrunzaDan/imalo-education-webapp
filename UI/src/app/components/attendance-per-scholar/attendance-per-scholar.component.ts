@@ -29,6 +29,7 @@ import {
   weekdaysOfMonth,
   withWeekdayStubs,
 } from './attendance-form';
+import { shiftMonth } from '../../utils/weekday-dates';
 import { RonPipe } from '../../pipes/ron.pipe';
 
 @Component({
@@ -170,6 +171,14 @@ export class AttendancePerScholarComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     this.scholarSubscription?.unsubscribe();
     this.attendanceSubscription?.unsubscribe();
+  }
+
+  previousMonth(): void {
+    this.monthForm.month().value.set(shiftMonth(this.selectedMonth(), -1));
+  }
+
+  nextMonth(): void {
+    this.monthForm.month().value.set(shiftMonth(this.selectedMonth(), 1));
   }
 
   private showRecords(records: AttendanceRecord[]): void {

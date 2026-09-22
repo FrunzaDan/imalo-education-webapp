@@ -26,7 +26,7 @@ const SCHOLAR: Scholar = {
   pickUpSchedule: null,
   schoolId: 1,
   grade: 3,
-  dateOfBirth: new Date('2016-01-01'),
+  dateOfBirth: '2016-01-01',
 };
 
 const SCHOOL: School = {

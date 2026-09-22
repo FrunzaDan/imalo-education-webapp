@@ -57,8 +57,8 @@ public class ScholarDataAccess : IScholarDataAccess
             await using var insertScholarCmd = new SqlCommand(insertScholarSql, connection, transaction);
             AddParam(insertScholarCmd, "@FirstName", SqlDbType.NVarChar, scholar.FirstName, 100);
             AddParam(insertScholarCmd, "@LastName", SqlDbType.NVarChar, scholar.LastName ?? string.Empty, 100);
-            AddParam(insertScholarCmd, "@DateOfBirth", SqlDbType.DateTime2, scholar.DateOfBirth);
-            AddParam(insertScholarCmd, "@Grade", SqlDbType.Int, (object?)scholar.Grade ?? DBNull.Value);
+            AddParam(insertScholarCmd, "@DateOfBirth", SqlDbType.Date, scholar.DateOfBirth);
+            AddParam(insertScholarCmd, "@Grade", SqlDbType.TinyInt, (object?)scholar.Grade ?? DBNull.Value);
             AddParam(insertScholarCmd, "@SchoolId", SqlDbType.Int, (object?)scholar.SchoolId ?? DBNull.Value);
 
             var insertedIdObj = await insertScholarCmd.ExecuteScalarAsync(cancellationToken);
@@ -282,8 +282,8 @@ public class ScholarDataAccess : IScholarDataAccess
             AddParam(updateScholarCmd, "@Id", SqlDbType.UniqueIdentifier, scholar.Id);
             AddParam(updateScholarCmd, "@FirstName", SqlDbType.NVarChar, scholar.FirstName ?? string.Empty, 100);
             AddParam(updateScholarCmd, "@LastName", SqlDbType.NVarChar, scholar.LastName ?? string.Empty, 100);
-            AddParam(updateScholarCmd, "@DateOfBirth", SqlDbType.DateTime2, scholar.DateOfBirth);
-            AddParam(updateScholarCmd, "@Grade", SqlDbType.Int, (object?)scholar.Grade ?? DBNull.Value);
+            AddParam(updateScholarCmd, "@DateOfBirth", SqlDbType.Date, scholar.DateOfBirth);
+            AddParam(updateScholarCmd, "@Grade", SqlDbType.TinyInt, (object?)scholar.Grade ?? DBNull.Value);
             AddParam(updateScholarCmd, "@SchoolId", SqlDbType.Int, (object?)scholar.SchoolId ?? DBNull.Value);
 
             var rowsAffected = await updateScholarCmd.ExecuteNonQueryAsync(cancellationToken);
@@ -762,9 +762,9 @@ public class ScholarDataAccess : IScholarDataAccess
                 Id = reader.GetGuid(reader.GetOrdinal("Id")),
                 FirstName = reader.GetString(reader.GetOrdinal("FirstName")),
                 LastName = reader.GetString(reader.GetOrdinal("LastName")),
-                DateOfBirth = reader.GetDateTime(reader.GetOrdinal("DateOfBirth")),
+                DateOfBirth = reader.GetFieldValue<DateOnly>(reader.GetOrdinal("DateOfBirth")),
                 Grade =
-                    reader.IsDBNull(reader.GetOrdinal("Grade")) ? null : reader.GetInt32(reader.GetOrdinal("Grade")),
+                    reader.IsDBNull(reader.GetOrdinal("Grade")) ? null : reader.GetByte(reader.GetOrdinal("Grade")),
                 SchoolId = reader.IsDBNull(reader.GetOrdinal("SchoolId"))
                     ? null
                     : reader.GetInt32(reader.GetOrdinal("SchoolId")),

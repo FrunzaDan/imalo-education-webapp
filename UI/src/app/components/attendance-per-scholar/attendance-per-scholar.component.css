@@ -29,6 +29,17 @@
   width: auto;
 }
 
+.month-nav {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.month-nav__arrow {
+  padding: var(--space-2) var(--space-3);
+  line-height: 1;
+}
+
 /* Table chrome (.app-table / .table-header / .table-row / .table-cell) comes
    from the global stylesheet, so this table matches the other data tables.
    Only what is specific to the attendance grid lives here. */

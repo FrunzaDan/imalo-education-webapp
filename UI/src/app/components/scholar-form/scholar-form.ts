@@ -106,9 +106,7 @@ export function toFormModel(scholar: Scholar): ScholarFormModel {
     lastName: scholar.lastName,
     schoolId: scholar.schoolId?.toString() ?? '',
     grade: scholar.grade,
-    dateOfBirth: scholar.dateOfBirth
-      ? new Date(scholar.dateOfBirth).toISOString().substring(0, 10)
-      : '',
+    dateOfBirth: scholar.dateOfBirth ?? '',
     motherFirstName: scholar.motherFirstName ?? '',
     motherLastName: scholar.motherLastName ?? '',
     motherPhoneNumber: scholar.motherPhoneNumber ?? '',
@@ -134,7 +132,7 @@ export function toScholar(model: ScholarFormModel, id: string | null): Scholar {
     lastName: model.lastName,
     schoolId: Number(model.schoolId),
     grade: model.grade,
-    dateOfBirth: new Date(model.dateOfBirth),
+    dateOfBirth: model.dateOfBirth,
     motherFirstName: model.motherFirstName || null,
     motherLastName: model.motherLastName || null,
     motherPhoneNumber: model.motherPhoneNumber || null,

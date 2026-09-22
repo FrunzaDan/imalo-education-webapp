@@ -5,19 +5,19 @@ namespace ImaloEducationApi.Tests.Models;
 
 public class ScholarValidationTests
 {
-    private static ValidationResult? Validate(DateTime date) =>
+    private static ValidationResult? Validate(DateOnly date) =>
         Scholar.ValidateDateOfBirth(date, new ValidationContext(new object()));
 
     [Fact]
     public void ValidateDateOfBirth_AcceptsPastDate()
     {
-        Assert.Equal(ValidationResult.Success, Validate(DateTime.UtcNow.AddYears(-10)));
+        Assert.Equal(ValidationResult.Success, Validate(DateOnly.FromDateTime(DateTime.UtcNow).AddYears(-10)));
     }
 
     [Fact]
     public void ValidateDateOfBirth_RejectsFutureDate()
     {
-        var result = Validate(DateTime.UtcNow.AddDays(1));
+        var result = Validate(DateOnly.FromDateTime(DateTime.UtcNow).AddDays(1));
 
         Assert.NotEqual(ValidationResult.Success, result);
         Assert.Equal("Date of birth cannot be in the future.", result!.ErrorMessage);

@@ -6,12 +6,30 @@
 
     <div class="attendance-container__controls controls">
       <label for="monthPicker" class="controls__label">Month:</label>
-      <input
-        id="monthPicker"
-        type="month"
-        [formField]="monthForm.month"
-        class="app-input controls__month-input"
-      />
+      <div class="month-nav">
+        <button
+          type="button"
+          class="app-button app-button--ghost month-nav__arrow"
+          (click)="previousMonth()"
+          aria-label="Previous month"
+        >
+          ‹
+        </button>
+        <input
+          id="monthPicker"
+          type="month"
+          [formField]="monthForm.month"
+          class="app-input controls__month-input"
+        />
+        <button
+          type="button"
+          class="app-button app-button--ghost month-nav__arrow"
+          (click)="nextMonth()"
+          aria-label="Next month"
+        >
+          ›
+        </button>
+      </div>
       <button
         type="button"
         class="app-button app-button--ghost"
