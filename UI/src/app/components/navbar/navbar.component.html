@@ -2,6 +2,15 @@
   <div class="navbar-brand">Imalo Utils</div>
   <ul class="navbar-links">
     <li>
+      <a
+        routerLink="/dashboard"
+        routerLinkActive="active"
+        [routerLinkActiveOptions]="{ exact: true }"
+        class="nav-link"
+        >Dashboard</a
+      >
+    </li>
+    <li>
       <a routerLink="/scholars" routerLinkActive="active" class="nav-link"
         >Scholars</a
       >

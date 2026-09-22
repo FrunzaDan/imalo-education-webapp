@@ -1,0 +1,47 @@
+<footer class="app-footer">
+  <svg
+    class="app-footer__wave"
+    viewBox="0 0 1200 24"
+    preserveAspectRatio="none"
+    aria-hidden="true"
+  >
+    <path
+      d="M0 12 C 150 24, 300 0, 450 12 S 750 24, 900 12 S 1150 0, 1200 12 V24 H0 Z"
+    ></path>
+  </svg>
+
+  <div class="app-footer__content">
+    <div class="app-footer__brand">
+      <span class="app-footer__logo">Imalo Utils</span>
+      <p class="app-footer__tagline">
+        Keeping track of scholars, schedules and attendance — one tidy table
+        at a time.
+      </p>
+    </div>
+
+    <nav class="app-footer__links" aria-label="Footer">
+      <a routerLink="/dashboard" class="app-footer__link">Dashboard</a>
+      <a routerLink="/scholars" class="app-footer__link">Scholars</a>
+      <a routerLink="/pickup-time" class="app-footer__link">Pickup Time</a>
+      <a routerLink="/attendance" class="app-footer__link">Attendance</a>
+      <a routerLink="/charts" class="app-footer__link">Charts</a>
+      <a routerLink="/audit-log" class="app-footer__link">Audit Log</a>
+      <a routerLink="/about" class="app-footer__link">About</a>
+    </nav>
+
+    <div class="app-footer__stack">
+      <span class="app-footer__stack-label">Built with</span>
+      <div class="app-footer__badges">
+        <span class="app-footer__badge">Angular</span>
+        <span class="app-footer__badge">.NET</span>
+        <span class="app-footer__badge">SQL Server</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="app-footer__bottom">
+    <span>&copy; {{ currentYear }} Imalo Utils</span>
+    <span class="app-footer__dot" aria-hidden="true">&bull;</span>
+    <span>A learning project, built for real classrooms.</span>
+  </div>
+</footer>

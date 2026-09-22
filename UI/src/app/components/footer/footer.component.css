@@ -1,0 +1,142 @@
+.app-footer {
+  position: relative;
+  margin-top: var(--space-7);
+  padding: var(--space-6) var(--space-5) var(--space-4);
+  background: linear-gradient(
+    135deg,
+    var(--cyan-dark-color) 0%,
+    var(--cyan-darker-color) 60%,
+    var(--cyan-main-color) 130%
+  );
+  color: rgba(var(--light-main-color-for-alpha), 0.85);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+
+/* Sits on the footer's own top edge, tinted with the page background so it
+   reads as a torn/wave edge rather than a hard rectangle. */
+.app-footer__wave {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 1.5rem;
+  fill: var(--light-main-color);
+}
+
+.app-footer__content {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-6);
+  justify-content: space-between;
+  padding-top: var(--space-3);
+}
+
+.app-footer__brand {
+  max-width: 22rem;
+}
+
+.app-footer__logo {
+  font-size: 1.4rem;
+  font-weight: 600;
+  color: var(--light-main-color);
+  letter-spacing: 0.01em;
+}
+
+.app-footer__tagline {
+  margin: var(--space-2) 0 0;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  color: rgba(var(--light-main-color-for-alpha), 0.7);
+}
+
+.app-footer__links {
+  display: flex;
+  flex-direction: column;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  max-height: 8rem;
+}
+
+.app-footer__link {
+  color: rgba(var(--light-main-color-for-alpha), 0.8);
+  text-decoration: none;
+  font-size: 0.9rem;
+  font-weight: 500;
+  width: fit-content;
+  border-bottom: var(--border-width) solid transparent;
+  transition:
+    color 0.2s ease,
+    border-color 0.2s ease;
+}
+
+.app-footer__link:hover {
+  color: var(--orange-light-color);
+  border-color: var(--orange-light-color);
+}
+
+.app-footer__stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.app-footer__stack-label {
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: rgba(var(--light-main-color-for-alpha), 0.55);
+}
+
+.app-footer__badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.app-footer__badge {
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-sm);
+  border: var(--border-width) solid rgba(var(--light-main-color-for-alpha), 0.3);
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--light-main-color);
+  background-color: rgba(var(--light-main-color-for-alpha), 0.08);
+  transition:
+    background-color 0.2s ease,
+    transform 0.2s ease;
+}
+
+.app-footer__badge:hover {
+  background-color: rgba(var(--orange-main-color-for-alpha), 0.25);
+  transform: translateY(-1px);
+}
+
+.app-footer__bottom {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  margin-top: var(--space-5);
+  padding-top: var(--space-3);
+  border-top: var(--border-width) solid rgba(var(--light-main-color-for-alpha), 0.15);
+  font-size: 0.8rem;
+  color: rgba(var(--light-main-color-for-alpha), 0.6);
+}
+
+.app-footer__dot {
+  opacity: 0.5;
+}
+
+@media (max-width: 640px) {
+  .app-footer__content {
+    flex-direction: column;
+    gap: var(--space-4);
+  }
+
+  .app-footer__links {
+    max-height: none;
+  }
+}

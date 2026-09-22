@@ -383,3 +383,28 @@ select.app-input {
   color: var(--dark-main-color);
   opacity: 0.65;
 }
+
+/* Print utilities: .no-print hides UI chrome (nav, buttons, toolbars) from a
+   printed page/PDF; .print-only is its inverse, for content (e.g. an invoice
+   header) that only makes sense once it's on paper. Global because both get
+   applied from inside routed page components as well as the app shell. */
+.print-only {
+  display: none;
+}
+
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  .print-only {
+    display: block;
+  }
+  body {
+    background-color: #ffffff;
+    padding: 0;
+  }
+  .app-card {
+    box-shadow: none;
+    border: none;
+  }
+}

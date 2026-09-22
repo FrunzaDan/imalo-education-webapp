@@ -53,6 +53,7 @@ export class AttendancePerScholarComponent implements OnInit, OnDestroy {
 
   scholar = signal<Scholar | null>(null);
   scholarId: string = '';
+  readonly today = new Date();
 
   // Standard per-day prices for this scholar's school, applied when a day is
   // marked for the first time. 0 until the school has loaded (or if the
@@ -60,6 +61,10 @@ export class AttendancePerScholarComponent implements OnInit, OnDestroy {
   // template, so plain fields are enough.
   lunchPrice = 0;
   transportPrice = 0;
+
+  // The school's name, for the printable invoice header. A signal (unlike
+  // lunchPrice/transportPrice above) because the template reads it.
+  schoolName = signal('');
 
   // 'YYYY-MM', the value format of <input type="month">. A one-field signal
   // form binds the picker; selectedMonth is its value.
@@ -100,6 +105,18 @@ export class AttendancePerScholarComponent implements OnInit, OnDestroy {
       .map((entry) => entry.index);
   });
   readonly dayRows = computed(() => this.visibleIndexes().map((i) => this.days()[i]));
+
+  // The selected month as a Date (the 1st), so the invoice header can format
+  // it with DatePipe instead of hand-building a "September 2026" string.
+  // Falls back to today while the month form is still empty (before the
+  // scholar/attendance load picks a default month) so DatePipe never sees
+  // an invalid date.
+  readonly monthLabel = computed(() => {
+    const month = this.selectedMonth();
+    if (!month) return this.today;
+    const [year, monthNumber] = month.split('-').map(Number);
+    return new Date(year, monthNumber - 1, 1);
+  });
 
   // What Save sends: loaded records plus every day the user has marked.
   readonly recordsToSave = computed(() => toAttendanceRecords(this.days()));
@@ -145,6 +162,7 @@ export class AttendancePerScholarComponent implements OnInit, OnDestroy {
             next: (school) => {
               this.lunchPrice = school?.lunchPrice ?? 0;
               this.transportPrice = school?.transportPrice ?? 0;
+              this.schoolName.set(school?.name ?? '');
             },
           });
         }
@@ -329,5 +347,13 @@ export class AttendancePerScholarComponent implements OnInit, OnDestroy {
       ],
       this.dayRows(),
     );
+  }
+
+  // Opens the browser's print dialog over the invoice-only view (see the
+  // .no-print/.print-only classes in the template and global styles.css).
+  // Saving as PDF from there avoids pulling in a PDF-generation dependency
+  // for what the browser already does natively.
+  printInvoice(): void {
+    window.print();
   }
 }

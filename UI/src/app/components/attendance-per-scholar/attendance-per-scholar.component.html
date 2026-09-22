@@ -1,10 +1,20 @@
 @if (scholar(); as scholar) {
   <div class="attendance-container">
-    <h2 class="page-title attendance-container__title">
+    <h2 class="page-title attendance-container__title no-print">
       Attendance for {{ scholar.firstName }} {{ scholar.lastName }}
     </h2>
 
-    <div class="attendance-container__controls controls">
+    <div class="print-only invoice-header">
+      <h1 class="invoice-header__title">Attendance Invoice</h1>
+      <p class="invoice-header__scholar">{{ scholar.firstName }} {{ scholar.lastName }}</p>
+      @if (schoolName()) {
+        <p class="invoice-header__school">{{ schoolName() }}</p>
+      }
+      <p class="invoice-header__month">{{ monthLabel() | date: 'MMMM yyyy' }}</p>
+      <p class="invoice-header__generated">Generated {{ today | date: 'medium' }}</p>
+    </div>
+
+    <div class="attendance-container__controls controls no-print">
       <label for="monthPicker" class="controls__label">Month:</label>
       <div class="month-nav">
         <button
@@ -36,6 +46,13 @@
         (click)="exportCsv()"
       >
         Export CSV
+      </button>
+      <button
+        type="button"
+        class="app-button app-button--ghost"
+        (click)="printInvoice()"
+      >
+        Print Invoice
       </button>
     </div>
 
@@ -163,7 +180,7 @@
       </tfoot>
     </table>
 
-    <div class="attendance-container__save-bar">
+    <div class="attendance-container__save-bar no-print">
       <button
         type="button"
         class="app-button app-button--accent"

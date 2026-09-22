@@ -1,0 +1,140 @@
+.dashboard-title {
+  margin: 0;
+}
+
+.dashboard-today {
+  color: var(--dark-main-color);
+  opacity: 0.7;
+  font-size: 0.95rem;
+}
+
+.dashboard-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+  gap: var(--space-4);
+  margin-bottom: var(--space-5);
+}
+
+/* .stat-tile already gets .app-card's border/shadow/radius via the extra
+   class on the element — only the internal layout is needed here. */
+.stat-tile {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: var(--space-4);
+}
+
+.stat-tile__label {
+  font-size: 0.8rem;
+  color: var(--dark-main-color);
+  opacity: 0.7;
+}
+
+.stat-tile__value {
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: var(--cyan-dark-color);
+}
+
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(20rem, 1fr));
+  gap: var(--space-4);
+}
+
+.dashboard-panel {
+  padding: var(--space-4) var(--space-5);
+}
+
+.dashboard-panel--wide {
+  grid-column: 1 / -1;
+}
+
+.dashboard-panel__title {
+  margin: 0 0 var(--space-3);
+  font-size: 1.1rem;
+  color: var(--cyan-dark-color);
+}
+
+.dashboard-panel__empty {
+  margin: 0;
+  color: var(--dark-main-color);
+  opacity: 0.7;
+  font-style: italic;
+}
+
+.dashboard-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  /* Today's Pickups can list every scholar in the school — cap the panel's
+     height instead of letting it push everything below it off-screen. */
+  max-height: 22rem;
+  overflow-y: auto;
+}
+
+.dashboard-list__item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) 0;
+  border-bottom: var(--border-width) solid var(--border-color);
+}
+
+.dashboard-list__item:last-child {
+  border-bottom: none;
+}
+
+.dashboard-list__swatch {
+  width: 0.7rem;
+  height: 0.7rem;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.dashboard-list__name {
+  color: var(--cyan-dark-color);
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.dashboard-list__name:hover {
+  text-decoration: underline;
+}
+
+.dashboard-list__name--muted {
+  color: var(--dark-main-color);
+  opacity: 0.6;
+  font-weight: 400;
+  cursor: default;
+}
+
+.dashboard-list__meta {
+  color: var(--dark-main-color);
+  opacity: 0.7;
+  font-size: 0.85rem;
+  flex: 1;
+}
+
+.dashboard-list__time {
+  color: var(--dark-main-color);
+  opacity: 0.85;
+  font-size: 0.85rem;
+  white-space: nowrap;
+}
+
+.dashboard-panel__link {
+  display: inline-block;
+  margin-top: var(--space-3);
+  color: var(--cyan-dark-color);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.dashboard-panel__link:hover {
+  text-decoration: underline;
+}

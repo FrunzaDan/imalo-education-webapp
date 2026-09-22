@@ -3,9 +3,14 @@ import { Routes } from '@angular/router';
 export const routes: Routes = [
   {
     path: '',
+    redirectTo: 'dashboard',
+    pathMatch: 'full',
+  },
+  {
+    path: 'dashboard',
     loadComponent: () =>
-      import('./components/scholar-table/scholar-table.component').then(
-        (m) => m.ScholarTableComponent,
+      import('./components/dashboard/dashboard.component').then(
+        (m) => m.DashboardComponent,
       ),
   },
   {

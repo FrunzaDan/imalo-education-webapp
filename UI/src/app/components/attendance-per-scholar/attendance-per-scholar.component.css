@@ -12,6 +12,16 @@
   margin-bottom: var(--space-4);
 }
 
+@media print {
+  .attendance-container {
+    max-width: none;
+    margin: 0;
+    padding: 0;
+    border: none;
+    box-shadow: none;
+  }
+}
+
 .controls {
   display: flex;
   flex-wrap: wrap;
@@ -87,4 +97,31 @@
   color: var(--orange-text-color);
   font-style: italic;
   font-size: 0.9rem;
+}
+
+/* Only visible on paper — see the .print-only rule in the global stylesheet. */
+.invoice-header {
+  margin-bottom: var(--space-4);
+  padding-bottom: var(--space-3);
+  border-bottom: var(--border-width-thick) solid var(--cyan-dark-color);
+}
+
+.invoice-header__title {
+  margin: 0 0 var(--space-2);
+  color: var(--cyan-dark-color);
+}
+
+.invoice-header p {
+  margin: 0;
+}
+
+.invoice-header__scholar {
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.invoice-header__generated {
+  margin-top: var(--space-2);
+  font-size: 0.85rem;
+  opacity: 0.7;
 }

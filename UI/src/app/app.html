@@ -1,4 +1,4 @@
-<app-navbar></app-navbar>
+<app-navbar class="no-print"></app-navbar>
 
 @if (apiAvailable()) {
 <router-outlet />
@@ -11,6 +11,8 @@
   </p>
 </div>
 }
+
+<app-footer class="no-print"></app-footer>
 
 <app-notification></app-notification>
 <app-confirm-modal></app-confirm-modal>
