@@ -9,7 +9,13 @@ import { CsvExportService } from '../../services/csv-export.service';
 import { Scholar } from '../../interfaces/scholar';
 import { ScholarAttendance } from '../../interfaces/scholar-attendance';
 import { shiftMonth, toMonthString, weekdaysOfMonth } from '../../utils/weekday-dates';
-import { buildScholarRows, cellLabel, ScholarAttendanceRow } from './attendance-grid';
+import {
+  buildScholarRows,
+  cellLabel,
+  countsByDay,
+  ScholarAttendanceRow,
+  sum,
+} from './attendance-grid';
 
 @Component({
   selector: 'app-attendance',
@@ -35,6 +41,13 @@ export class AttendanceComponent implements OnInit {
   readonly rows = computed(() =>
     buildScholarRows(this.scholars(), this.allAttendance(), this.selectedMonth()),
   );
+
+  // Footer summary: one Present/Lunch/Transport count per day, plus the
+  // month's totals below that.
+  readonly dailyCounts = computed(() => countsByDay(this.rows(), this.weekdayDates().length));
+  readonly totalPresent = computed(() => sum(this.dailyCounts().present));
+  readonly totalLunch = computed(() => sum(this.dailyCounts().lunchSelected));
+  readonly totalTransport = computed(() => sum(this.dailyCounts().transportSelected));
 
   ngOnInit(): void {
     this.loadData();

@@ -63,3 +63,30 @@ export function cellLabel(cell: AttendanceCell | null): string {
   if (cell.transportSelected) parts.push('Transport');
   return parts.join(' + ');
 }
+
+// One count per weekday column, across every scholar row — the footer's
+// per-day summary lines.
+export interface DailyAttendanceCounts {
+  present: number[];
+  lunchSelected: number[];
+  transportSelected: number[];
+}
+
+export function countsByDay(rows: ScholarAttendanceRow[], dayCount: number): DailyAttendanceCounts {
+  const present = new Array(dayCount).fill(0);
+  const lunchSelected = new Array(dayCount).fill(0);
+  const transportSelected = new Array(dayCount).fill(0);
+
+  for (const row of rows) {
+    row.cells.forEach((cell, index) => {
+      if (!cell?.present) return;
+      present[index]++;
+      if (cell.lunchSelected) lunchSelected[index]++;
+      if (cell.transportSelected) transportSelected[index]++;
+    });
+  }
+
+  return { present, lunchSelected, transportSelected };
+}
+
+export const sum = (counts: number[]): number => counts.reduce((a, b) => a + b, 0);

@@ -124,6 +124,29 @@ function randomInt(min: number, max: number): number {
   return min + Math.floor(Math.random() * (max - min + 1));
 }
 
+// Every calendar month from (startYear, startMonth) to (endYear, endMonth),
+// inclusive on both ends.
+function monthsInRange(
+  startYear: number,
+  startMonth: number,
+  endYear: number,
+  endMonth: number,
+): { year: number; month: number }[] {
+  const months: { year: number; month: number }[] = [];
+  let year = startYear;
+  let month = startMonth;
+
+  while (year < endYear || (year === endYear && month <= endMonth)) {
+    months.push({ year, month });
+    month++;
+    if (month > 12) {
+      month = 1;
+      year++;
+    }
+  }
+  return months;
+}
+
 function randomBirthdate(): Date {
   const now = new Date();
   const end = new Date(
@@ -268,7 +291,7 @@ export class AboutComponent {
       firstName: pick(FIRST_NAMES),
       lastName: pick(LAST_NAMES),
       schoolId: pick(schools).id,
-      grade: randomInt(0, 12),
+      grade: randomInt(1, 4),
       dateOfBirth: randomBirthdate(),
       pickUpSchedule: randomPickUpSchedule(),
       motherFirstName: mother.firstName,
@@ -280,25 +303,22 @@ export class AboutComponent {
     };
   }
 
-  // A couple of recent months of attendance, most (not all) weekdays, so the
-  // per-scholar attendance page and the attendance dashboard both have
-  // something realistic to show right away.
+  // Every month from July 2024 to July 2026 inclusive, most (not all)
+  // weekdays, so the attendance dashboard's Charts page has real month- and
+  // year-spanning trends to show right away instead of just the last couple
+  // of months. No scholar ever gets Transport in July or August — school
+  // holidays, no pickup runs.
   private buildRandomAttendance(
     school: School | undefined,
   ): AttendanceRecord[] {
     const lunchPrice = school?.lunchPrice ?? 15;
     const transportPrice = school?.transportPrice ?? 5;
-    const now = new Date();
-    const months = [
-      { year: now.getFullYear(), month: now.getMonth() + 1 },
-      {
-        year: now.getMonth() === 0 ? now.getFullYear() - 1 : now.getFullYear(),
-        month: now.getMonth() === 0 ? 12 : now.getMonth(),
-      },
-    ];
+    const months = monthsInRange(2024, 7, 2026, 7);
 
     const records: AttendanceRecord[] = [];
     for (const { year, month } of months) {
+      const isSummerBreak = month === 7 || month === 8; // no transport in Jul/Aug
+
       for (const date of getWeekdayDatesInMonth(year, month)) {
         if (Math.random() >= 0.7) continue; // skip some days entirely
 
@@ -306,7 +326,8 @@ export class AboutComponent {
         // rule enforced in the UI and the API.
         const present = Math.random() < 0.9;
         const lunchSelected = present && Math.random() < 0.8;
-        const transportSelected = lunchSelected && Math.random() < 0.4;
+        const transportSelected =
+          !isSummerBreak && lunchSelected && Math.random() < 0.4;
 
         records.push({
           date,

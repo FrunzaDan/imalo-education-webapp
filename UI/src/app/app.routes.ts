@@ -58,6 +58,13 @@ export const routes: Routes = [
       ).then((m) => m.AttendancePerScholarComponent),
   },
   {
+    path: 'charts',
+    loadComponent: () =>
+      import('./components/charts/charts.component').then(
+        (m) => m.ChartsComponent,
+      ),
+  },
+  {
     path: 'audit-log',
     loadComponent: () =>
       import('./components/global-audit-log/global-audit-log.component').then(

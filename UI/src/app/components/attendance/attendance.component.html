@@ -91,6 +91,41 @@
       </tr>
       }
     </tbody>
+    <tfoot>
+      <tr class="table-row attendance-grid__summary-row">
+        <td class="table-cell attendance-grid__name-cell attendance-grid__summary-label">
+          Present
+        </td>
+        @for (count of dailyCounts().present; track $index) {
+        <td class="table-cell attendance-grid__day-cell">{{ count }}</td>
+        }
+      </tr>
+      <tr class="table-row attendance-grid__summary-row">
+        <td class="table-cell attendance-grid__name-cell attendance-grid__summary-label">
+          Lunch
+        </td>
+        @for (count of dailyCounts().lunchSelected; track $index) {
+        <td class="table-cell attendance-grid__day-cell">{{ count }}</td>
+        }
+      </tr>
+      <tr class="table-row attendance-grid__summary-row">
+        <td class="table-cell attendance-grid__name-cell attendance-grid__summary-label">
+          Transport
+        </td>
+        @for (count of dailyCounts().transportSelected; track $index) {
+        <td class="table-cell attendance-grid__day-cell">{{ count }}</td>
+        }
+      </tr>
+      <tr class="table-row attendance-grid__summary-row attendance-grid__summary-row--totals">
+        <td class="table-cell attendance-grid__name-cell attendance-grid__summary-label">
+          Totals
+        </td>
+        <td class="table-cell attendance-grid__totals-cell" [attr.colspan]="weekdayDates().length">
+          Present: {{ totalPresent() }} &nbsp;&middot;&nbsp; Lunch: {{ totalLunch() }}
+          &nbsp;&middot;&nbsp; Transport: {{ totalTransport() }}
+        </td>
+      </tr>
+    </tfoot>
   </table>
 </div>
 }
