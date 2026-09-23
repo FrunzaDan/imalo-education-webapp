@@ -7,6 +7,10 @@ namespace ImaloEducationApi.Data;
 
 public class ScholarDataAccess : IScholarDataAccess
 {
+    // One shared instance: JsonSerializerOptions caches per-type serialization
+    // metadata, so a new instance per call would rebuild that cache every time.
+    private static readonly JsonSerializerOptions JsonOptions = new() { PropertyNameCaseInsensitive = true };
+
     private readonly string _connectionString;
     private readonly ILogger<ScholarDataAccess> _logger;
 
@@ -73,12 +77,12 @@ public class ScholarDataAccess : IScholarDataAccess
             _logger.LogInformation("Scholar created with ID: {ScholarId}", insertedId);
 
             // Insert pickup schedule if provided
-            if (scholar.PickUpSchedule != null && scholar.PickUpSchedule.Count > 0)
+            if (scholar.PickUpSchedule != null)
             {
                 await using var insertScheduleCmd = new SqlCommand(insertScheduleSql, connection, transaction);
                 AddParam(insertScheduleCmd, "@ScholarId", SqlDbType.UniqueIdentifier, insertedId);
                 AddParam(insertScheduleCmd, "@ScheduleJson", SqlDbType.NVarChar,
-                    JsonSerializer.Serialize(scholar.PickUpSchedule), -1);
+                    JsonSerializer.Serialize(scholar.PickUpSchedule, JsonOptions), -1);
 
                 await insertScheduleCmd.ExecuteNonQueryAsync(cancellationToken);
                 _logger.LogInformation("Pickup schedule inserted for scholar ID: {ScholarId}", insertedId);
@@ -98,10 +102,10 @@ public class ScholarDataAccess : IScholarDataAccess
 
                 await using var insertParentCmd = new SqlCommand(insertParentSql, connection, transaction);
                 AddParam(insertParentCmd, "@ScholarId", SqlDbType.UniqueIdentifier, insertedId);
-                AddParam(insertParentCmd, "@Role", SqlDbType.NVarChar, role, 10);
+                AddParam(insertParentCmd, "@Role", SqlDbType.VarChar, role, 6);
                 AddParam(insertParentCmd, "@FirstName", SqlDbType.NVarChar, ToDbValue(firstName), 100);
                 AddParam(insertParentCmd, "@LastName", SqlDbType.NVarChar, ToDbValue(lastName), 100);
-                AddParam(insertParentCmd, "@PhoneNumber", SqlDbType.NVarChar, ToDbValue(phoneNumber), 20);
+                AddParam(insertParentCmd, "@PhoneNumber", SqlDbType.VarChar, ToDbValue(phoneNumber), 20);
                 await insertParentCmd.ExecuteNonQueryAsync(cancellationToken);
             }
 
@@ -109,7 +113,7 @@ public class ScholarDataAccess : IScholarDataAccess
 
             // Best-effort: runs after the transaction has committed, on its own
             // connection, so a logging failure can never roll back a successful create.
-            await LogAuditAsync(insertedId, "Created", null, cancellationToken);
+            await LogAuditAsync(insertedId, AuditAction.Created, null, cancellationToken);
 
             return scholar;
         }
@@ -128,9 +132,9 @@ public class ScholarDataAccess : IScholarDataAccess
 
     public async Task<IEnumerable<Scholar>> GetScholarsAsync(CancellationToken cancellationToken)
     {
-        // Parents is joined via OUTER APPLY, not a plain LEFT JOIN — a LEFT JOIN straight
-        // to Parents would duplicate the scholar row when both a Mother and a Father row
-        // exist, and OUTER APPLY is how to pull more than one column per role without that.
+        // Parents is joined once per role, with the role in the ON clause. (ScholarId, Role)
+        // is Parents' primary key, so each join matches at most one row and the scholar
+        // row is never duplicated — and each join is a clustered-index seek.
         const string sql = """
 
                                            SELECT s.Id, s.FirstName, s.LastName, s.DateOfBirth, s.Grade, s.SchoolId, ps.ScheduleJson,
@@ -138,8 +142,8 @@ public class ScholarDataAccess : IScholarDataAccess
                                                   father.FirstName AS FatherFirstName, father.LastName AS FatherLastName, father.PhoneNumber AS FatherPhoneNumber
                                            FROM Scholars s
                                            LEFT JOIN PickUpSchedule ps ON s.Id = ps.ScholarId
-                                           OUTER APPLY (SELECT TOP 1 FirstName, LastName, PhoneNumber FROM Parents WHERE ScholarId = s.Id AND Role = 'Mother') AS mother
-                                           OUTER APPLY (SELECT TOP 1 FirstName, LastName, PhoneNumber FROM Parents WHERE ScholarId = s.Id AND Role = 'Father') AS father;
+                                           LEFT JOIN Parents AS mother ON mother.ScholarId = s.Id AND mother.Role = 'Mother'
+                                           LEFT JOIN Parents AS father ON father.ScholarId = s.Id AND father.Role = 'Father';
                            """;
 
         var scholars = new List<Scholar>();
@@ -191,8 +195,8 @@ public class ScholarDataAccess : IScholarDataAccess
                                                   father.FirstName AS FatherFirstName, father.LastName AS FatherLastName, father.PhoneNumber AS FatherPhoneNumber
                                            FROM Scholars s
                                            LEFT JOIN PickUpSchedule ps ON s.Id = ps.ScholarId
-                                           OUTER APPLY (SELECT TOP 1 FirstName, LastName, PhoneNumber FROM Parents WHERE ScholarId = s.Id AND Role = 'Mother') AS mother
-                                           OUTER APPLY (SELECT TOP 1 FirstName, LastName, PhoneNumber FROM Parents WHERE ScholarId = s.Id AND Role = 'Father') AS father
+                                           LEFT JOIN Parents AS mother ON mother.ScholarId = s.Id AND mother.Role = 'Mother'
+                                           LEFT JOIN Parents AS father ON father.ScholarId = s.Id AND father.Role = 'Father'
                                            WHERE s.Id = @Id;
                            """;
 
@@ -300,7 +304,7 @@ public class ScholarDataAccess : IScholarDataAccess
                 await using var updateScheduleCmd = new SqlCommand(updateScheduleSql, connection, transaction);
                 AddParam(updateScheduleCmd, "@Id", SqlDbType.UniqueIdentifier, scholar.Id);
                 AddParam(updateScheduleCmd, "@ScheduleJson", SqlDbType.NVarChar,
-                    JsonSerializer.Serialize(scholar.PickUpSchedule), -1);
+                    JsonSerializer.Serialize(scholar.PickUpSchedule, JsonOptions), -1);
                 await updateScheduleCmd.ExecuteNonQueryAsync(cancellationToken);
                 _logger.LogInformation("Updated pickup schedule for scholar ID: {ScholarId}", scholar.Id);
             }
@@ -320,24 +324,24 @@ public class ScholarDataAccess : IScholarDataAccess
                 {
                     await using var deleteParentCmd = new SqlCommand(deleteParentSql, connection, transaction);
                     AddParam(deleteParentCmd, "@Id", SqlDbType.UniqueIdentifier, scholar.Id);
-                    AddParam(deleteParentCmd, "@Role", SqlDbType.NVarChar, role, 10);
+                    AddParam(deleteParentCmd, "@Role", SqlDbType.VarChar, role, 6);
                     await deleteParentCmd.ExecuteNonQueryAsync(cancellationToken);
                 }
                 else
                 {
                     await using var upsertParentCmd = new SqlCommand(upsertParentSql, connection, transaction);
                     AddParam(upsertParentCmd, "@Id", SqlDbType.UniqueIdentifier, scholar.Id);
-                    AddParam(upsertParentCmd, "@Role", SqlDbType.NVarChar, role, 10);
+                    AddParam(upsertParentCmd, "@Role", SqlDbType.VarChar, role, 6);
                     AddParam(upsertParentCmd, "@FirstName", SqlDbType.NVarChar, ToDbValue(firstName), 100);
                     AddParam(upsertParentCmd, "@LastName", SqlDbType.NVarChar, ToDbValue(lastName), 100);
-                    AddParam(upsertParentCmd, "@PhoneNumber", SqlDbType.NVarChar, ToDbValue(phoneNumber), 20);
+                    AddParam(upsertParentCmd, "@PhoneNumber", SqlDbType.VarChar, ToDbValue(phoneNumber), 20);
                     await upsertParentCmd.ExecuteNonQueryAsync(cancellationToken);
                 }
             }
 
             await transaction.CommitAsync(cancellationToken);
 
-            await LogAuditAsync(scholar.Id, "Edited", null, cancellationToken);
+            await LogAuditAsync(scholar.Id, AuditAction.Edited, null, cancellationToken);
 
             _logger.LogInformation("Updated scholar with ID: {ScholarId}", scholar.Id);
             return scholar;
@@ -381,7 +385,7 @@ public class ScholarDataAccess : IScholarDataAccess
                 return false; // Scholar not found
             }
 
-            await LogAuditAsync(id, "Deleted", null, cancellationToken);
+            await LogAuditAsync(id, AuditAction.Deleted, null, cancellationToken);
 
             _logger.LogInformation("Deleted scholar with ID: {ScholarId}", id);
             return true;
@@ -424,7 +428,7 @@ public class ScholarDataAccess : IScholarDataAccess
         await using var command = new SqlCommand(upsertAttendanceSql, connection);
 
         AddParam(command, "@ScholarId", SqlDbType.UniqueIdentifier, scholarId);
-        AddParam(command, "@AttendanceJson", SqlDbType.NVarChar, JsonSerializer.Serialize(attendanceRecords), -1);
+        AddParam(command, "@AttendanceJson", SqlDbType.NVarChar, JsonSerializer.Serialize(attendanceRecords, JsonOptions), -1);
 
         try
         {
@@ -470,8 +474,7 @@ public class ScholarDataAccess : IScholarDataAccess
             }
 
             var json = result.ToString();
-            return JsonSerializer.Deserialize<List<AttendanceRecord>>(json!,
-                new JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? new List<AttendanceRecord>();
+            return JsonSerializer.Deserialize<List<AttendanceRecord>>(json!, JsonOptions) ?? new List<AttendanceRecord>();
         }
         catch (JsonException ex)
         {
@@ -490,12 +493,12 @@ public class ScholarDataAccess : IScholarDataAccess
         }
     }
 
-    public async Task<IEnumerable<(Guid ScholarId, List<AttendanceRecord> Attendance)>> GetAllAttendanceAsync(
+    public async Task<List<ScholarAttendance>> GetAllAttendanceAsync(
         CancellationToken cancellationToken)
     {
         const string sql = "SELECT ScholarId, AttendanceJson FROM Attendance;";
 
-        var results = new List<(Guid, List<AttendanceRecord>)>();
+        var results = new List<ScholarAttendance>();
 
         await using var connection = new SqlConnection(_connectionString);
         await using var command = new SqlCommand(sql, connection);
@@ -512,9 +515,8 @@ public class ScholarDataAccess : IScholarDataAccess
 
                 try
                 {
-                    var records = JsonSerializer.Deserialize<List<AttendanceRecord>>(json,
-                        new JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? new List<AttendanceRecord>();
-                    results.Add((scholarId, records));
+                    var records = JsonSerializer.Deserialize<List<AttendanceRecord>>(json, JsonOptions) ?? new List<AttendanceRecord>();
+                    results.Add(new ScholarAttendance(scholarId, records));
                 }
                 catch (JsonException ex)
                 {
@@ -584,11 +586,11 @@ public class ScholarDataAccess : IScholarDataAccess
     // while writing the log must never turn an otherwise-successful request
     // into a 500 — it's swallowed and logged instead. Uses its own connection
     // rather than sharing the caller's, for the same reason.
-    private async Task LogAuditAsync(Guid scholarId, string action, string? details, CancellationToken cancellationToken)
+    private async Task LogAuditAsync(Guid scholarId, AuditAction action, string? details, CancellationToken cancellationToken)
     {
         const string sql = """
-                            INSERT INTO ScholarAuditLog (ScholarId, Action, Details, ActionDate)
-                            VALUES (@ScholarId, @Action, @Details, SYSUTCDATETIME());
+                            INSERT INTO ScholarAuditLog (ScholarId, Action, Details)
+                            VALUES (@ScholarId, @Action, @Details); -- ActionDate defaults to SYSUTCDATETIME()
                             """;
 
         try
@@ -597,7 +599,7 @@ public class ScholarDataAccess : IScholarDataAccess
             await using var command = new SqlCommand(sql, connection);
 
             AddParam(command, "@ScholarId", SqlDbType.UniqueIdentifier, scholarId);
-            AddParam(command, "@Action", SqlDbType.NVarChar, action, 50);
+            AddParam(command, "@Action", SqlDbType.VarChar, action.ToString(), 10);
             AddParam(command, "@Details", SqlDbType.NVarChar, ToDbValue(details), 500);
 
             await connection.OpenAsync(cancellationToken);
@@ -639,11 +641,11 @@ public class ScholarDataAccess : IScholarDataAccess
                 {
                     AuditId = reader.GetInt32(reader.GetOrdinal("AuditId")),
                     ScholarId = reader.GetGuid(reader.GetOrdinal("ScholarId")),
-                    Action = reader.GetString(reader.GetOrdinal("Action")),
+                    Action = Enum.Parse<AuditAction>(reader.GetString(reader.GetOrdinal("Action"))),
                     Details = reader.IsDBNull(reader.GetOrdinal("Details"))
                         ? null
                         : reader.GetString(reader.GetOrdinal("Details")),
-                    ActionDate = reader.GetDateTime(reader.GetOrdinal("ActionDate")),
+                    ActionDate = reader.GetDateTimeOffset(reader.GetOrdinal("ActionDate")),
                 });
             }
 
@@ -713,11 +715,11 @@ public class ScholarDataAccess : IScholarDataAccess
                     LastName = reader.IsDBNull(reader.GetOrdinal("LastName"))
                         ? null
                         : reader.GetString(reader.GetOrdinal("LastName")),
-                    Action = reader.GetString(reader.GetOrdinal("Action")),
+                    Action = Enum.Parse<AuditAction>(reader.GetString(reader.GetOrdinal("Action"))),
                     Details = reader.IsDBNull(reader.GetOrdinal("Details"))
                         ? null
                         : reader.GetString(reader.GetOrdinal("Details")),
-                    ActionDate = reader.GetDateTime(reader.GetOrdinal("ActionDate")),
+                    ActionDate = reader.GetDateTimeOffset(reader.GetOrdinal("ActionDate")),
                 });
             }
 
@@ -791,8 +793,7 @@ public class ScholarDataAccess : IScholarDataAccess
             if (reader.IsDBNull(reader.GetOrdinal("ScheduleJson"))) return scholar;
 
             var json = reader.GetString(reader.GetOrdinal("ScheduleJson"));
-            scholar.PickUpSchedule = JsonSerializer.Deserialize<Dictionary<string, string?>>(json,
-                new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+            scholar.PickUpSchedule = JsonSerializer.Deserialize<PickUpSchedule>(json, JsonOptions);
 
             return scholar;
         }

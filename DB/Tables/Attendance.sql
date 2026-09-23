@@ -8,6 +8,10 @@ CREATE TABLE [dbo].[Attendance]
     -- AttendanceJson to store the JSON representation of the attendance record
     [AttendanceJson] NVARCHAR(MAX) NOT NULL,
 
+    -- The DB can't check the records' shape (the API's AttendanceRecord does),
+    -- but it can at least refuse anything that isn't JSON.
+    CONSTRAINT [CK_Attendance_AttendanceJson_IsJson] CHECK (ISJSON([AttendanceJson]) = 1),
+
     -- Define ScholarId as the primary key for this table
     CONSTRAINT [PK_Attendance] PRIMARY KEY CLUSTERED ([ScholarId] ASC),
 

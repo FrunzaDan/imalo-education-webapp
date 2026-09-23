@@ -16,8 +16,7 @@ public interface IScholarDataAccess
     Task<bool> CreateOrUpdateAttendanceAsync(Guid scholarId, List<AttendanceRecord> attendanceRecords,
         CancellationToken cancellationToken);
     Task<List<AttendanceRecord>> GetAttendanceByScholarIdAsync(Guid scholarId, CancellationToken cancellationToken);
-    Task<IEnumerable<(Guid ScholarId, List<AttendanceRecord> Attendance)>> GetAllAttendanceAsync(
-        CancellationToken cancellationToken);
+    Task<List<ScholarAttendance>> GetAllAttendanceAsync(CancellationToken cancellationToken);
     Task<bool> DeleteAttendanceAsync(Guid scholarId, CancellationToken cancellationToken);
 
     Task<List<AuditLogEntry>> GetAuditLogByScholarIdAsync(Guid scholarId, CancellationToken cancellationToken);

@@ -2,7 +2,7 @@ import { AttendanceRecord } from '../../interfaces/attendance-record';
 import { Scholar } from '../../interfaces/scholar';
 import { ScholarAttendance } from '../../interfaces/scholar-attendance';
 import { School } from '../../interfaces/school';
-import { toDateOnly, weekdaysOfMonth } from '../../utils/weekday-dates';
+import { weekdaysOfMonth } from '../../utils/weekday-dates';
 
 export interface ChartPoint {
   key: string;
@@ -44,10 +44,9 @@ export function buildDailyPoints(
   const byDate = new Map<string, AttendanceRecord[]>();
 
   for (const record of flattenRecords(allAttendance)) {
-    const date = toDateOnly(record.date);
-    const bucket = byDate.get(date);
+    const bucket = byDate.get(record.date);
     if (bucket) bucket.push(record);
-    else byDate.set(date, [record]);
+    else byDate.set(record.date, [record]);
   }
 
   return dates.map((date) => ({
@@ -68,7 +67,7 @@ export function buildMonthlyPoints(
   const byMonth = new Map<number, AttendanceRecord[]>();
 
   for (const record of flattenRecords(allAttendance)) {
-    const [recordYear, recordMonth] = toDateOnly(record.date).split('-').map(Number);
+    const [recordYear, recordMonth] = record.date.split('-').map(Number);
     if (recordYear !== year) continue;
     const bucket = byMonth.get(recordMonth);
     if (bucket) bucket.push(record);

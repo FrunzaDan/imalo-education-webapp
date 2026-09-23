@@ -6,17 +6,17 @@
 -- day-keyed or weekday-keyed collection.
 CREATE TABLE [dbo].[Parents]
 (
-    [Id] UNIQUEIDENTIFIER NOT NULL DEFAULT NEWID(),
     [ScholarId] UNIQUEIDENTIFIER NOT NULL,
-    [Role] NVARCHAR(10) NOT NULL, -- 'Mother' or 'Father'
+    [Role] VARCHAR(6) NOT NULL, -- 'Mother' or 'Father' (ASCII, CHECK below)
     [FirstName] NVARCHAR(100) NULL,
     [LastName] NVARCHAR(100) NULL,
-    [PhoneNumber] NVARCHAR(20) NULL,
+    [PhoneNumber] VARCHAR(20) NULL, -- ASCII only: the API accepts ^\+?[0-9 ()-]{6,20}$
 
-    CONSTRAINT [PK_Parents] PRIMARY KEY CLUSTERED ([Id] ASC),
-
-    -- At most one Mother row and one Father row per scholar.
-    CONSTRAINT [UQ_Parents_ScholarId_Role] UNIQUE ([ScholarId], [Role]),
+    -- Natural key, no surrogate Id: every query addresses a parent by
+    -- (ScholarId, Role), and the key doubles as "at most one Mother row and one
+    -- Father row per scholar". Clustered on it, so a scholar's parents sit
+    -- together and the FK below needs no separate index.
+    CONSTRAINT [PK_Parents] PRIMARY KEY CLUSTERED ([ScholarId] ASC, [Role] ASC),
 
     CONSTRAINT [CK_Parents_Role] CHECK ([Role] IN ('Mother', 'Father')),
 

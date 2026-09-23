@@ -40,9 +40,6 @@ export function shiftMonth(month: string, delta: number): string {
   return toMonthString(new Date(year, monthNumber - 1 + delta, 1));
 }
 
-// Dates come back from the API as 'YYYY-MM-DD' or a full ISO timestamp.
-export const toDateOnly = (date: string): string => date.substring(0, 10);
-
 // Parses a 'YYYY-MM-DD' string into a local-time Date, day-for-day — unlike
 // `new Date(dateOnlyString)`, which the spec parses as UTC midnight and can
 // display a day early/late once formatted in a timezone behind/ahead of UTC.

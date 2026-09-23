@@ -7,7 +7,9 @@ import {
   schema,
   validate,
 } from '@angular/forms/signals';
+import { WEEK_DAYS, WeekDay } from '../../constants/week-days';
 import { Scholar } from '../../interfaces/scholar';
+import { parseDateOnly } from '../../utils/weekday-dates';
 
 // The form's own shape, kept separate from the API's Scholar: native controls
 // only emit strings (or number | null for <input type="number">), so ids and
@@ -29,13 +31,8 @@ export interface ScholarFormModel {
   pickUpSchedule: PickUpScheduleFormModel;
 }
 
-export interface PickUpScheduleFormModel {
-  monday: string;
-  tuesday: string;
-  wednesday: string;
-  thursday: string;
-  friday: string;
-}
+// '' for "no pickup" — a time input can't hold null (see toScholar).
+export type PickUpScheduleFormModel = Record<WeekDay, string>;
 
 export const emptyScholarForm = (): ScholarFormModel => ({
   firstName: '',
@@ -79,7 +76,9 @@ export const scholarFormSchema = schema<ScholarFormModel>((p) => {
   required(p.dateOfBirth, { message: 'Birth Date is required.' });
   validate(p.dateOfBirth, ({ value }) => {
     if (!value()) return undefined; // the required() rule above reports blanks
-    const date = new Date(value());
+    // parseDateOnly, not new Date(value()): the latter reads 'YYYY-MM-DD' as UTC
+    // midnight, so "today" could compare as the future (or past) by the UTC offset.
+    const date = parseDateOnly(value());
     return isNaN(date.getTime()) || date > new Date()
       ? { kind: 'invalidDate', message: 'Please enter a valid date (not in the future).' }
       : undefined;
@@ -113,13 +112,7 @@ export function toFormModel(scholar: Scholar): ScholarFormModel {
     fatherFirstName: scholar.fatherFirstName ?? '',
     fatherLastName: scholar.fatherLastName ?? '',
     fatherPhoneNumber: scholar.fatherPhoneNumber ?? '',
-    pickUpSchedule: {
-      monday: scholar.pickUpSchedule?.monday ?? '',
-      tuesday: scholar.pickUpSchedule?.tuesday ?? '',
-      wednesday: scholar.pickUpSchedule?.wednesday ?? '',
-      thursday: scholar.pickUpSchedule?.thursday ?? '',
-      friday: scholar.pickUpSchedule?.friday ?? '',
-    },
+    pickUpSchedule: mapWeekDays((day) => scholar.pickUpSchedule?.[day] ?? ''),
   };
 }
 
@@ -139,6 +132,10 @@ export function toScholar(model: ScholarFormModel, id: string | null): Scholar {
     fatherFirstName: model.fatherFirstName || null,
     fatherLastName: model.fatherLastName || null,
     fatherPhoneNumber: model.fatherPhoneNumber || null,
-    pickUpSchedule: { ...model.pickUpSchedule },
+    pickUpSchedule: mapWeekDays((day) => model.pickUpSchedule[day] || null),
   };
+}
+
+function mapWeekDays<T>(valueFor: (day: WeekDay) => T): Record<WeekDay, T> {
+  return Object.fromEntries(WEEK_DAYS.map((day) => [day, valueFor(day)])) as Record<WeekDay, T>;
 }

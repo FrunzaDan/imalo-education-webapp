@@ -255,6 +255,22 @@ public class ScholarsController : ControllerBase
         if (attendance == null)
             return BadRequest(new { message = "Attendance data is required." });
 
+        // One record per day: the list is stored as-is, so a repeated date would
+        // leave two conflicting records for the same day.
+        var duplicateDates = attendance
+            .GroupBy(r => r.Date)
+            .Where(g => g.Count() > 1)
+            .Select(g => g.Key)
+            .ToList();
+        if (duplicateDates.Count > 0)
+        {
+            return BadRequest(new
+            {
+                message = "Each date can appear only once.",
+                dates = duplicateDates
+            });
+        }
+
         var absentButSelected = attendance
             .Where(r => !r.Present && (r.LunchSelected || r.TransportSelected))
             .Select(r => r.Date)
@@ -346,19 +362,13 @@ public class ScholarsController : ControllerBase
     }
 
     [HttpGet("attendance")]
-    public async Task<ActionResult<IEnumerable<object>>> GetAllAttendance(CancellationToken cancellationToken)
+    public async Task<ActionResult<List<ScholarAttendance>>> GetAllAttendance(CancellationToken cancellationToken)
     {
         try
         {
-            var allAttendance = await _scholarDataAccess.GetAllAttendanceAsync(cancellationToken);
+            var result = await _scholarDataAccess.GetAllAttendanceAsync(cancellationToken);
 
-            var result = allAttendance.Select(a => new
-            {
-                ScholarId = a.ScholarId,
-                Attendance = a.Attendance
-            });
-
-            _logger.LogInformation("Retrieved attendance for {Count} scholars.", result.Count());
+            _logger.LogInformation("Retrieved attendance for {Count} scholars.", result.Count);
             return Ok(result);
         }
         catch (Exception ex)

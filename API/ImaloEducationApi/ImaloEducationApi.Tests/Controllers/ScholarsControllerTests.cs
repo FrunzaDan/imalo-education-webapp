@@ -256,7 +256,7 @@ public class ScholarsControllerTests
     {
         var (controller, dataAccess) = MakeController();
         var id = Guid.NewGuid();
-        var entries = new List<AuditLogEntry> { new() { ScholarId = id, Action = "Created" } };
+        var entries = new List<AuditLogEntry> { new() { ScholarId = id, Action = AuditAction.Created } };
         dataAccess.Setup(d => d.GetAuditLogByScholarIdAsync(id, It.IsAny<CancellationToken>())).ReturnsAsync(entries);
 
         var result = await controller.GetScholarAuditLog(id, CancellationToken.None);
@@ -337,7 +337,7 @@ public class ScholarsControllerTests
     {
         var (controller, dataAccess) = MakeController();
         var id = Guid.NewGuid();
-        var date = new DateTime(2024, 3, 4);
+        var date = new DateOnly(2024, 3, 4);
         var records = new List<AttendanceRecord>
         {
             new() { Date = date, Present = false, LunchSelected = true },
@@ -346,7 +346,7 @@ public class ScholarsControllerTests
         var result = await controller.CreateOrUpdateAttendance(id, records, CancellationToken.None);
 
         var badRequest = Assert.IsType<BadRequestObjectResult>(result);
-        var dates = Assert.IsAssignableFrom<IEnumerable<DateTime>>(
+        var dates = Assert.IsAssignableFrom<IEnumerable<DateOnly>>(
             badRequest.Value!.GetType().GetProperty("dates")!.GetValue(badRequest.Value));
         Assert.Equal([date], dates);
         dataAccess.Verify(
@@ -359,9 +359,9 @@ public class ScholarsControllerTests
     {
         var (controller, dataAccess) = MakeController();
         var id = Guid.NewGuid();
-        var okDate = new DateTime(2024, 3, 4);
-        var badDate1 = new DateTime(2024, 3, 5);
-        var badDate2 = new DateTime(2024, 3, 6);
+        var okDate = new DateOnly(2024, 3, 4);
+        var badDate1 = new DateOnly(2024, 3, 5);
+        var badDate2 = new DateOnly(2024, 3, 6);
         var records = new List<AttendanceRecord>
         {
             new() { Date = okDate, Present = true, LunchSelected = true },
@@ -372,9 +372,33 @@ public class ScholarsControllerTests
         var result = await controller.CreateOrUpdateAttendance(id, records, CancellationToken.None);
 
         var badRequest = Assert.IsType<BadRequestObjectResult>(result);
-        var dates = Assert.IsAssignableFrom<IEnumerable<DateTime>>(
+        var dates = Assert.IsAssignableFrom<IEnumerable<DateOnly>>(
             badRequest.Value!.GetType().GetProperty("dates")!.GetValue(badRequest.Value));
         Assert.Equal([badDate1, badDate2], dates);
+        dataAccess.Verify(
+            d => d.CreateOrUpdateAttendanceAsync(It.IsAny<Guid>(), It.IsAny<List<AttendanceRecord>>(),
+                It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task CreateOrUpdateAttendance_DuplicateDates_ReturnsBadRequestListingThem()
+    {
+        var (controller, dataAccess) = MakeController();
+        var id = Guid.NewGuid();
+        var repeated = new DateOnly(2024, 3, 4);
+        var records = new List<AttendanceRecord>
+        {
+            new() { Date = repeated },
+            new() { Date = new DateOnly(2024, 3, 5) },
+            new() { Date = repeated },
+        };
+
+        var result = await controller.CreateOrUpdateAttendance(id, records, CancellationToken.None);
+
+        var badRequest = Assert.IsType<BadRequestObjectResult>(result);
+        var dates = Assert.IsAssignableFrom<IEnumerable<DateOnly>>(
+            badRequest.Value!.GetType().GetProperty("dates")!.GetValue(badRequest.Value));
+        Assert.Equal([repeated], dates);
         dataAccess.Verify(
             d => d.CreateOrUpdateAttendanceAsync(It.IsAny<Guid>(), It.IsAny<List<AttendanceRecord>>(),
                 It.IsAny<CancellationToken>()), Times.Never);
@@ -387,7 +411,7 @@ public class ScholarsControllerTests
         var id = Guid.NewGuid();
         var records = new List<AttendanceRecord>
         {
-            new() { Date = DateTime.UtcNow, Present = false, TransportSelected = true },
+            new() { Date = new DateOnly(2024, 3, 4), Present = false, TransportSelected = true },
         };
 
         var result = await controller.CreateOrUpdateAttendance(id, records, CancellationToken.None);
@@ -402,7 +426,7 @@ public class ScholarsControllerTests
         var id = Guid.NewGuid();
         var records = new List<AttendanceRecord>
         {
-            new() { Date = DateTime.UtcNow, Present = false, LunchSelected = false, TransportSelected = false },
+            new() { Date = new DateOnly(2024, 3, 4), Present = false, LunchSelected = false, TransportSelected = false },
         };
         dataAccess
             .Setup(d => d.CreateOrUpdateAttendanceAsync(id, records, It.IsAny<CancellationToken>()))
@@ -418,7 +442,7 @@ public class ScholarsControllerTests
     {
         var (controller, dataAccess) = MakeController();
         var id = Guid.NewGuid();
-        var records = new List<AttendanceRecord> { new() { Date = DateTime.UtcNow, LunchCost = 10m } };
+        var records = new List<AttendanceRecord> { new() { Date = new DateOnly(2024, 3, 4), LunchCost = 10m } };
         dataAccess
             .Setup(d => d.CreateOrUpdateAttendanceAsync(id, records, It.IsAny<CancellationToken>()))
             .ReturnsAsync(true);
@@ -507,15 +531,15 @@ public class ScholarsControllerTests
     {
         var (controller, dataAccess) = MakeController();
         var scholarId = Guid.NewGuid();
-        var records = new List<AttendanceRecord> { new() { Date = DateTime.UtcNow } };
+        var records = new List<AttendanceRecord> { new() { Date = new DateOnly(2024, 3, 4) } };
         dataAccess.Setup(d => d.GetAllAttendanceAsync(It.IsAny<CancellationToken>()))
-            .ReturnsAsync([(scholarId, records)]);
+            .ReturnsAsync([new ScholarAttendance(scholarId, records)]);
 
         var result = await controller.GetAllAttendance(CancellationToken.None);
 
         var ok = Assert.IsType<OkObjectResult>(result.Result);
-        var items = Assert.IsAssignableFrom<IEnumerable<object>>(ok.Value).ToList();
-        Assert.Single(items);
+        var item = Assert.Single(Assert.IsAssignableFrom<IEnumerable<ScholarAttendance>>(ok.Value));
+        Assert.Equal(scholarId, item.ScholarId);
     }
 
     [Fact]

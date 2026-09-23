@@ -34,7 +34,7 @@ const EXISTING: Scholar = {
   fatherFirstName: null,
   fatherLastName: null,
   fatherPhoneNumber: null,
-  pickUpSchedule: { monday: '12:00', tuesday: null },
+  pickUpSchedule: { monday: '12:00', tuesday: null, wednesday: null, thursday: null, friday: null },
 };
 
 interface SetupOptions {
@@ -231,7 +231,16 @@ describe('ScholarFormComponent', () => {
       await fixture.whenStable();
 
       expect(createScholar).not.toHaveBeenCalled();
-      expect((updateScholar.mock.calls as unknown as Scholar[][])[0][0].id).toBe('scholar-1');
+      const sent = (updateScholar.mock.calls as unknown as Scholar[][])[0][0];
+      expect(sent.id).toBe('scholar-1');
+      // Blank time inputs go out as null ("no pickup"), not ''.
+      expect(sent.pickUpSchedule).toEqual({
+        monday: '12:00',
+        tuesday: null,
+        wednesday: null,
+        thursday: null,
+        friday: null,
+      });
       expect(notificationService.show).toHaveBeenCalledWith('Scholar updated successfully!');
     });
   });

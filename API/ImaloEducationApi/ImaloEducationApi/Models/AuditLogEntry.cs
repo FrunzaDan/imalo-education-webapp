@@ -6,28 +6,20 @@ public class AuditLogEntry
 
     public Guid ScholarId { get; set; }
 
-    public string Action { get; set; } = string.Empty;
+    public AuditAction Action { get; set; }
 
     public string? Details { get; set; }
 
-    public DateTime ActionDate { get; set; }
+    // UTC, with its offset — serializes as "...+00:00", so the browser converts
+    // it to local time instead of mistaking UTC for local.
+    public DateTimeOffset ActionDate { get; set; }
 }
 
-public class GlobalAuditLogEntry
+public class GlobalAuditLogEntry : AuditLogEntry
 {
-    public int AuditId { get; set; }
-
-    public Guid ScholarId { get; set; }
-
     // Null when the scholar no longer exists (GetAllAuditLogAsync LEFT JOINs
     // Scholars, since audit history outlives a deleted scholar).
     public string? FirstName { get; set; }
 
     public string? LastName { get; set; }
-
-    public string Action { get; set; } = string.Empty;
-
-    public string? Details { get; set; }
-
-    public DateTime ActionDate { get; set; }
 }

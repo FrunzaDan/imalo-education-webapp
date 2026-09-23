@@ -8,11 +8,17 @@ CREATE TABLE [dbo].[ScholarAuditLog]
 (
     [AuditId] INT IDENTITY (1, 1) NOT NULL,
     [ScholarId] UNIQUEIDENTIFIER NOT NULL,
-    [Action] NVARCHAR (50) NOT NULL,
+    [Action] VARCHAR (10) NOT NULL, -- API: AuditAction enum, stored by name
     [Details] NVARCHAR (500) NULL,
-    [ActionDate] DATETIME2 NOT NULL,
+    -- DATETIMEOFFSET, not DATETIME2: the value carries its own UTC offset, so it
+    -- reaches the browser as "...+00:00" and is displayed in local time. A bare
+    -- DATETIME2 went out with no offset and the browser read UTC as local time.
+    [ActionDate] DATETIMEOFFSET (3) NOT NULL
+        CONSTRAINT [DF_ScholarAuditLog_ActionDate] DEFAULT SYSUTCDATETIME(),
 
-    CONSTRAINT [PK_ScholarAuditLog] PRIMARY KEY CLUSTERED ([AuditId] ASC)
+    CONSTRAINT [PK_ScholarAuditLog] PRIMARY KEY CLUSTERED ([AuditId] ASC),
+
+    CONSTRAINT [CK_ScholarAuditLog_Action] CHECK ([Action] IN ('Created', 'Edited', 'Deleted'))
 );
 GO
 

@@ -1,7 +1,7 @@
 import { AttendanceRecord } from '../../interfaces/attendance-record';
 import { Scholar } from '../../interfaces/scholar';
 import { ScholarAttendance } from '../../interfaces/scholar-attendance';
-import { toDateOnly, weekdaysOfMonth } from '../../utils/weekday-dates';
+import { weekdaysOfMonth } from '../../utils/weekday-dates';
 
 // A day's status for one scholar, or null when there is no record for that
 // day at all (never marked — same as a marked-absent day, but rendered the
@@ -43,7 +43,7 @@ export function buildScholarRows(
 }
 
 function indexByDate(records: AttendanceRecord[]): Map<string, AttendanceRecord> {
-  return new Map(records.map((record) => [toDateOnly(record.date), record]));
+  return new Map(records.map((record) => [record.date, record]));
 }
 
 function toCell(record: AttendanceRecord | undefined): AttendanceCell | null {

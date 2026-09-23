@@ -24,8 +24,6 @@ import {
   attendanceFormSchema,
   toAttendanceDays,
   toAttendanceRecords,
-  toDateOnly,
-  toMonthString,
   weekdaysOfMonth,
   withWeekdayStubs,
 } from './attendance-form';
@@ -99,7 +97,7 @@ export class AttendancePerScholarComponent implements OnInit, OnDestroy {
   readonly visibleIndexes = computed(() => {
     const wanted = new Set(weekdaysOfMonth(this.selectedMonth()));
     return this.days()
-      .map((day, index) => ({ date: toDateOnly(day.date), index }))
+      .map((day, index) => ({ date: day.date, index }))
       .filter((entry) => wanted.has(entry.date))
       .sort((a, b) => a.date.localeCompare(b.date))
       .map((entry) => entry.index);
@@ -137,7 +135,6 @@ export class AttendancePerScholarComponent implements OnInit, OnDestroy {
   isSaving = signal(false);
   hasUnsavedChanges = signal(false);
 
-  protected readonly toDateOnly = toDateOnly;
 
   ngOnInit(): void {
     const scholarId = this.id();
@@ -210,10 +207,9 @@ export class AttendancePerScholarComponent implements OnInit, OnDestroy {
     if (records.length === 0) {
       return DEFAULT_MONTH;
     }
-    const latest = records
-      .map((r) => new Date(r.date))
-      .sort((a, b) => b.getTime() - a.getTime())[0];
-    return toMonthString(latest);
+    // 'YYYY-MM-DD' sorts chronologically as a plain string.
+    const latest = records.map((r) => r.date).sort().at(-1)!;
+    return latest.substring(0, 7);
   }
 
   // Adds a day to what Save sends, the first time it's marked. Once persisted
@@ -329,7 +325,7 @@ export class AttendancePerScholarComponent implements OnInit, OnDestroy {
     this.csvExportService.export(
       `attendance_${scholarName}_${this.selectedMonth()}`,
       [
-        { header: 'Date', value: (r: AttendanceDay) => toDateOnly(r.date) },
+        { header: 'Date', value: (r: AttendanceDay) => r.date },
         {
           header: 'Present',
           value: (r: AttendanceDay) => (r.present ? 'Yes' : 'No'),

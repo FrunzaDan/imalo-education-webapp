@@ -15,7 +15,7 @@ public class ScholarModelValidationTests
         DateOfBirth = DateOnly.FromDateTime(DateTime.UtcNow).AddYears(-8),
         SchoolId = 1,
         Grade = 3,
-        PickUpSchedule = new Dictionary<string, string?> { ["monday"] = "13:00" },
+        PickUpSchedule = new PickUpSchedule { Monday = new TimeOnly(13, 0) },
     };
 
     private static bool TryValidate(Scholar scholar, out List<ValidationResult> results)
@@ -86,16 +86,6 @@ public class ScholarModelValidationTests
         // attributes (Required/Range/...) do, so this asserts on message content instead.
         Assert.False(TryValidate(scholar, out var results));
         Assert.Contains(results, r => r.ErrorMessage == "Date of birth cannot be in the future.");
-    }
-
-    [Fact]
-    public void InvalidPickUpScheduleDay_FailsValidation()
-    {
-        var scholar = ValidScholar();
-        scholar.PickUpSchedule = new Dictionary<string, string?> { ["sunday"] = "13:00" };
-
-        Assert.False(TryValidate(scholar, out var results));
-        Assert.Contains(results, r => r.ErrorMessage != null && r.ErrorMessage.Contains("Invalid day in schedule"));
     }
 
     [Fact]

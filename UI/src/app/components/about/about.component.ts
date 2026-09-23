@@ -8,7 +8,7 @@ import { Scholar } from '../../interfaces/scholar';
 import { School } from '../../interfaces/school';
 import { AttendanceRecord } from '../../interfaces/attendance-record';
 import { PickUpSchedule } from '../../interfaces/pick-up-schedule';
-import { WeekDays } from '../../constants/week-days';
+import { WEEK_DAYS } from '../../constants/week-days';
 import { getWeekdayDatesInMonth } from '../../utils/weekday-dates';
 
 const TEST_SCHOLAR_COUNT = 20;
@@ -99,8 +99,6 @@ const LAST_NAMES = [
   'Müller',
 ];
 
-const WEEKDAY_KEYS: (keyof PickUpSchedule)[] = Object.values(WeekDays);
-
 // Matches GanttChartComponent's own slot window (11:00-13:45, 15-minute
 // steps), so randomly-generated schedules actually land on a slot and show
 // up highlighted on the pickup-time chart instead of just sitting in data.
@@ -157,12 +155,10 @@ function randomBirthdate(): string {
 }
 
 function randomPickUpSchedule(): PickUpSchedule {
-  const schedule: PickUpSchedule = {};
-  for (const day of WEEKDAY_KEYS) {
-    // Every test scholar has a pickup time every weekday.
-    schedule[day] = pick(PICKUP_TIME_SLOTS);
-  }
-  return schedule;
+  // Every test scholar has a pickup time every weekday.
+  return Object.fromEntries(
+    WEEK_DAYS.map((day) => [day, pick(PICKUP_TIME_SLOTS)]),
+  ) as PickUpSchedule;
 }
 
 // A plausible-looking Romanian mobile number.

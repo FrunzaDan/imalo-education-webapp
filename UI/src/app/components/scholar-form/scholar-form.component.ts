@@ -13,7 +13,7 @@ import { rxResource, toSignal } from '@angular/core/rxjs-interop';
 import { FormField, FormRoot, form } from '@angular/forms/signals';
 import { Router, RouterModule } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
-import { WeekDays } from '../../constants/week-days';
+import { WEEK_DAYS } from '../../constants/week-days';
 import { ScholarsService } from '../../services/scholars.service';
 import { SchoolsService } from '../../services/schools.service';
 import { NotificationService } from '../../services/notification.service';
@@ -48,7 +48,7 @@ export class ScholarFormComponent {
 
   // SchoolsService swallows errors into [], so this never errors.
   readonly schools = toSignal(this.schoolsService.getSchools(), { initialValue: [] });
-  readonly weekDays = Object.values(WeekDays);
+  readonly weekDays = WEEK_DAYS;
 
   // Only loads in edit mode (params() is undefined on the create route, which
   // leaves the resource idle).

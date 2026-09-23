@@ -8,7 +8,6 @@ import { AttendanceService } from '../../services/attendance.service';
 import { CsvExportService } from '../../services/csv-export.service';
 import { NotificationService } from '../../services/notification.service';
 import { DEFAULT_MONTH, getWeekdayDatesInMonth } from '../../utils/weekday-dates';
-import { toDateOnly } from './attendance-form';
 import type { Scholar } from '../../interfaces/scholar';
 import type { School } from '../../interfaces/school';
 import type { AttendanceRecord } from '../../interfaces/attendance-record';
@@ -125,7 +124,7 @@ const BOX_ORDER: Box[] = ['present', 'lunch', 'transport', 'both'];
 type Setup = ReturnType<typeof setup>;
 
 function checkbox({ fixture, component }: Setup, date: string, box: Box): HTMLInputElement {
-  const index = component.dayRows().findIndex((r) => toDateOnly(r.date) === date);
+  const index = component.dayRows().findIndex((r) => r.date === date);
   const rowEl = fixture.nativeElement.querySelectorAll('.attendance-table__row')[index];
   return rowEl.querySelectorAll('input[type="checkbox"]')[BOX_ORDER.indexOf(box)];
 }

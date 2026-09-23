@@ -8,6 +8,10 @@ CREATE TABLE [dbo].[PickUpSchedule]
     -- ScheduleJson to store the JSON representation of the pickup schedule
     [ScheduleJson] NVARCHAR(MAX) NOT NULL,
 
+    -- The DB can't check the schedule's shape (that's Scholar.PickUpSchedule's
+    -- job in the API), but it can at least refuse anything that isn't JSON.
+    CONSTRAINT [CK_PickUpSchedule_ScheduleJson_IsJson] CHECK (ISJSON([ScheduleJson]) = 1),
+
     -- Define ScholarId as the primary key for this table
     CONSTRAINT [PK_PickUpSchedule] PRIMARY KEY CLUSTERED ([ScholarId] ASC),
 

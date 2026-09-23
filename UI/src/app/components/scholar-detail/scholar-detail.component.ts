@@ -7,8 +7,7 @@ import { SchoolsService } from '../../services/schools.service';
 import { NotificationService } from '../../services/notification.service';
 import { ConfirmModalService } from '../../services/confirm-modal.service';
 import { AuditLogService } from '../../services/audit-log.service';
-import { WeekDays } from '../../constants/week-days';
-import { PickUpSchedule } from '../../interfaces/pick-up-schedule';
+import { WEEK_DAYS } from '../../constants/week-days';
 
 @Component({
   selector: 'app-scholar-detail',
@@ -52,7 +51,7 @@ export class ScholarDetailComponent {
   readonly auditLogLoading = this.auditLogService.loading;
   readonly auditLogError = this.auditLogService.error;
 
-  daysOfWeek: (keyof PickUpSchedule)[] = Object.values(WeekDays);
+  readonly daysOfWeek = WEEK_DAYS;
 
   constructor() {
     effect(() => {

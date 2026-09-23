@@ -5,7 +5,9 @@
 -- and conditional table creation during deployment.
 CREATE TABLE [dbo].[Scholars]
 (
-    [Id] UNIQUEIDENTIFIER NOT NULL DEFAULT NEWID(), -- Primary key, automatically generated GUID
+    -- Sequential, not NEWID(): Id is the clustered key, and random GUIDs insert
+    -- at random points in the index (page splits, fragmentation).
+    [Id] UNIQUEIDENTIFIER NOT NULL CONSTRAINT [DF_Scholars_Id] DEFAULT NEWSEQUENTIALID(),
     [FirstName] NVARCHAR(100) NOT NULL,
     [LastName] NVARCHAR(100) NOT NULL,
     [DateOfBirth] DATE NOT NULL, -- date-only, never a time component (API: Scholar.DateOfBirth is DateOnly)

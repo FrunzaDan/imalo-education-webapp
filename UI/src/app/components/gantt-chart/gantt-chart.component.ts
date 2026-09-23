@@ -5,10 +5,9 @@ import { Scholar } from '../../interfaces/scholar';
 import { School } from '../../interfaces/school';
 import { ScholarsService } from '../../services/scholars.service';
 import { SchoolsService } from '../../services/schools.service';
-import { WeekDays } from '../../constants/week-days';
+import { WEEK_DAYS, WeekDay } from '../../constants/week-days';
 import { forkJoin } from 'rxjs';
 import { map } from 'rxjs/operators';
-import { PickUpSchedule } from '../../interfaces/pick-up-schedule';
 import { contrastTextColor } from '../../utils/contrast-color';
 
 interface GanttCell {
@@ -29,9 +28,7 @@ export class GanttChartComponent implements OnInit {
   scholars = signal<Scholar[]>([]);
   schools = new Map<string, School>();
   timeSlots: TimeSlot[] = [];
-  weekDays: (keyof PickUpSchedule)[] = Object.values(
-    WeekDays,
-  ) as (keyof PickUpSchedule)[];
+  readonly weekDays = WEEK_DAYS;
   private readonly SLOT_DURATION = 10;
   private static readonly EMPTY_STYLE: Record<string, string> = {};
   private static readonly UNKNOWN_SCHOOL_COLOR = '#a0a0a0';
@@ -53,7 +50,7 @@ export class GanttChartComponent implements OnInit {
 
       for (const day of this.weekDays) {
         const pickupTime = scholar.pickUpSchedule[day];
-        if (!pickupTime || typeof pickupTime !== 'string') continue;
+        if (!pickupTime) continue;
 
         const slot = slotsByMinutes.get(this.timeToMinutes(pickupTime));
         if (!slot) continue;
@@ -145,7 +142,7 @@ export class GanttChartComponent implements OnInit {
 
   private cellKey(
     scholarId: string,
-    day: keyof PickUpSchedule,
+    day: WeekDay,
     slotStart: string,
   ): string {
     return `${scholarId}|${day}|${slotStart}`;
@@ -154,7 +151,7 @@ export class GanttChartComponent implements OnInit {
   private getCell(
     scholar: Scholar,
     slot: TimeSlot,
-    day: keyof PickUpSchedule,
+    day: WeekDay,
   ): GanttCell | undefined {
     return this.cellsByKey().get(this.cellKey(scholar.id, day, slot.start));
   }
@@ -162,7 +159,7 @@ export class GanttChartComponent implements OnInit {
   getSlotStyle(
     scholar: Scholar,
     slot: TimeSlot,
-    day: keyof PickUpSchedule,
+    day: WeekDay,
   ): Record<string, string> {
     return this.getCell(scholar, slot, day)?.style ?? GanttChartComponent.EMPTY_STYLE;
   }
@@ -170,7 +167,7 @@ export class GanttChartComponent implements OnInit {
   getTimeRange(
     scholar: Scholar,
     slot: TimeSlot,
-    day: keyof PickUpSchedule,
+    day: WeekDay,
   ): string {
     return this.getCell(scholar, slot, day)?.label ?? '';
   }
@@ -178,7 +175,7 @@ export class GanttChartComponent implements OnInit {
   isTimeOccupied(
     scholar: Scholar,
     slot: TimeSlot,
-    day: keyof PickUpSchedule,
+    day: WeekDay,
   ): boolean {
     return this.getCell(scholar, slot, day) !== undefined;
   }

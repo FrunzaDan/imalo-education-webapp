@@ -1,8 +1,8 @@
 import { applyEach, disabled, schema } from '@angular/forms/signals';
 import { AttendanceRecord } from '../../interfaces/attendance-record';
-import { toDateOnly, toMonthString, weekdaysOfMonth } from '../../utils/weekday-dates';
+import { toMonthString, weekdaysOfMonth } from '../../utils/weekday-dates';
 
-export { toDateOnly, toMonthString, weekdaysOfMonth };
+export { toMonthString, weekdaysOfMonth };
 
 // One entry per day the attendance form knows about: every record loaded from
 // the API, plus a stub for each weekday of every month the user has looked at.
@@ -49,7 +49,7 @@ export function toAttendanceRecords(days: AttendanceDay[]): AttendanceRecord[] {
 // Returns `days` plus a not-yet-persisted stub for each weekday of `month` that
 // has no entry yet (or `days` itself, unchanged, if none are missing).
 export function withWeekdayStubs(days: AttendanceDay[], month: string): AttendanceDay[] {
-  const known = new Set(days.map((day) => toDateOnly(day.date)));
+  const known = new Set(days.map((day) => day.date));
   const stubs = weekdaysOfMonth(month)
     .filter((date) => !known.has(date))
     .map(

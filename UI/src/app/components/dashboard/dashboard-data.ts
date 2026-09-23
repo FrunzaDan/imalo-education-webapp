@@ -1,7 +1,6 @@
-import { PickUpSchedule } from '../../interfaces/pick-up-schedule';
 import { Scholar } from '../../interfaces/scholar';
 import { School } from '../../interfaces/school';
-import { WeekDays } from '../../constants/week-days';
+import { WEEK_DAYS, WeekDay } from '../../constants/week-days';
 
 export interface TodayPickup {
   scholarId: string;
@@ -11,19 +10,10 @@ export interface TodayPickup {
   schoolColor: string;
 }
 
-const WEEKDAY_BY_JS_DAY: Record<number, keyof PickUpSchedule | null> = {
-  0: null, // Sunday
-  1: WeekDays.MONDAY,
-  2: WeekDays.TUESDAY,
-  3: WeekDays.WEDNESDAY,
-  4: WeekDays.THURSDAY,
-  5: WeekDays.FRIDAY,
-  6: null, // Saturday
-};
-
 // null on a weekend — there is no pickup-schedule day for it.
-export function todayWeekdayKey(today: Date): keyof PickUpSchedule | null {
-  return WEEKDAY_BY_JS_DAY[today.getDay()];
+export function todayWeekdayKey(today: Date): WeekDay | null {
+  // getDay(): 0 = Sunday … 6 = Saturday; WEEK_DAYS starts at Monday.
+  return WEEK_DAYS[today.getDay() - 1] ?? null;
 }
 
 // Every scholar with a pickup time today, earliest first.
