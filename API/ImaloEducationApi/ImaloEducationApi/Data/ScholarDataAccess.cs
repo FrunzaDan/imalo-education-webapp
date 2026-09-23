@@ -74,11 +74,7 @@ public class ScholarDataAccess : IScholarDataAccess
 
             var insertedIdObj = await insertScholarCmd.ExecuteScalarAsync(cancellationToken);
             if (insertedIdObj is not Guid insertedId)
-            {
-                await transaction.RollbackAsync(cancellationToken);
-                _logger.LogError("Failed to get the inserted scholar ID.");
                 throw new InvalidOperationException("Scholar was inserted, but no ID was returned.");
-            }
 
             scholar.ScholarId = insertedId;
             _logger.LogInformation("Scholar created with ID: {ScholarId}", insertedId);
@@ -124,15 +120,10 @@ public class ScholarDataAccess : IScholarDataAccess
 
             return scholar;
         }
-        catch (SqlException ex)
+        catch
         {
-            await transaction.RollbackAsync(cancellationToken);
-            _logger.LogError(ex, "SQL error occurred while inserting scholar or pickup schedule.");
-            throw new Exception("A database error occurred while creating the scholar.", ex);
-        }
-        catch (Exception)
-        {
-            await transaction.RollbackAsync(cancellationToken);
+            // CancellationToken.None: the rollback must run even when the request was cancelled.
+            await transaction.RollbackAsync(CancellationToken.None);
             throw;
         }
     }
@@ -158,36 +149,18 @@ public class ScholarDataAccess : IScholarDataAccess
         await using var connection = new SqlConnection(_connectionString);
         await using var command = new SqlCommand(sql, connection);
 
-        try
-        {
-            await connection.OpenAsync(cancellationToken);
-            await using var reader = await command.ExecuteReaderAsync(cancellationToken);
+        await connection.OpenAsync(cancellationToken);
+        await using var reader = await command.ExecuteReaderAsync(cancellationToken);
 
-            while (await reader.ReadAsync(cancellationToken))
-            {
-                var scholar = TryMapScholarFromReader(reader);
-                if (scholar != null)
-                    scholars.Add(scholar);
-            }
+        while (await reader.ReadAsync(cancellationToken))
+        {
+            var scholar = TryMapScholarFromReader(reader);
+            if (scholar != null)
+                scholars.Add(scholar);
+        }
 
-            _logger.LogInformation("Fetched {Count} scholars.", scholars.Count);
-            return scholars;
-        }
-        catch (JsonException ex)
-        {
-            _logger.LogError(ex, "Error parsing JSON for pickup schedule.");
-            throw new Exception("Failed to parse pickup schedule data from the database.", ex);
-        }
-        catch (SqlException ex)
-        {
-            _logger.LogError(ex, "Database error occurred while fetching scholars.");
-            throw;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Unexpected error fetching scholars.");
-            throw;
-        }
+        _logger.LogInformation("Fetched {Count} scholars.", scholars.Count);
+        return scholars;
     }
 
     public async Task<Scholar?> GetScholarByIdAsync(Guid scholarId, CancellationToken cancellationToken)
@@ -211,36 +184,18 @@ public class ScholarDataAccess : IScholarDataAccess
         await using var command = new SqlCommand(sql, connection);
         AddParam(command, "@ScholarId", SqlDbType.UniqueIdentifier, scholarId);
 
-        try
-        {
-            await connection.OpenAsync(cancellationToken);
-            await using var reader = await command.ExecuteReaderAsync(cancellationToken);
+        await connection.OpenAsync(cancellationToken);
+        await using var reader = await command.ExecuteReaderAsync(cancellationToken);
 
-            if (await reader.ReadAsync(cancellationToken))
-            {
-                var scholar = TryMapScholarFromReader(reader);
-                _logger.LogInformation("Retrieved scholar with ID: {ScholarId}", scholarId);
-                return scholar;
-            }
+        if (await reader.ReadAsync(cancellationToken))
+        {
+            var scholar = TryMapScholarFromReader(reader);
+            _logger.LogInformation("Retrieved scholar with ID: {ScholarId}", scholarId);
+            return scholar;
+        }
 
-            _logger.LogWarning("No scholar found with ID: {ScholarId}", scholarId);
-            return null;
-        }
-        catch (JsonException ex)
-        {
-            _logger.LogError(ex, "JSON error while fetching scholar ID {ScholarId}.", scholarId);
-            throw new Exception("Corrupted pickup schedule data.", ex);
-        }
-        catch (SqlException ex)
-        {
-            _logger.LogError(ex, "SQL error while fetching scholar by ID {ScholarId}.", scholarId);
-            throw;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Unexpected error retrieving scholar by ID: {ScholarId}", scholarId);
-            throw;
-        }
+        _logger.LogWarning("No scholar found with ID: {ScholarId}", scholarId);
+        return null;
     }
 
     public async Task<Scholar?> UpdateScholarAsync(Scholar scholar, CancellationToken cancellationToken)
@@ -353,15 +308,10 @@ public class ScholarDataAccess : IScholarDataAccess
             _logger.LogInformation("Updated scholar with ID: {ScholarId}", scholar.ScholarId);
             return scholar;
         }
-        catch (SqlException ex)
+        catch
         {
-            await transaction.RollbackAsync(cancellationToken);
-            _logger.LogError(ex, "SQL error occurred while updating scholar with ID: {ScholarId}", scholar.ScholarId);
-            throw;
-        }
-        catch (Exception)
-        {
-            await transaction.RollbackAsync(cancellationToken);
+            // CancellationToken.None: the rollback must run even when the request was cancelled.
+            await transaction.RollbackAsync(CancellationToken.None);
             throw;
         }
     }
@@ -380,40 +330,27 @@ public class ScholarDataAccess : IScholarDataAccess
         await using var command = new SqlCommand(deleteScholarSql, connection);
         AddParam(command, "@ScholarId", SqlDbType.UniqueIdentifier, scholarId);
 
-        try
+        await connection.OpenAsync(cancellationToken);
+
+        var rowsAffected = await command.ExecuteNonQueryAsync(cancellationToken);
+
+        if (rowsAffected == 0)
         {
-            await connection.OpenAsync(cancellationToken);
-
-            var rowsAffected = await command.ExecuteNonQueryAsync(cancellationToken);
-
-            if (rowsAffected == 0)
-            {
-                _logger.LogWarning("No scholar found to delete with ID: {ScholarId}", scholarId);
-                return false; // Scholar not found
-            }
-
-            await LogAuditAsync(scholarId, AuditAction.Deleted, null, cancellationToken);
-
-            _logger.LogInformation("Deleted scholar with ID: {ScholarId}", scholarId);
-            return true;
+            _logger.LogWarning("No scholar found to delete with ID: {ScholarId}", scholarId);
+            return false; // Scholar not found
         }
-        catch (SqlException ex)
-        {
-            _logger.LogError(ex, "SQL error occurred while deleting scholar with ID: {ScholarId}", scholarId);
-            throw;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Unexpected error deleting scholar with ID: {ScholarId}", scholarId);
-            throw;
-        }
+
+        await LogAuditAsync(scholarId, AuditAction.Deleted, null, cancellationToken);
+
+        _logger.LogInformation("Deleted scholar with ID: {ScholarId}", scholarId);
+        return true;
     }
 
     // -----------------------------
     // Attendance management methods
     // -----------------------------
 
-    public async Task<bool> CreateOrUpdateAttendanceAsync(Guid scholarId, List<AttendanceRecord> attendanceRecords,
+    public async Task CreateOrUpdateAttendanceAsync(Guid scholarId, List<AttendanceRecord> attendanceRecords,
         CancellationToken cancellationToken)
     {
         if (scholarId == Guid.Empty)
@@ -437,24 +374,10 @@ public class ScholarDataAccess : IScholarDataAccess
         AddParam(command, "@ScholarId", SqlDbType.UniqueIdentifier, scholarId);
         AddParam(command, "@AttendanceJson", SqlDbType.NVarChar, JsonSerializer.Serialize(attendanceRecords, JsonOptions), -1);
 
-        try
-        {
-            await connection.OpenAsync(cancellationToken);
-            await command.ExecuteNonQueryAsync(cancellationToken);
+        await connection.OpenAsync(cancellationToken);
+        await command.ExecuteNonQueryAsync(cancellationToken);
 
-            _logger.LogInformation("Attendance record upserted for scholar ID: {ScholarId}", scholarId);
-            return true;
-        }
-        catch (SqlException ex)
-        {
-            _logger.LogError(ex, "SQL error while creating or updating attendance for scholar ID: {ScholarId}", scholarId);
-            throw;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Unexpected error while creating/updating attendance for scholar ID: {ScholarId}", scholarId);
-            throw;
-        }
+        _logger.LogInformation("Attendance record upserted for scholar ID: {ScholarId}", scholarId);
     }
 
     public async Task<List<AttendanceRecord>> GetAttendanceByScholarIdAsync(Guid scholarId,
@@ -485,18 +408,7 @@ public class ScholarDataAccess : IScholarDataAccess
         }
         catch (JsonException ex)
         {
-            _logger.LogError(ex, "Invalid JSON found for scholar ID {ScholarId}", scholarId);
-            throw new Exception("Corrupted attendance JSON in database.", ex);
-        }
-        catch (SqlException ex)
-        {
-            _logger.LogError(ex, "SQL error while fetching attendance for scholar ID {ScholarId}", scholarId);
-            throw;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Unexpected error while fetching attendance for scholar ID: {ScholarId}", scholarId);
-            throw;
+            throw new InvalidOperationException($"Stored attendance for scholar {scholarId} is not valid JSON.", ex);
         }
     }
 
@@ -510,40 +422,27 @@ public class ScholarDataAccess : IScholarDataAccess
         await using var connection = new SqlConnection(_connectionString);
         await using var command = new SqlCommand(sql, connection);
 
-        try
-        {
-            await connection.OpenAsync(cancellationToken);
-            await using var reader = await command.ExecuteReaderAsync(cancellationToken);
+        await connection.OpenAsync(cancellationToken);
+        await using var reader = await command.ExecuteReaderAsync(cancellationToken);
 
-            while (await reader.ReadAsync(cancellationToken))
+        while (await reader.ReadAsync(cancellationToken))
+        {
+            var scholarId = reader.GetGuid(reader.GetOrdinal("ScholarId"));
+            var json = reader.GetString(reader.GetOrdinal("AttendanceJson"));
+
+            try
             {
-                var scholarId = reader.GetGuid(reader.GetOrdinal("ScholarId"));
-                var json = reader.GetString(reader.GetOrdinal("AttendanceJson"));
-
-                try
-                {
-                    var records = JsonSerializer.Deserialize<List<AttendanceRecord>>(json, JsonOptions) ?? new List<AttendanceRecord>();
-                    results.Add(new ScholarAttendance(scholarId, records));
-                }
-                catch (JsonException ex)
-                {
-                    _logger.LogWarning(ex, "Failed to parse attendance JSON for scholar {ScholarId}", scholarId);
-                }
+                var records = JsonSerializer.Deserialize<List<AttendanceRecord>>(json, JsonOptions) ?? new List<AttendanceRecord>();
+                results.Add(new ScholarAttendance(scholarId, records));
             }
+            catch (JsonException ex)
+            {
+                _logger.LogWarning(ex, "Failed to parse attendance JSON for scholar {ScholarId}", scholarId);
+            }
+        }
 
-            _logger.LogInformation("Fetched attendance for {Count} scholars.", results.Count);
-            return results;
-        }
-        catch (SqlException ex)
-        {
-            _logger.LogError(ex, "SQL error occurred while fetching all attendance.");
-            throw;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Unexpected error fetching all attendance.");
-            throw;
-        }
+        _logger.LogInformation("Fetched attendance for {Count} scholars.", results.Count);
+        return results;
     }
 
     public async Task<bool> DeleteAttendanceAsync(Guid scholarId, CancellationToken cancellationToken)
@@ -557,30 +456,17 @@ public class ScholarDataAccess : IScholarDataAccess
         await using var command = new SqlCommand(sql, connection);
         AddParam(command, "@ScholarId", SqlDbType.UniqueIdentifier, scholarId);
 
-        try
-        {
-            await connection.OpenAsync(cancellationToken);
-            var rows = await command.ExecuteNonQueryAsync(cancellationToken);
+        await connection.OpenAsync(cancellationToken);
+        var rows = await command.ExecuteNonQueryAsync(cancellationToken);
 
-            if (rows > 0)
-            {
-                _logger.LogInformation("Deleted attendance for scholar ID: {ScholarId}", scholarId);
-                return true;
-            }
+        if (rows > 0)
+        {
+            _logger.LogInformation("Deleted attendance for scholar ID: {ScholarId}", scholarId);
+            return true;
+        }
 
-            _logger.LogWarning("No attendance found to delete for scholar ID: {ScholarId}", scholarId);
-            return false;
-        }
-        catch (SqlException ex)
-        {
-            _logger.LogError(ex, "SQL error while deleting attendance for scholar ID: {ScholarId}", scholarId);
-            throw;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Unexpected error deleting attendance for scholar ID: {ScholarId}", scholarId);
-            throw;
-        }
+        _logger.LogWarning("No attendance found to delete for scholar ID: {ScholarId}", scholarId);
+        return false;
     }
 
     // ---------------------------
@@ -637,34 +523,26 @@ public class ScholarDataAccess : IScholarDataAccess
         await using var command = new SqlCommand(sql, connection);
         AddParam(command, "@ScholarId", SqlDbType.UniqueIdentifier, scholarId);
 
-        try
-        {
-            await connection.OpenAsync(cancellationToken);
-            await using var reader = await command.ExecuteReaderAsync(cancellationToken);
+        await connection.OpenAsync(cancellationToken);
+        await using var reader = await command.ExecuteReaderAsync(cancellationToken);
 
-            while (await reader.ReadAsync(cancellationToken))
+        while (await reader.ReadAsync(cancellationToken))
+        {
+            entries.Add(new AuditLogEntry
             {
-                entries.Add(new AuditLogEntry
-                {
-                    ScholarAuditLogId = reader.GetInt32(reader.GetOrdinal("ScholarAuditLogId")),
-                    ScholarId = reader.GetGuid(reader.GetOrdinal("ScholarId")),
-                    ActionType = Enum.Parse<AuditAction>(reader.GetString(reader.GetOrdinal("ActionType"))),
-                    Details = reader.IsDBNull(reader.GetOrdinal("Details"))
-                        ? null
-                        : reader.GetString(reader.GetOrdinal("Details")),
-                    OccurredAt = GetUtcDateTime(reader, "OccurredAt"),
-                });
-            }
+                ScholarAuditLogId = reader.GetInt32(reader.GetOrdinal("ScholarAuditLogId")),
+                ScholarId = reader.GetGuid(reader.GetOrdinal("ScholarId")),
+                ActionType = Enum.Parse<AuditAction>(reader.GetString(reader.GetOrdinal("ActionType"))),
+                Details = reader.IsDBNull(reader.GetOrdinal("Details"))
+                    ? null
+                    : reader.GetString(reader.GetOrdinal("Details")),
+                OccurredAt = GetUtcDateTime(reader, "OccurredAt"),
+            });
+        }
 
-            _logger.LogInformation("Fetched {Count} audit log entries for scholar {ScholarId}.", entries.Count,
-                scholarId);
-            return entries;
-        }
-        catch (SqlException ex)
-        {
-            _logger.LogError(ex, "SQL error while fetching audit log for scholar ID {ScholarId}.", scholarId);
-            throw;
-        }
+        _logger.LogInformation("Fetched {Count} audit log entries for scholar {ScholarId}.", entries.Count,
+            scholarId);
+        return entries;
     }
 
     public async Task<PagedResponse<GlobalAuditLogEntry>> GetAllAuditLogAsync(int pageNumber, int pageSize,
@@ -691,55 +569,47 @@ public class ScholarDataAccess : IScholarDataAccess
 
         await using var connection = new SqlConnection(_connectionString);
 
-        try
+        await connection.OpenAsync(cancellationToken);
+
+        // Fetched independently of the page query below, so TotalItems is always
+        // correct even when the requested page itself has zero rows (past the
+        // last page, or the log was just cleared) — a COUNT(*) OVER() window
+        // column on the page query only reflects the total when at least one row
+        // comes back.
+        await using (var countCmd = new SqlCommand(countSql, connection))
         {
-            await connection.OpenAsync(cancellationToken);
-
-            // Fetched independently of the page query below, so TotalItems is always
-            // correct even when the requested page itself has zero rows (past the
-            // last page, or the log was just cleared) — a COUNT(*) OVER() window
-            // column on the page query only reflects the total when at least one row
-            // comes back.
-            await using (var countCmd = new SqlCommand(countSql, connection))
-            {
-                totalItems = (int)(await countCmd.ExecuteScalarAsync(cancellationToken))!;
-            }
-
-            await using var pageCmd = new SqlCommand(pageSql, connection);
-            AddParam(pageCmd, "@PageNumber", SqlDbType.Int, pageNumber);
-            AddParam(pageCmd, "@PageSize", SqlDbType.Int, pageSize);
-
-            await using var reader = await pageCmd.ExecuteReaderAsync(cancellationToken);
-
-            while (await reader.ReadAsync(cancellationToken))
-            {
-                items.Add(new GlobalAuditLogEntry
-                {
-                    ScholarAuditLogId = reader.GetInt32(reader.GetOrdinal("ScholarAuditLogId")),
-                    ScholarId = reader.GetGuid(reader.GetOrdinal("ScholarId")),
-                    ScholarFirstName = reader.IsDBNull(reader.GetOrdinal("FirstName"))
-                        ? null
-                        : reader.GetString(reader.GetOrdinal("FirstName")),
-                    ScholarLastName = reader.IsDBNull(reader.GetOrdinal("LastName"))
-                        ? null
-                        : reader.GetString(reader.GetOrdinal("LastName")),
-                    ActionType = Enum.Parse<AuditAction>(reader.GetString(reader.GetOrdinal("ActionType"))),
-                    Details = reader.IsDBNull(reader.GetOrdinal("Details"))
-                        ? null
-                        : reader.GetString(reader.GetOrdinal("Details")),
-                    OccurredAt = GetUtcDateTime(reader, "OccurredAt"),
-                });
-            }
-
-            _logger.LogInformation("Fetched page {PageNumber} ({Count} of {Total}) of the global audit log.",
-                pageNumber, items.Count, totalItems);
-            return new PagedResponse<GlobalAuditLogEntry>(items, totalItems, pageNumber, pageSize);
+            totalItems = (int)(await countCmd.ExecuteScalarAsync(cancellationToken))!;
         }
-        catch (SqlException ex)
+
+        await using var pageCmd = new SqlCommand(pageSql, connection);
+        AddParam(pageCmd, "@PageNumber", SqlDbType.Int, pageNumber);
+        AddParam(pageCmd, "@PageSize", SqlDbType.Int, pageSize);
+
+        await using var reader = await pageCmd.ExecuteReaderAsync(cancellationToken);
+
+        while (await reader.ReadAsync(cancellationToken))
         {
-            _logger.LogError(ex, "SQL error while fetching the global audit log.");
-            throw;
+            items.Add(new GlobalAuditLogEntry
+            {
+                ScholarAuditLogId = reader.GetInt32(reader.GetOrdinal("ScholarAuditLogId")),
+                ScholarId = reader.GetGuid(reader.GetOrdinal("ScholarId")),
+                ScholarFirstName = reader.IsDBNull(reader.GetOrdinal("FirstName"))
+                    ? null
+                    : reader.GetString(reader.GetOrdinal("FirstName")),
+                ScholarLastName = reader.IsDBNull(reader.GetOrdinal("LastName"))
+                    ? null
+                    : reader.GetString(reader.GetOrdinal("LastName")),
+                ActionType = Enum.Parse<AuditAction>(reader.GetString(reader.GetOrdinal("ActionType"))),
+                Details = reader.IsDBNull(reader.GetOrdinal("Details"))
+                    ? null
+                    : reader.GetString(reader.GetOrdinal("Details")),
+                OccurredAt = GetUtcDateTime(reader, "OccurredAt"),
+            });
         }
+
+        _logger.LogInformation("Fetched page {PageNumber} ({Count} of {Total}) of the global audit log.",
+            pageNumber, items.Count, totalItems);
+        return new PagedResponse<GlobalAuditLogEntry>(items, totalItems, pageNumber, pageSize);
     }
 
     public async Task DeleteAllAuditLogAsync(CancellationToken cancellationToken)
@@ -749,18 +619,10 @@ public class ScholarDataAccess : IScholarDataAccess
         await using var connection = new SqlConnection(_connectionString);
         await using var command = new SqlCommand(sql, connection);
 
-        try
-        {
-            await connection.OpenAsync(cancellationToken);
-            var rows = await command.ExecuteNonQueryAsync(cancellationToken);
+        await connection.OpenAsync(cancellationToken);
+        var rows = await command.ExecuteNonQueryAsync(cancellationToken);
 
-            _logger.LogInformation("Cleared the audit log ({Count} entries deleted).", rows);
-        }
-        catch (SqlException ex)
-        {
-            _logger.LogError(ex, "SQL error while clearing the audit log.");
-            throw;
-        }
+        _logger.LogInformation("Cleared the audit log ({Count} entries deleted).", rows);
     }
 
     private Scholar? TryMapScholarFromReader(SqlDataReader reader)
@@ -807,13 +669,9 @@ public class ScholarDataAccess : IScholarDataAccess
         }
         catch (JsonException ex)
         {
-            _logger.LogWarning(ex, "Failed to deserialize pickup schedule for scholar row.");
-            return null; // Skip malformed data
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error mapping scholar from reader.");
-            throw;
+            // One scholar's unreadable schedule shouldn't take the whole list down.
+            _logger.LogWarning(ex, "Skipping scholar row with an unreadable pickup schedule.");
+            return null;
         }
     }
 }

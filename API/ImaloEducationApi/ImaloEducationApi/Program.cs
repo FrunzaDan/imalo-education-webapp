@@ -1,4 +1,5 @@
 using ImaloEducationApi.Data;
+using ImaloEducationApi.ErrorHandling;
 using ImaloEducationApi.Logging;
 using ImaloEducationApi.Routing;
 using Microsoft.AspNetCore.Mvc.ApplicationModels;
@@ -19,6 +20,12 @@ builder.Services.AddSingleton<AppLogger>();
 
 // Health checks (liveness only — no DB probe)
 builder.Services.AddHealthChecks();
+
+// Every error response is RFC 9457 Problem Details (application/problem+json): validation
+// failures from [ApiController], Problem()/NotFound results, bare status codes (UseStatusCodePages)
+// and unhandled exceptions (GlobalExceptionHandler, which logs them once and answers 500).
+builder.Services.AddProblemDetails();
+builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 
 // Only the Angular app's own origins may call the API from a browser.
 var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? [];
@@ -48,6 +55,11 @@ using (var scope = app.Services.CreateScope())
 // Configure Middleware
 // --------------------------------------------------
 
+// First, so it catches exceptions from everything after it.
+app.UseExceptionHandler();
+// Gives an empty 4xx/5xx (unknown route, wrong method, unsupported media type) a Problem Details body.
+app.UseStatusCodePages();
+
 // Enable Swagger in development only
 if (app.Environment.IsDevelopment())
 {
@@ -55,9 +67,6 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI(options => options.SwaggerEndpoint("/openapi/v1.json", "v1"));
 }
 
-// Optional: Swagger in production with auth
-// app.UseSwagger();
-// app.UseSwaggerUI();
 // Enforce HTTPS redirection
 app.UseHttpsRedirection();
 

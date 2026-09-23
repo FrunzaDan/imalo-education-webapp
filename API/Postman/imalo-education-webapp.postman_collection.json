@@ -445,7 +445,7 @@
 							"script": {
 								"type": "text/javascript",
 								"exec": [
-									"pm.test(\"Status code is 200\", () => pm.response.to.have.status(200));"
+									"pm.test(\"Status code is 204\", () => pm.response.to.have.status(204));"
 								]
 							}
 						}
@@ -711,7 +711,11 @@
 							"script": {
 								"type": "text/javascript",
 								"exec": [
-									"pm.test(\"Status code is 400\", () => pm.response.to.have.status(400));"
+									"pm.test(\"Status code is 400\", () => pm.response.to.have.status(400));",
+									"pm.test(\"Body is RFC 9457 Problem Details\", () => {",
+									"    pm.expect(pm.response.headers.get(\"Content-Type\")).to.include(\"application/problem+json\");",
+									"    pm.expect(pm.response.json().status).to.eql(pm.response.code);",
+									"});"
 								]
 							}
 						}
@@ -750,7 +754,11 @@
 							"script": {
 								"type": "text/javascript",
 								"exec": [
-									"pm.test(\"Status code is 400\", () => pm.response.to.have.status(400));"
+									"pm.test(\"Status code is 400\", () => pm.response.to.have.status(400));",
+									"pm.test(\"Body is RFC 9457 Problem Details\", () => {",
+									"    pm.expect(pm.response.headers.get(\"Content-Type\")).to.include(\"application/problem+json\");",
+									"    pm.expect(pm.response.json().status).to.eql(pm.response.code);",
+									"});"
 								]
 							}
 						}
@@ -789,7 +797,11 @@
 							"script": {
 								"type": "text/javascript",
 								"exec": [
-									"pm.test(\"Status code is 400\", () => pm.response.to.have.status(400));"
+									"pm.test(\"Status code is 400\", () => pm.response.to.have.status(400));",
+									"pm.test(\"Body is RFC 9457 Problem Details\", () => {",
+									"    pm.expect(pm.response.headers.get(\"Content-Type\")).to.include(\"application/problem+json\");",
+									"    pm.expect(pm.response.json().status).to.eql(pm.response.code);",
+									"});"
 								]
 							}
 						}
@@ -828,7 +840,11 @@
 							"script": {
 								"type": "text/javascript",
 								"exec": [
-									"pm.test(\"Status code is 400\", () => pm.response.to.have.status(400));"
+									"pm.test(\"Status code is 400\", () => pm.response.to.have.status(400));",
+									"pm.test(\"Body is RFC 9457 Problem Details\", () => {",
+									"    pm.expect(pm.response.headers.get(\"Content-Type\")).to.include(\"application/problem+json\");",
+									"    pm.expect(pm.response.json().status).to.eql(pm.response.code);",
+									"});"
 								]
 							}
 						}
@@ -867,7 +883,11 @@
 							"script": {
 								"type": "text/javascript",
 								"exec": [
-									"pm.test(\"Status code is 400\", () => pm.response.to.have.status(400));"
+									"pm.test(\"Status code is 400\", () => pm.response.to.have.status(400));",
+									"pm.test(\"Body is RFC 9457 Problem Details\", () => {",
+									"    pm.expect(pm.response.headers.get(\"Content-Type\")).to.include(\"application/problem+json\");",
+									"    pm.expect(pm.response.json().status).to.eql(pm.response.code);",
+									"});"
 								]
 							}
 						}
@@ -891,7 +911,7 @@
 						},
 						"body": {
 							"mode": "raw",
-							"raw": "{\n    \"id\": \"00000000-0000-0000-0000-000000000002\",\n    \"firstName\": \"Mismatch\",\n    \"lastName\": \"Id\",\n    \"birthDate\": \"2015-04-12\"\n}",
+							"raw": "{\n  \"scholarId\": \"00000000-0000-0000-0000-000000000002\",\n  \"firstName\": \"Mismatch\",\n  \"lastName\": \"Id\",\n  \"birthDate\": \"2015-04-12\"\n}",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -907,7 +927,11 @@
 							"script": {
 								"type": "text/javascript",
 								"exec": [
-									"pm.test(\"Status code is 400\", () => pm.response.to.have.status(400));"
+									"pm.test(\"Status code is 400\", () => pm.response.to.have.status(400));",
+									"pm.test(\"Body is RFC 9457 Problem Details\", () => {",
+									"    pm.expect(pm.response.headers.get(\"Content-Type\")).to.include(\"application/problem+json\");",
+									"    pm.expect(pm.response.json().status).to.eql(pm.response.code);",
+									"});"
 								]
 							}
 						}
@@ -919,14 +943,14 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "{{baseUrl}}/api/scholars/00000000-0000-0000-0000-000000000000",
+							"raw": "{{baseUrl}}/api/scholars/11111111-1111-1111-1111-111111111111",
 							"host": [
 								"{{baseUrl}}"
 							],
 							"path": [
 								"api",
 								"scholars",
-								"00000000-0000-0000-0000-000000000000"
+								"11111111-1111-1111-1111-111111111111"
 							]
 						},
 						"description": "Well-formed GUID, but no such row exists."
@@ -938,7 +962,11 @@
 							"script": {
 								"type": "text/javascript",
 								"exec": [
-									"pm.test(\"Status code is 404\", () => pm.response.to.have.status(404));"
+									"pm.test(\"Status code is 404\", () => pm.response.to.have.status(404));",
+									"pm.test(\"Body is RFC 9457 Problem Details\", () => {",
+									"    pm.expect(pm.response.headers.get(\"Content-Type\")).to.include(\"application/problem+json\");",
+									"    pm.expect(pm.response.json().status).to.eql(pm.response.code);",
+									"});"
 								]
 							}
 						}
@@ -950,19 +978,19 @@
 						"method": "PUT",
 						"header": [],
 						"url": {
-							"raw": "{{baseUrl}}/api/scholars/00000000-0000-0000-0000-000000000000",
+							"raw": "{{baseUrl}}/api/scholars/11111111-1111-1111-1111-111111111111",
 							"host": [
 								"{{baseUrl}}"
 							],
 							"path": [
 								"api",
 								"scholars",
-								"00000000-0000-0000-0000-000000000000"
+								"11111111-1111-1111-1111-111111111111"
 							]
 						},
 						"body": {
 							"mode": "raw",
-							"raw": "{\n    \"id\": \"00000000-0000-0000-0000-000000000000\",\n    \"firstName\": \"Ghost\",\n    \"lastName\": \"Scholar\",\n    \"birthDate\": \"2015-04-12\"\n}",
+							"raw": "{\n  \"scholarId\": \"11111111-1111-1111-1111-111111111111\",\n  \"firstName\": \"Ghost\",\n  \"lastName\": \"Scholar\",\n  \"birthDate\": \"2015-04-12\"\n}",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -978,7 +1006,11 @@
 							"script": {
 								"type": "text/javascript",
 								"exec": [
-									"pm.test(\"Status code is 404\", () => pm.response.to.have.status(404));"
+									"pm.test(\"Status code is 404\", () => pm.response.to.have.status(404));",
+									"pm.test(\"Body is RFC 9457 Problem Details\", () => {",
+									"    pm.expect(pm.response.headers.get(\"Content-Type\")).to.include(\"application/problem+json\");",
+									"    pm.expect(pm.response.json().status).to.eql(pm.response.code);",
+									"});"
 								]
 							}
 						}
@@ -990,14 +1022,14 @@
 						"method": "DELETE",
 						"header": [],
 						"url": {
-							"raw": "{{baseUrl}}/api/scholars/00000000-0000-0000-0000-000000000000",
+							"raw": "{{baseUrl}}/api/scholars/11111111-1111-1111-1111-111111111111",
 							"host": [
 								"{{baseUrl}}"
 							],
 							"path": [
 								"api",
 								"scholars",
-								"00000000-0000-0000-0000-000000000000"
+								"11111111-1111-1111-1111-111111111111"
 							]
 						}
 					},
@@ -1008,7 +1040,11 @@
 							"script": {
 								"type": "text/javascript",
 								"exec": [
-									"pm.test(\"Status code is 404\", () => pm.response.to.have.status(404));"
+									"pm.test(\"Status code is 404\", () => pm.response.to.have.status(404));",
+									"pm.test(\"Body is RFC 9457 Problem Details\", () => {",
+									"    pm.expect(pm.response.headers.get(\"Content-Type\")).to.include(\"application/problem+json\");",
+									"    pm.expect(pm.response.json().status).to.eql(pm.response.code);",
+									"});"
 								]
 							}
 						}
@@ -1050,7 +1086,11 @@
 							"script": {
 								"type": "text/javascript",
 								"exec": [
-									"pm.test(\"Status code is 400\", () => pm.response.to.have.status(400));"
+									"pm.test(\"Status code is 400\", () => pm.response.to.have.status(400));",
+									"pm.test(\"Body is RFC 9457 Problem Details\", () => {",
+									"    pm.expect(pm.response.headers.get(\"Content-Type\")).to.include(\"application/problem+json\");",
+									"    pm.expect(pm.response.json().status).to.eql(pm.response.code);",
+									"});"
 								]
 							}
 						}
@@ -1092,7 +1132,11 @@
 							"script": {
 								"type": "text/javascript",
 								"exec": [
-									"pm.test(\"Status code is 400\", () => pm.response.to.have.status(400));"
+									"pm.test(\"Status code is 400\", () => pm.response.to.have.status(400));",
+									"pm.test(\"Body is RFC 9457 Problem Details\", () => {",
+									"    pm.expect(pm.response.headers.get(\"Content-Type\")).to.include(\"application/problem+json\");",
+									"    pm.expect(pm.response.json().status).to.eql(pm.response.code);",
+									"});"
 								]
 							}
 						}
@@ -1188,7 +1232,11 @@
 							"script": {
 								"type": "text/javascript",
 								"exec": [
-									"pm.test(\"Status code is 400\", () => pm.response.to.have.status(400));"
+									"pm.test(\"Status code is 400\", () => pm.response.to.have.status(400));",
+									"pm.test(\"Body is RFC 9457 Problem Details\", () => {",
+									"    pm.expect(pm.response.headers.get(\"Content-Type\")).to.include(\"application/problem+json\");",
+									"    pm.expect(pm.response.json().status).to.eql(pm.response.code);",
+									"});"
 								]
 							}
 						}
@@ -1230,14 +1278,14 @@
 						"method": "DELETE",
 						"header": [],
 						"url": {
-							"raw": "{{baseUrl}}/api/scholars/00000000-0000-0000-0000-000000000000/attendance",
+							"raw": "{{baseUrl}}/api/scholars/11111111-1111-1111-1111-111111111111/attendance",
 							"host": [
 								"{{baseUrl}}"
 							],
 							"path": [
 								"api",
 								"scholars",
-								"00000000-0000-0000-0000-000000000000",
+								"11111111-1111-1111-1111-111111111111",
 								"attendance"
 							]
 						},
@@ -1250,7 +1298,11 @@
 							"script": {
 								"type": "text/javascript",
 								"exec": [
-									"pm.test(\"Status code is 404\", () => pm.response.to.have.status(404));"
+									"pm.test(\"Status code is 404\", () => pm.response.to.have.status(404));",
+									"pm.test(\"Body is RFC 9457 Problem Details\", () => {",
+									"    pm.expect(pm.response.headers.get(\"Content-Type\")).to.include(\"application/problem+json\");",
+									"    pm.expect(pm.response.json().status).to.eql(pm.response.code);",
+									"});"
 								]
 							}
 						}

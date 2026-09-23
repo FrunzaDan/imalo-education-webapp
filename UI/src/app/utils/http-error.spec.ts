@@ -8,10 +8,14 @@ describe('extractHttpErrorMessage', () => {
     expect(extractHttpErrorMessage(error)).toBe('Could not reach the server. It may be offline.');
   });
 
-  it('flattens a ModelState-style validation-errors dict', () => {
+  it('flattens a ValidationProblemDetails errors dict', () => {
     const error = new HttpErrorResponse({
       status: 400,
-      error: { errors: { FirstName: ['Required'], Grade: ['Out of range', 'Must be an integer'] } },
+      error: {
+        title: 'One or more validation errors occurred.',
+        status: 400,
+        errors: { FirstName: ['Required'], Grade: ['Out of range', 'Must be an integer'] },
+      },
     });
 
     expect(extractHttpErrorMessage(error)).toBe(
@@ -19,9 +23,20 @@ describe('extractHttpErrorMessage', () => {
     );
   });
 
-  it('falls back to a plain server message when there is no validation dict', () => {
-    const error = new HttpErrorResponse({ status: 404, error: { message: 'Scholar not found.' } });
-    expect(extractHttpErrorMessage(error)).toBe('Scholar not found.');
+  it("uses a problem's detail when there is no validation dict", () => {
+    const error = new HttpErrorResponse({
+      status: 404,
+      error: { title: 'Scholar not found.', status: 404, detail: 'Scholar with ID 123 not found.' },
+    });
+    expect(extractHttpErrorMessage(error)).toBe('Scholar with ID 123 not found.');
+  });
+
+  it("falls back to a problem's title when it has no detail", () => {
+    const error = new HttpErrorResponse({
+      status: 500,
+      error: { title: 'An unexpected error occurred.', status: 500 },
+    });
+    expect(extractHttpErrorMessage(error)).toBe('An unexpected error occurred.');
   });
 
   it('falls back to a generic message when the server sends neither shape', () => {
@@ -37,7 +52,10 @@ describe('catchHttpError', () => {
   });
 
   it('rethrows an Error prefixed with the operation name and extracted message', async () => {
-    const error = new HttpErrorResponse({ status: 404, error: { message: 'Scholar not found.' } });
+    const error = new HttpErrorResponse({
+      status: 404,
+      error: { title: 'Scholar not found.', status: 404, detail: 'Scholar not found.' },
+    });
 
     await expect(
       firstValueFrom(throwError(() => error).pipe(catchHttpError('getScholarById id=123'))),

@@ -13,7 +13,7 @@ public interface IScholarDataAccess
     Task<Scholar?> UpdateScholarAsync(Scholar scholar, CancellationToken cancellationToken);
     Task<bool> DeleteScholarAsync(Guid scholarId, CancellationToken cancellationToken);
 
-    Task<bool> CreateOrUpdateAttendanceAsync(Guid scholarId, List<AttendanceRecord> attendanceRecords,
+    Task CreateOrUpdateAttendanceAsync(Guid scholarId, List<AttendanceRecord> attendanceRecords,
         CancellationToken cancellationToken);
     Task<List<AttendanceRecord>> GetAttendanceByScholarIdAsync(Guid scholarId, CancellationToken cancellationToken);
     Task<List<ScholarAttendance>> GetAllAttendanceAsync(CancellationToken cancellationToken);

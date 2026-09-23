@@ -6,7 +6,8 @@ ASP.NET Core Web API (.NET 10, C#), single controller, plain ADO.NET data access
 
 ## Key files / paths
 
-- `API/ImaloEducationApi/ImaloEducationApi/Program.cs` — host setup: CORS, Swagger, logging middleware, `no-store` cache header.
+- `API/ImaloEducationApi/ImaloEducationApi/Program.cs` — host setup: Problem Details + exception handler, CORS, OpenAPI/Swagger UI, logging middleware, `no-store` cache header.
+- `API/ImaloEducationApi/ImaloEducationApi/ErrorHandling/GlobalExceptionHandler.cs` — the one place an unhandled exception is logged and turned into a `500` (see "Error handling").
 - `API/ImaloEducationApi/ImaloEducationApi/Controllers/ScholarController.cs` — the one controller, `ScholarsController`, route `api/Scholars`.
 - `API/ImaloEducationApi/ImaloEducationApi/Data/ScholarDataAccess.cs` — all SQL, scoped DI service. Implements `IScholarDataAccess` (`Data/IScholarDataAccess.cs`) — extracted solely to let `ScholarsController` be unit-tested against a mock (see Gotchas), not for a second implementation.
 - `API/ImaloEducationApi/ImaloEducationApi/Models/Scholar.cs` — the `Scholar` model + its `ValidationAttribute` validators.
@@ -20,24 +21,24 @@ ASP.NET Core Web API (.NET 10, C#), single controller, plain ADO.NET data access
 
 ## Endpoints
 
-All under `api/Scholars`. All return `500` with `{ message, details = ex.Message }` on unexpected exceptions (see Gotchas — this leaks internal exception text to the client, a known/accepted gap, not yet fixed).
+All under `api/scholars`. Every error response is RFC 9457 Problem Details — see "Error handling" below for the shapes.
 
 **Scholars**
-- `POST /api/scholars` — create. Body: `Scholar`. `400` with per-field validation errors if `ModelState` is invalid. `201 Created` (Location header to `GetScholarById`) on success.
+- `POST /api/scholars` — create. Body: `Scholar`. `400` validation problem (per-field `errors`) if the body is invalid — answered by `[ApiController]` before the action runs. `201 Created` (Location header to `GetScholarById`) on success.
 - `GET /api/scholars` — list all.
-- `GET /api/scholars/{scholarId:guid}` — one scholar. `404` if not found.
-- `PUT /api/scholars/{scholarId:guid}` — update. `400` if the URL's `scholarId` and the body's `scholarId` don't match, or validation fails. `404` if no such scholar.
-- `DELETE /api/scholars/{scholarId:guid}` — `204 No Content` on success, `404` if not found. Cascades to `ScholarPickupSchedule`, `ScholarAttendance`, `ScholarParent` via DB `ON DELETE CASCADE` — the controller doesn't delete children itself.
+- `GET /api/scholars/{scholarId:guid}` — one scholar. `404` problem if not found.
+- `PUT /api/scholars/{scholarId:guid}` — update. `400` validation problem if the URL's `scholarId` and the body's `scholarId` don't match (`errors.ScholarId`), or validation fails. `404` problem if no such scholar.
+- `DELETE /api/scholars/{scholarId:guid}` — `204 No Content` on success, `404` problem if not found. Cascades to `ScholarPickupSchedule`, `ScholarAttendance`, `ScholarParent` via DB `ON DELETE CASCADE` — the controller doesn't delete children itself.
 
 **Audit log** (`ScholarAuditLog` table — see [[database]])
 - `GET /api/scholars/{scholarId:guid}/audit-log` — full history for one scholar, newest first.
-- `GET /api/scholars/audit-log/all?pageNumber=1&pageSize=20` — global, paginated, newest first. `pageNumber` must be ≥1, `pageSize` 1–100 (`400` otherwise). Returns `PagedResponse<GlobalAuditLogEntry>` (`PageNumber`, `PageSize`, `TotalItems`, `Items`).
+- `GET /api/scholars/audit-log/all?pageNumber=1&pageSize=20` — global, paginated, newest first. `pageNumber` must be ≥1, `pageSize` 1–100 — `[Range]` on the query parameters, so `[ApiController]` answers `400` (`errors.pageNumber`/`errors.pageSize`) before the action runs. Returns `PagedResponse<GlobalAuditLogEntry>` (`PageNumber`, `PageSize`, `TotalItems`, `Items`).
 - `DELETE /api/scholars/audit-log/all` — clears the entire audit log. **No confirmation, no auth** — see Gotchas.
 
 **Attendance**
-- `POST /api/scholars/{scholarId:guid}/attendance` — upserts (replaces) the scholar's whole `List<AttendanceRecord>` in one call — not a per-day patch. `400` if the same `date` appears twice, or if any record has `Present: false` with `LunchSelected`/`TransportSelected: true` — a scholar can't have lunch/transport selected on a day they weren't present. Costs must be 0–9999.99 (`[Range]`, rejected by `[ApiController]`'s automatic `400`).
+- `POST /api/scholars/{scholarId:guid}/attendance` — upserts (replaces) the scholar's whole `List<AttendanceRecord>` in one call — not a per-day patch. `204 No Content` on success. `400` validation problem (`errors.attendance`, one message per broken rule, naming the dates) if the same `date` appears twice, or if any record has `Present: false` with `LunchSelected`/`TransportSelected: true` — a scholar can't have lunch/transport selected on a day they weren't present. Costs must be 0–9999.99 (`[Range]`, rejected by `[ApiController]`'s automatic `400`).
 - `GET /api/scholars/{scholarId:guid}/attendance` — `200` with `[]` if none exist yet (not `404` — a new scholar having no attendance is a normal state).
-- `DELETE /api/scholars/{scholarId:guid}/attendance` — `404` if nothing to delete.
+- `DELETE /api/scholars/{scholarId:guid}/attendance` — `204` on success, `404` problem if nothing to delete.
 - `GET /api/scholars/attendance` — every scholar's attendance in one call, `List<ScholarAttendance>` (`[{ scholarId, attendance: AttendanceRecord[] }]`). Backs the attendance dashboard, not the per-scholar page.
 
 **Other**
@@ -45,6 +46,24 @@ All under `api/Scholars`. All return `500` with `{ message, details = ex.Message
 - `GET /openapi/v1.json` — the OpenAPI document from ASP.NET Core's built-in generator (`AddOpenApi`/`MapOpenApi`), and `GET /swagger` — Swagger UI showing it (`Swashbuckle.AspNetCore.SwaggerUI` only); development environment only, the same setup as the sibling apps.
 
 ## How it works
+
+### Error handling
+
+Every error response is **RFC 9457 Problem Details** (`Content-Type: application/problem+json`, with `type`, `title`, `status`, `traceId`, and `detail`/`errors` where there's something to say). It's the same mechanism as the sibling apps — one `IExceptionHandler`, no try/catch in controllers or data access, exception text only in Development — with Problem Details as the body because this API is plain REST (the siblings answer in their `ResponseModel` envelope).
+
+| Situation | Status | Body | Produced by |
+|---|---|---|---|
+| Invalid body / DataAnnotations / out-of-range query parameter / malformed JSON | `400` | `ValidationProblemDetails` — `errors: { field: [messages] }` | `[ApiController]`, before the action runs |
+| Rule the attributes can't express (attendance date rules, URL/body ID mismatch, all-zero scholar ID) | `400` | `ValidationProblemDetails` | the action: `ModelState.AddModelError` + `ValidationProblem()` |
+| Scholar/attendance not found | `404` | `ProblemDetails` with a `detail` | the action: `Problem(statusCode: 404, …)` |
+| Unknown route, wrong method, unsupported media type | `404`/`405`/`415` | `ProblemDetails` | `UseStatusCodePages()` |
+| Anything thrown (SQL down, bad stored JSON, bug) | `500` | `ProblemDetails`; `detail` = the exception message **in Development only** | `GlobalExceptionHandler` (registered with `AddExceptionHandler`, run by `UseExceptionHandler()` first in the pipeline) — logs it once with method + path |
+| Client aborted the request | `499` | none | `UseExceptionHandler` itself, not logged as an error |
+
+- `ScholarDataAccess` doesn't catch-and-log either. The only `catch` blocks left are deliberate: roll back a failed transaction and rethrow (create/update), keep the best-effort audit write from failing a request, skip one unreadable schedule/attendance row in a list, and rewrap corrupt stored attendance JSON with the scholar's ID for the log.
+- The UI reads these bodies in `UI/src/app/utils/http-error.ts`: the `errors` messages, else `detail`, else `title` (see [[angular-frontend]]).
+- Tests: `ErrorHandling/ErrorResponseTests.cs` runs the real pipeline in memory (`WebApplicationFactory<Program>`, data layer mocked) and pins each row of the table above.
+
 
 - `ScholarDataAccess` is `Scoped`, injected into the controller; every method opens its own `SqlConnection` (no shared/ambient connection or unit-of-work).
 - `CreateScholarAsync`/`UpdateScholarAsync` wrap the Scholar row + `PickupSchedule` row + `Parents` row(s) in a single `SqlTransaction` — all committed or none.
@@ -61,10 +80,10 @@ All under `api/Scholars`. All return `500` with `{ message, details = ex.Message
 
 - **No authentication/authorization.** `UseAuthorization()` is called but nothing configures `AddAuthentication`/a scheme — every endpoint, including `DELETE /api/scholars/audit-log/all`, is open to anyone who can reach the API. Known, deliberately deferred for this learning project.
 - **CORS allows only the Angular app's origins**, read from `Cors:AllowedOrigins` in `appsettings.json` (`http(s)://localhost:4204`), with the methods the API uses (`GET`/`POST`/`PUT`/`DELETE`) and the `Content-Type` header — the same mechanism as the sibling apps. A new UI origin (another port, a deployed host) must be added there.
-- **Exception messages leak to clients** — every catch-all `500` response includes `details = ex.Message` verbatim. Known, deliberately deferred.
 - **Unit tests** — `API/ImaloEducationApi/ImaloEducationApi.Tests` (xUnit), two layers:
   - `Models/` — `Scholar`'s validation attributes (`ValidateBirthDate`, `ValidatePhoneNumber` — digits only, 9–12, the same rule as the sibling apps) individually and through `Validator.TryValidateObject`, the same path ASP.NET Core's `ModelState` binding uses; `WireFormatTests` pins the JSON shapes the UI depends on (`PickupSchedule` read/write/rejection, `DateOnly` dates, cost `[Range]`, `AuditAction` by name, `OccurredAt` as UTC ending in `Z`).
-  - `Controllers/ScholarsControllerTests.cs` — `ScholarsController` against a Moq mock of `IScholarDataAccess` (status codes, `ModelState`-invalid shape, not-found vs. success vs. exception branching for every endpoint). `ScholarDataAccess` was given an `IScholarDataAccess` interface (`Data/IScholarDataAccess.cs`) purely so this mock could exist — there's still no second implementation and none is planned.
+  - `Controllers/ScholarsControllerTests.cs` — `ScholarsController` against a Moq mock of `IScholarDataAccess` (success vs. not-found vs. the rules the controller checks itself, for every endpoint; asserts the `ProblemDetails`/`ValidationProblemDetails` it returns, and that exceptions are *not* caught there).
+  - `ErrorHandling/ErrorResponseTests.cs` — the whole pipeline in memory via `WebApplicationFactory<Program>` (`Microsoft.AspNetCore.Mvc.Testing`): what a client receives for a validation failure, bad paging, malformed JSON, a missing scholar, an unknown route, and an unhandled exception (message shown in Development, hidden in Production). `ScholarDataAccess` was given an `IScholarDataAccess` interface (`Data/IScholarDataAccess.cs`) purely so this mock could exist — there's still no second implementation and none is planned.
   - Still **no real-DB coverage** — `ScholarDataAccess`'s own SQL (transactions, cascade deletes, the per-role `Parents` joins, best-effort audit logging) is untested; that would need an integration test against a real SQL Server, not a mock.
   - Run via `dotnet test API/ImaloEducationApi/ImaloEducationApi.slnx` (from inside the repo, so the root `global.json` selects Microsoft Testing Platform) or as part of [[build-and-run]]'s `build.sh`. `dotnet test --coverage` adds a coverage report.
   - Packages: `xunit.v3.mtp-v2`, `Moq`, `Microsoft.Testing.Extensions.CodeCoverage` — identical to the sibling apps; versions live in `API/ImaloEducationApi/Directory.Packages.props` (Central Package Management), shared build settings in `Directory.Build.props`. Tests use `TestContext.Current.CancellationToken`, never `CancellationToken.None`.

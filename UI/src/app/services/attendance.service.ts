@@ -41,9 +41,9 @@ export class AttendanceService {
   saveAttendance(
     scholarId: string,
     attendance: AttendanceRecord[],
-  ): Observable<any> {
+  ): Observable<void> {
     return this.http
-      .post(`${this.baseUrl}/${scholarId}/attendance`, attendance)
+      .post<void>(`${this.baseUrl}/${scholarId}/attendance`, attendance)
       .pipe(catchHttpError(`saveAttendance scholarId=${scholarId}`));
   }
 
