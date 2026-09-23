@@ -1,4 +1,4 @@
-<h2 class="page-title">Scholars</h2>
+<h1 class="page-title">Scholars</h1>
 
 <div class="page-toolbar">
   <input
@@ -27,6 +27,11 @@
     }}
   </button>
 </div>
+@if (loading()) {
+<div class="loading-message">Loading scholars...</div>
+} @else if (loadError(); as error) {
+<div class="app-alert" role="alert">{{ error }}</div>
+} @else {
 <table class="app-table">
   <thead>
     <tr>
@@ -131,3 +136,4 @@
     }
   </tbody>
 </table>
+}

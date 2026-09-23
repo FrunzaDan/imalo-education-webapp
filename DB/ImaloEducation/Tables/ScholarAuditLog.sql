@@ -1,4 +1,5 @@
--- Records lifecycle actions (Created/Edited/Deleted) taken on a Scholar.
+-- Records lifecycle actions (Created/Edited/Deleted) taken on a Scholar — the same
+-- audit table as CustomerAuditLog/EmployeeAuditLog, minus PerformedBy (Imalo has no users).
 -- No FK to Scholar: audit history must survive a scholar being hard-deleted
 -- (DeleteScholarAsync removes the Scholar row outright), so ScholarId is a
 -- plain UNIQUEIDENTIFIER column, indexed for the per-scholar lookup.
@@ -22,8 +23,10 @@ CREATE TABLE [dbo].[ScholarAuditLog]
 );
 GO
 
-CREATE INDEX [IX_ScholarAuditLog_ScholarId]
-    ON [dbo].[ScholarAuditLog] ([ScholarId]);
+-- Keyed in the per-scholar query's ORDER BY order, so the "newest first" listing is
+-- read straight off the index with no sort.
+CREATE INDEX [IX_ScholarAuditLog_ScholarId_OccurredAt_ScholarAuditLogId]
+    ON [dbo].[ScholarAuditLog] ([ScholarId], [OccurredAt] DESC, [ScholarAuditLogId] DESC);
 GO
 
 -- Supports the global, unfiltered "newest first" scan across every scholar —

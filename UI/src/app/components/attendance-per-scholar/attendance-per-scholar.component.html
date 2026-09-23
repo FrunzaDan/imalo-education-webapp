@@ -1,8 +1,11 @@
-@if (scholar(); as scholar) {
+@if (loadError(); as error) {
+  <h1 class="page-title">Attendance</h1>
+  <div class="app-alert" role="alert">{{ error }}</div>
+} @else if (scholar(); as scholar) {
   <div class="attendance-container">
-    <h2 class="page-title attendance-container__title no-print">
+    <h1 class="page-title attendance-container__title no-print">
       Attendance for {{ scholar.firstName }} {{ scholar.lastName }}
-    </h2>
+    </h1>
 
     <div class="print-only invoice-header">
       <h1 class="invoice-header__title">Attendance Invoice</h1>
@@ -180,6 +183,9 @@
       </tfoot>
     </table>
 
+    @if (saveError(); as error) {
+      <div class="app-alert no-print" role="alert">{{ error }}</div>
+    }
     <div class="attendance-container__save-bar no-print">
       <button
         type="button"

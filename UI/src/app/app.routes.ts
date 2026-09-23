@@ -1,4 +1,5 @@
 import { Routes } from '@angular/router';
+import { unsavedChangesGuard } from './services/unsaved-changes.guard';
 
 export const routes: Routes = [
   {
@@ -8,6 +9,7 @@ export const routes: Routes = [
   },
   {
     path: 'dashboard',
+    title: 'Dashboard',
     loadComponent: () =>
       import('./components/dashboard/dashboard.component').then(
         (m) => m.DashboardComponent,
@@ -15,6 +17,7 @@ export const routes: Routes = [
   },
   {
     path: 'scholars',
+    title: 'Scholars',
     loadComponent: () =>
       import('./components/scholar-table/scholar-table.component').then(
         (m) => m.ScholarTableComponent,
@@ -22,6 +25,8 @@ export const routes: Routes = [
   },
   {
     path: 'create-scholar',
+    title: 'Create scholar',
+    canDeactivate: [unsavedChangesGuard],
     loadComponent: () =>
       import('./components/scholar-form/scholar-form.component').then(
         (m) => m.ScholarFormComponent,
@@ -29,6 +34,7 @@ export const routes: Routes = [
   },
   {
     path: 'scholars/:scholarId',
+    title: 'Scholar details',
     loadComponent: () =>
       import('./components/scholar-detail/scholar-detail.component').then(
         (m) => m.ScholarDetailComponent,
@@ -36,6 +42,8 @@ export const routes: Routes = [
   },
   {
     path: 'scholars/update/:scholarId',
+    title: 'Update scholar',
+    canDeactivate: [unsavedChangesGuard],
     loadComponent: () =>
       import('./components/scholar-form/scholar-form.component').then(
         (m) => m.ScholarFormComponent,
@@ -43,6 +51,7 @@ export const routes: Routes = [
   },
   {
     path: 'pickup-time',
+    title: 'Pickup time',
     loadComponent: () =>
       import('./components/gantt-chart/gantt-chart.component').then(
         (m) => m.GanttChartComponent,
@@ -50,6 +59,7 @@ export const routes: Routes = [
   },
   {
     path: 'attendance',
+    title: 'Attendance',
     loadComponent: () =>
       import('./components/attendance/attendance.component').then(
         (m) => m.AttendanceComponent,
@@ -57,6 +67,8 @@ export const routes: Routes = [
   },
   {
     path: 'attendance/:scholarId',
+    title: 'Scholar attendance',
+    canDeactivate: [unsavedChangesGuard],
     loadComponent: () =>
       import(
         './components/attendance-per-scholar/attendance-per-scholar.component'
@@ -64,6 +76,7 @@ export const routes: Routes = [
   },
   {
     path: 'charts',
+    title: 'Charts',
     loadComponent: () =>
       import('./components/charts/charts.component').then(
         (m) => m.ChartsComponent,
@@ -71,6 +84,7 @@ export const routes: Routes = [
   },
   {
     path: 'audit-log',
+    title: 'Audit log',
     loadComponent: () =>
       import('./components/global-audit-log/global-audit-log.component').then(
         (m) => m.GlobalAuditLogComponent,
@@ -78,6 +92,7 @@ export const routes: Routes = [
   },
   {
     path: 'about',
+    title: 'About',
     loadComponent: () =>
       import('./components/about/about.component').then(
         (m) => m.AboutComponent,
@@ -85,6 +100,7 @@ export const routes: Routes = [
   },
   {
     path: '**',
+    title: 'Page not found',
     loadComponent: () =>
       import('./components/not-found/not-found.component').then(
         (m) => m.NotFoundComponent,

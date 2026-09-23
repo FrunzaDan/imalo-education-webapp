@@ -1,58 +1,42 @@
 import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
-import { Observable } from 'rxjs';
+import { Observable, tap } from 'rxjs';
 import { AttendanceRecord } from '../interfaces/attendance-record';
 import { ScholarAttendance } from '../interfaces/scholar-attendance';
 import { environment } from '../../environments/environment';
-import { catchHttpError } from '../utils/http-error';
+import { NotificationService } from './notification.service';
 
-@Injectable({
-  providedIn: 'root',
-})
+// Same conventions as ScholarsService: errors surface as HttpErrorResponse,
+// a successful save confirms itself with a toast (skipped by *Silently).
+@Injectable({ providedIn: 'root' })
 export class AttendanceService {
   private readonly http = inject(HttpClient);
-  // Base API endpoint
-  private baseUrl = `${environment.apiUrl}/api/scholars`;
+  private readonly notificationService = inject(NotificationService);
+  private readonly baseUrl = `${environment.apiUrl}/api/scholars`;
 
-  // ----------------------------
-  // Fetch all scholars' attendance
-  // ----------------------------
   // No caching here: this list is read by the attendance dashboard right after
   // per-scholar edits get saved elsewhere, so a stale cached copy would show
   // pre-edit data. It's a small local dataset — refetching is cheap.
   getAllScholarAttendance(): Observable<ScholarAttendance[]> {
-    return this.http
-      .get<ScholarAttendance[]>(`${this.baseUrl}/attendance`)
-      .pipe(catchHttpError('getAllScholarAttendance'));
+    return this.http.get<ScholarAttendance[]>(`${this.baseUrl}/attendance`);
   }
 
-  // ----------------------------
-  // Fetch a single scholar's attendance
-  // ----------------------------
   getAttendanceByScholarId(scholarId: string): Observable<AttendanceRecord[]> {
-    return this.http
-      .get<AttendanceRecord[]>(`${this.baseUrl}/${scholarId}/attendance`)
-      .pipe(catchHttpError(`getAttendanceByScholarId scholarId=${scholarId}`));
+    return this.http.get<AttendanceRecord[]>(`${this.baseUrl}/${scholarId}/attendance`);
   }
 
-  // ----------------------------
-  // Create or update attendance for a scholar
-  // ----------------------------
-  saveAttendance(
-    scholarId: string,
-    attendance: AttendanceRecord[],
-  ): Observable<void> {
-    return this.http
-      .post<void>(`${this.baseUrl}/${scholarId}/attendance`, attendance)
-      .pipe(catchHttpError(`saveAttendance scholarId=${scholarId}`));
+  // Replaces the scholar's whole attendance list (the API answers 204).
+  saveAttendance(scholarId: string, attendance: AttendanceRecord[]): Observable<void> {
+    return this.saveAttendanceSilently(scholarId, attendance).pipe(
+      tap(() => this.notificationService.show('Attendance saved successfully.')),
+    );
   }
 
-  // ----------------------------
-  // Delete attendance for a scholar
-  // ----------------------------
-  deleteAttendance(scholarId: string): Observable<any> {
-    return this.http
-      .delete(`${this.baseUrl}/${scholarId}/attendance`)
-      .pipe(catchHttpError(`deleteAttendance scholarId=${scholarId}`));
+  saveAttendanceSilently(scholarId: string, attendance: AttendanceRecord[]): Observable<void> {
+    return this.http.post<void>(`${this.baseUrl}/${scholarId}/attendance`, attendance);
+  }
+
+  deleteAttendance(scholarId: string): Observable<void> {
+    return this.http.delete<void>(`${this.baseUrl}/${scholarId}/attendance`);
   }
 }

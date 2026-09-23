@@ -99,6 +99,25 @@ export const scholarFormSchema = schema<ScholarFormModel>((p) => {
   }
 });
 
+// True when the user has changed anything relative to `baseline` (the blank
+// form when creating, the loaded scholar when editing). Comparing values —
+// rather than trusting a "touched" flag — means typing something and then
+// putting it back doesn't count as an unsaved change.
+export function isScholarFormDirty(
+  model: ScholarFormModel,
+  baseline: ScholarFormModel,
+): boolean {
+  const { pickupSchedule, ...fields } = model;
+  return (
+    (Object.keys(fields) as (keyof typeof fields)[]).some(
+      (key) => fields[key] !== baseline[key],
+    ) ||
+    (Object.keys(pickupSchedule) as (keyof PickUpScheduleFormModel)[]).some(
+      (day) => pickupSchedule[day] !== baseline.pickupSchedule[day],
+    )
+  );
+}
+
 export function toFormModel(scholar: Scholar): ScholarFormModel {
   return {
     firstName: scholar.firstName,

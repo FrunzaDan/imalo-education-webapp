@@ -24,6 +24,11 @@
   pointer-events: auto;
 }
 
+/* The toast's text color, so the focus ring shows on both backgrounds. */
+.notification-toast :focus-visible {
+  outline-color: currentColor;
+}
+
 .notification-success {
   background-color: var(--cyan-dark-color);
 }

@@ -1,22 +1,23 @@
 import {
   Component,
+  DestroyRef,
   OnInit,
-  OnDestroy,
   computed,
   inject,
   input,
   linkedSignal,
   signal,
 } from '@angular/core';
+import { HttpErrorResponse } from '@angular/common/http';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FieldTree, FormField, form } from '@angular/forms/signals';
 import { DatePipe } from '@angular/common';
-import { Subscription } from 'rxjs';
+import { map, switchMap } from 'rxjs';
 
 import { ScholarsService } from '../../services/scholars.service';
 import { SchoolsService } from '../../services/schools.service';
 import { AttendanceService } from '../../services/attendance.service';
 import { CsvExportService } from '../../services/csv-export.service';
-import { NotificationService } from '../../services/notification.service';
 import { Scholar } from '../../interfaces/scholar';
 import { AttendanceRecord } from '../../interfaces/attendance-record';
 import {
@@ -29,27 +30,29 @@ import {
 } from './attendance-form';
 import { DEFAULT_MONTH, shiftMonth } from '../../utils/weekday-dates';
 import { RonPipe } from '../../pipes/ron.pipe';
+import { extractErrorMessage } from '../../utils/extract-error-message';
+import { HasUnsavedChanges } from '../../services/unsaved-changes.guard';
 
 @Component({
   selector: 'app-attendance-per-scholar',
   imports: [DatePipe, FormField, RonPipe],
   templateUrl: './attendance-per-scholar.component.html',
   styleUrl: './attendance-per-scholar.component.css',
+  // Refresh / closing the tab isn't a router navigation, so guard it here too.
+  host: { '(window:beforeunload)': 'onBeforeUnload($event)' },
 })
-export class AttendancePerScholarComponent implements OnInit, OnDestroy {
+export class AttendancePerScholarComponent implements OnInit, HasUnsavedChanges {
   private readonly scholarsService = inject(ScholarsService);
   private readonly schoolsService = inject(SchoolsService);
   private readonly attendanceService = inject(AttendanceService);
   private readonly csvExportService = inject(CsvExportService);
-  private readonly notificationService = inject(NotificationService);
-
-  private scholarSubscription: Subscription | undefined;
-  private attendanceSubscription: Subscription | undefined;
+  private readonly destroyRef = inject(DestroyRef);
 
   // Bound from the `:scholarId` route param by withComponentInputBinding() in app.config.ts.
   readonly scholarId = input<string>();
 
   scholar = signal<Scholar | null>(null);
+  readonly loadError = signal<string | null>(null);
   readonly today = new Date();
 
   // Standard per-day prices for this scholar's school, applied when a day is
@@ -132,58 +135,48 @@ export class AttendancePerScholarComponent implements OnInit, OnDestroy {
   );
 
   isSaving = signal(false);
-  hasUnsavedChanges = signal(false);
-
+  readonly saveError = signal<string | null>(null);
+  // Read by unsavedChangesGuard (and onBeforeUnload); set by every edit handler.
+  readonly hasUnsavedChanges = signal(false);
 
   ngOnInit(): void {
     const scholarId = this.scholarId();
-    if (!scholarId) {
-      console.error('Scholar ID not found in route parameters.');
-      return;
-    }
+    if (!scholarId) return;
 
-    this.scholarSubscription = this.scholarsService.getScholars().subscribe({
-      next: (scholars) => {
-        const scholar = scholars.find((s) => s.scholarId === scholarId) || null;
-        this.scholar.set(scholar);
-
-        if (!scholar) {
-          console.warn(`Scholar with ID ${scholarId} not found.`);
-          return;
-        }
-
-        if (scholar.schoolId != null) {
-          this.schoolsService.getSchoolById(scholar.schoolId).subscribe({
-            next: (school) => {
-              this.lunchPrice = school?.lunchPrice ?? 0;
-              this.transportPrice = school?.transportPrice ?? 0;
-              this.schoolName.set(school?.name ?? '');
-            },
-          });
-        }
-
-        this.attendanceSubscription = this.attendanceService
-          .getAttendanceByScholarId(scholarId)
-          .subscribe({
-            next: (attendanceData: AttendanceRecord[] | undefined) => {
-              this.showRecords(attendanceData ?? []);
-            },
-            error: (err) => {
-              console.error('Error fetching attendance data:', err);
-              this.showRecords([]);
-            },
-          });
-      },
-      error: (err) => {
-        console.error('Error fetching scholars:', err);
-        this.scholar.set(null);
-      },
-    });
+    // The attendance list is only shown (and so only saveable) once it has
+    // loaded: Save replaces the scholar's whole list, so saving over a failed
+    // load would wipe the attendance that couldn't be read.
+    this.scholarsService
+      .getScholarById(scholarId)
+      .pipe(
+        switchMap((scholar) => {
+          this.loadSchoolPrices(scholar);
+          return this.attendanceService
+            .getAttendanceByScholarId(scholarId)
+            .pipe(map((records) => ({ scholar, records })));
+        }),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe({
+        next: ({ scholar, records }) => {
+          this.showRecords(records);
+          this.scholar.set(scholar);
+        },
+        error: (error: HttpErrorResponse) =>
+          this.loadError.set(extractErrorMessage(error, 'Failed to load attendance')),
+      });
   }
 
-  ngOnDestroy(): void {
-    this.scholarSubscription?.unsubscribe();
-    this.attendanceSubscription?.unsubscribe();
+  private loadSchoolPrices(scholar: Scholar): void {
+    if (scholar.schoolId == null) return;
+    this.schoolsService
+      .getSchoolById(scholar.schoolId)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((school) => {
+        this.lunchPrice = school?.lunchPrice ?? 0;
+        this.transportPrice = school?.transportPrice ?? 0;
+        this.schoolName.set(school?.name ?? '');
+      });
   }
 
   previousMonth(): void {
@@ -298,23 +291,21 @@ export class AttendancePerScholarComponent implements OnInit, OnDestroy {
     if (!scholarId || this.isSaving()) return;
 
     this.isSaving.set(true);
-    this.attendanceService
-      .saveAttendance(scholarId, this.recordsToSave())
-      .subscribe({
-        next: () => {
-          this.isSaving.set(false);
-          this.hasUnsavedChanges.set(false);
-          this.notificationService.show('Attendance saved successfully!');
-        },
-        error: (err) => {
-          this.isSaving.set(false);
-          console.error('Failed to save attendance:', err.message);
-          this.notificationService.show(
-            `Failed to save attendance. ${err.message}`,
-            'error',
-          );
-        },
-      });
+    this.saveError.set(null);
+    this.attendanceService.saveAttendance(scholarId, this.recordsToSave()).subscribe({
+      next: () => {
+        this.isSaving.set(false);
+        this.hasUnsavedChanges.set(false);
+      },
+      error: (error: HttpErrorResponse) => {
+        this.isSaving.set(false);
+        this.saveError.set(extractErrorMessage(error, 'Failed to save attendance'));
+      },
+    });
+  }
+
+  onBeforeUnload(event: BeforeUnloadEvent): void {
+    if (this.hasUnsavedChanges()) event.preventDefault();
   }
 
   exportCsv(): void {

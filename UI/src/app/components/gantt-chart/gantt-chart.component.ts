@@ -1,5 +1,6 @@
 import { NgStyle } from '@angular/common';
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { HttpErrorResponse } from '@angular/common/http';
 import { TimeSlot } from '../../interfaces/time-slot';
 import { Scholar } from '../../interfaces/scholar';
 import { School } from '../../interfaces/school';
@@ -9,6 +10,7 @@ import { WEEK_DAYS, WeekDay } from '../../constants/week-days';
 import { forkJoin } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { contrastTextColor } from '../../utils/contrast-color';
+import { extractErrorMessage } from '../../utils/extract-error-message';
 
 interface GanttCell {
   style: Record<string, string>;
@@ -26,6 +28,8 @@ export class GanttChartComponent implements OnInit {
   private readonly schoolsService = inject(SchoolsService);
 
   scholars = signal<Scholar[]>([]);
+  readonly loading = signal(true);
+  readonly loadError = signal<string | null>(null);
   schools = new Map<string, School>();
   timeSlots: TimeSlot[] = [];
   readonly weekDays = WEEK_DAYS;
@@ -102,8 +106,16 @@ export class GanttChartComponent implements OnInit {
           return scholars; // Pass scholars to the next operator
         }),
       )
-      // Subscribe to the final observable to get the scholars data
-      .subscribe((scholars) => this.scholars.set(scholars));
+      .subscribe({
+        next: (scholars) => {
+          this.scholars.set(scholars);
+          this.loading.set(false);
+        },
+        error: (error: HttpErrorResponse) => {
+          this.loadError.set(extractErrorMessage(error, 'Failed to load pickup times'));
+          this.loading.set(false);
+        },
+      });
   }
 
   private generateTimeSlots(

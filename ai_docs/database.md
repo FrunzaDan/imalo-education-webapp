@@ -39,10 +39,10 @@ SQL Server schema for the `ImaloEducation` database, defined as an SSDT database
 **`ScholarAuditLog`** (`ScholarAuditLog.sql`) — lifecycle history (Created/Edited/Deleted) for scholars.
 - `ScholarAuditLogId INT IDENTITY(1,1)` PK
 - `ScholarId UNIQUEIDENTIFIER` NOT NULL — **no FK to `Scholar`**, deliberately: a deleted scholar's audit history must survive the hard delete.
-- `ActionType VARCHAR(10)` NOT NULL, `CHECK (ActionType IN ('Created','Edited','Deleted'))` — the API's `AuditAction` enum, stored by name
+- `ActionType VARCHAR(20)` NOT NULL, `CHECK (ActionType IN ('Created','Edited','Deleted'))` — the API's `AuditAction` enum, stored by name
 - `Details NVARCHAR(500)` NULL
 - `OccurredAt DATETIME2(3)` NOT NULL, default `SYSUTCDATETIME()` — UTC, like every timestamp in the three apps. `DATETIME2` carries no offset, so `ScholarDataAccess` marks the value `DateTimeKind.Utc` when it reads it; that's what makes it serialize with a trailing `Z` and display in the viewer's local time.
-- Two non-clustered indexes: `IX_ScholarAuditLog_ScholarId` (per-scholar lookups) and `IX_ScholarAuditLog_OccurredAt_ScholarAuditLogId` on `(OccurredAt DESC, ScholarAuditLogId DESC)` (supports the global, unfiltered newest-first paged view — the ScholarId index doesn't help there since no ScholarId filter is applied).
+- Two non-clustered indexes: `IX_ScholarAuditLog_ScholarId_OccurredAt_ScholarAuditLogId` on `(ScholarId, OccurredAt DESC, ScholarAuditLogId DESC)` (per-scholar lookups, read newest-first straight off the index) and `IX_ScholarAuditLog_OccurredAt_ScholarAuditLogId` on `(OccurredAt DESC, ScholarAuditLogId DESC)` (supports the global, unfiltered newest-first paged view — the ScholarId index doesn't help there since no ScholarId filter is applied).
 
 ## How it works
 

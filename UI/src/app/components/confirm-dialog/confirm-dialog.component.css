@@ -1,4 +1,4 @@
-.confirm-modal-overlay {
+.confirm-overlay {
   position: fixed;
   inset: 0;
   background-color: rgba(0, 0, 0, 0.5);
@@ -7,14 +7,14 @@
   justify-content: center;
   z-index: 1090;
   padding: var(--space-4);
-  animation: confirm-overlay-fade-in 0.5s ease-out forwards;
+  animation: confirm-overlay-fade-in 0.2s ease-out forwards;
 }
 
-.confirm-modal-overlay.closing {
-  animation: confirm-overlay-fade-out 1s ease-in forwards;
+.confirm-overlay.closing {
+  animation: confirm-overlay-fade-out 0.15s ease-in forwards;
 }
 
-.confirm-modal-card {
+.confirm-card {
   background-color: #fff;
   border: var(--border-width) solid var(--border-color);
   border-radius: var(--radius-lg);
@@ -22,27 +22,28 @@
   width: 100%;
   max-width: 420px;
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
-  animation: confirm-card-zoom-in 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  animation: confirm-card-zoom-in 0.2s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
 }
 
-.confirm-modal-card.closing {
-  animation: confirm-card-zoom-out 1s ease-in forwards;
+.confirm-card.closing {
+  animation: confirm-card-zoom-out 0.15s ease-in forwards;
 }
 
-.confirm-modal-title {
+.confirm-title {
   margin: 0 0 var(--space-2);
   color: var(--cyan-dark-color);
   font-size: 1.15rem;
   font-family: inherit;
 }
 
-.confirm-modal-message {
+.confirm-message {
   margin: 0 0 var(--space-5);
   color: var(--dark-main-color);
   line-height: 1.4;
+  white-space: pre-line;
 }
 
-.confirm-modal-actions {
+.confirm-actions {
   display: flex;
   justify-content: flex-end;
   gap: var(--space-3);
@@ -51,7 +52,7 @@
 /* Buttons are the shared .app-button (ghost for cancel). The palette has no
    red, so the final, irreversible confirmation is told apart by switching the
    fill to the ink color rather than a danger hue. */
-.confirm-modal-btn-danger {
+.confirm-button-danger {
   background-color: var(--dark-main-color);
   border-color: var(--dark-main-color);
 }

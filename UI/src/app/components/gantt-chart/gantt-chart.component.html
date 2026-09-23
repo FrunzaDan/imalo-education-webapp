@@ -1,8 +1,13 @@
-<h2 class="page-title">Pickup Time</h2>
+<h1 class="page-title">Pickup Time</h1>
 
+@if (loading()) {
+<div class="loading-message">Loading pickup times...</div>
+} @else if (loadError(); as error) {
+<div class="app-alert" role="alert">{{ error }}</div>
+} @else {
 @for (day of weekDays; track day) {
   <section class="gantt-container">
-    <h3 class="gantt-day-title">{{ formatDayTitle(day) }}</h3>
+    <h2 class="gantt-day-title">{{ formatDayTitle(day) }}</h2>
     <div class="gantt-chart">
       <!-- Header -->
       <div class="gantt-header" [style.--slot-count]="timeSlots.length">
@@ -34,4 +39,5 @@
       }
     </div>
   </section>
+}
 }

@@ -1,7 +1,13 @@
 <div class="scholar-form-page app-card">
-  <h2 class="page-title">{{ isEditMode() ? 'Update Scholar' : 'Create New Scholar' }}</h2>
+  <h1 class="page-title">{{ isEditMode() ? 'Update Scholar' : 'Create New Scholar' }}</h1>
 
+  @if (loadError(); as error) {
+  <div class="app-alert" role="alert">{{ error }}</div>
+  } @else {
   <form [formRoot]="scholarForm" class="scholar-form">
+    @if (saveError(); as error) {
+      <div class="app-alert" role="alert">{{ error }}</div>
+    }
     @if (invalidSummary(); as summary) {
       <div class="app-error-message" role="alert">{{ summary }}</div>
     }
@@ -196,4 +202,5 @@
       </button>
     </div>
   </form>
+  }
 </div>

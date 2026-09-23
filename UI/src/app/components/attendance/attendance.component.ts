@@ -1,4 +1,5 @@
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { HttpErrorResponse } from '@angular/common/http';
 import { DatePipe } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { FormField, form } from '@angular/forms/signals';
@@ -16,6 +17,7 @@ import {
   ScholarAttendanceRow,
   sum,
 } from './attendance-grid';
+import { extractErrorMessage } from '../../utils/extract-error-message';
 
 @Component({
   selector: 'app-attendance',
@@ -31,6 +33,7 @@ export class AttendanceComponent implements OnInit {
   private readonly scholars = signal<Scholar[]>([]);
   private readonly allAttendance = signal<ScholarAttendance[]>([]);
   loading = signal(true);
+  readonly loadError = signal<string | null>(null);
 
   // 'YYYY-MM', the value format of <input type="month">, defaulting to
   // DEFAULT_MONTH. The prev/next arrows write straight into it.
@@ -63,8 +66,8 @@ export class AttendanceComponent implements OnInit {
         this.allAttendance.set(allAttendance);
         this.loading.set(false);
       },
-      error: (err) => {
-        console.error('Failed to load attendance overview:', err);
+      error: (error: HttpErrorResponse) => {
+        this.loadError.set(extractErrorMessage(error, 'Failed to load attendance'));
         this.loading.set(false);
       },
     });

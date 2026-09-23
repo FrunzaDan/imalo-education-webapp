@@ -11,9 +11,10 @@
     <button
       type="button"
       class="app-button app-button--danger"
+      [disabled]="deleting()"
       (click)="deleteScholar()"
     >
-      Delete Scholar
+      {{ deleting() ? 'Deleting...' : 'Delete Scholar' }}
     </button>
     <button
       type="button"
@@ -24,8 +25,12 @@
     </button>
   </div>
 
+  @if (deleteError(); as error) {
+  <div class="app-alert" role="alert">{{ error }}</div>
+  }
+
   <div class="scholar-detail-container app-card">
-    <h2 class="page-title">{{ scholarValue.firstName }} {{ scholarValue.lastName }}</h2>
+    <h1 class="page-title">{{ scholarValue.firstName }} {{ scholarValue.lastName }}</h1>
     <section class="detail-section">
       <dl class="detail-list">
         <dt>Grade</dt>
@@ -45,7 +50,7 @@
       scholarValue.fatherPhoneNumber
     ) {
       <section class="detail-section">
-        <h3>Parents</h3>
+        <h2>Parents</h2>
         <dl class="detail-list">
           @if (
             scholarValue.motherFirstName ||
@@ -84,7 +89,7 @@
     }
     @if (scholarValue.pickupSchedule) {
       <section class="detail-section">
-        <h3>Pick-Up Schedule</h3>
+        <h2>Pick-Up Schedule</h2>
         <table class="pickup-schedule">
           <thead>
             <tr>
@@ -104,23 +109,23 @@
       </section>
     } @else {
       <section class="detail-section">
-        <h3>Pick-Up Schedule</h3>
+        <h2>Pick-Up Schedule</h2>
         <p class="detail-muted">Pick-Up Schedule not available.</p>
       </section>
     }
     <section class="detail-section">
-      <h3>Audit Trail</h3>
+      <h2>Audit trail</h2>
       @if (auditLogLoading()) {
-        <p class="detail-muted">Loading audit trail...</p>
+        <p class="detail-muted" role="status">Loading audit trail…</p>
       } @else if (auditLogError(); as errorMessage) {
-        <p class="app-error-message">{{ errorMessage }}</p>
+        <p class="app-alert" role="alert">{{ errorMessage }}</p>
       } @else if (auditLog().length === 0) {
         <p class="detail-muted">No recorded actions yet.</p>
       } @else {
         <ul class="audit-trail-list">
           @for (entry of auditLog(); track entry.scholarAuditLogId) {
             <li>
-              <strong>{{ entry.actionType }}</strong> on
+              <strong>{{ auditActionLabel(entry.actionType) }}</strong> on
               {{ entry.occurredAt | date: 'medium' }}
               @if (entry.details) {
                 <div class="audit-trail-details">{{ entry.details }}</div>
@@ -136,7 +141,7 @@
 
 @if (!scholar()) {
   @if (loadError(); as error) {
-    <div class="loading-message" role="alert">Failed to load scholar. {{ error }}</div>
+    <div class="app-alert" role="alert">{{ error }}</div>
   } @else {
     <div class="loading-message">Loading scholar details...</div>
   }

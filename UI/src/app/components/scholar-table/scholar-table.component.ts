@@ -1,11 +1,12 @@
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { HttpErrorResponse } from '@angular/common/http';
 import { FormField, form } from '@angular/forms/signals';
 import { ScholarsService } from '../../services/scholars.service';
 import { SchoolsService } from '../../services/schools.service';
 import { SortingService } from '../../services/sorting.service';
 import { CsvExportService } from '../../services/csv-export.service';
 import { NotificationService } from '../../services/notification.service';
-import { ConfirmModalService } from '../../services/confirm-modal.service';
+import { ConfirmDialogService } from '../../services/confirm-dialog.service';
 import { Scholar } from '../../interfaces/scholar';
 import { School } from '../../interfaces/school';
 import { NgStyle } from '@angular/common';
@@ -14,6 +15,7 @@ import { catchError, concatMap, map, toArray } from 'rxjs/operators';
 import { RouterModule } from '@angular/router';
 import { contrastTextColor } from '../../utils/contrast-color';
 import { parseDateOnly } from '../../utils/weekday-dates';
+import { extractErrorMessage } from '../../utils/extract-error-message';
 
 interface TransformedScholarData {
   scholarId: string;
@@ -37,11 +39,13 @@ export class ScholarTableComponent implements OnInit {
   private readonly sortingService = inject(SortingService);
   private readonly csvExportService = inject(CsvExportService);
   private readonly notificationService = inject(NotificationService);
-  private readonly confirmModalService = inject(ConfirmModalService);
+  private readonly confirmDialogService = inject(ConfirmDialogService);
 
   scholars: Scholar[] = [];
   schools: Map<string, School> = new Map();
   scholarData = signal<TransformedScholarData[]>([]);
+  readonly loading = signal(true);
+  readonly loadError = signal<string | null>(null);
 
   currentSortColumn: string = '';
   isAscending: boolean = true;
@@ -58,6 +62,7 @@ export class ScholarTableComponent implements OnInit {
   }
 
   private loadData(): void {
+    this.loadError.set(null);
     forkJoin({
       scholars: this.scholarsService.getScholars(),
       schools: this.schoolsService.getSchools(),
@@ -90,11 +95,18 @@ export class ScholarTableComponent implements OnInit {
           });
         }),
       )
-      .subscribe((transformedData: TransformedScholarData[]) => {
-        this.scholarData.set(transformedData);
-        // Stale selections (from before a reload) would otherwise reference
-        // rows that may no longer exist or may have shifted.
-        this.selectedScholarIds.set(new Set());
+      .subscribe({
+        next: (transformedData: TransformedScholarData[]) => {
+          this.scholarData.set(transformedData);
+          // Stale selections (from before a reload) would otherwise reference
+          // rows that may no longer exist or may have shifted.
+          this.selectedScholarIds.set(new Set());
+          this.loading.set(false);
+        },
+        error: (error: HttpErrorResponse) => {
+          this.loadError.set(extractErrorMessage(error, 'Failed to load scholars'));
+          this.loading.set(false);
+        },
       });
   }
 
@@ -165,10 +177,10 @@ export class ScholarTableComponent implements OnInit {
     if (this.selectedScholarIds().size === 0 || this.bulkDeleteInProgress()) return;
 
     const ids = Array.from(this.selectedScholarIds());
-    const confirmed = await this.confirmModalService.confirm(
+    const confirmed = await this.confirmDialogService.confirm(
       `Are you sure you want to delete ${ids.length} scholar${ids.length === 1 ? '' : 's'}? ` +
         `This also deletes their pickup schedule and attendance records. This cannot be undone.`,
-      { title: 'Delete scholars', confirmText: 'Delete', variant: 'danger' },
+      { title: 'Delete scholars?', confirmLabel: 'Delete', variant: 'danger' },
     );
     if (!confirmed) return;
 
@@ -177,12 +189,9 @@ export class ScholarTableComponent implements OnInit {
     from(ids)
       .pipe(
         concatMap((scholarId) =>
-          this.scholarsService.deleteScholar(scholarId).pipe(
+          this.scholarsService.deleteScholarSilently(scholarId).pipe(
             map(() => true),
-            catchError((err) => {
-              console.error(`Failed to delete scholar ${scholarId}:`, err);
-              return of(false);
-            }),
+            catchError(() => of(false)),
           ),
         ),
         toArray(),
@@ -194,7 +203,7 @@ export class ScholarTableComponent implements OnInit {
         this.notificationService.show(
           failed === 0
             ? `Deleted ${succeeded} scholar${succeeded === 1 ? '' : 's'}.`
-            : `Deleted ${succeeded} scholar${succeeded === 1 ? '' : 's'} (${failed} failed — check console).`,
+            : `Deleted ${succeeded} scholar${succeeded === 1 ? '' : 's'}; ${failed} could not be deleted.`,
           failed === 0 ? 'success' : 'error',
         );
         this.loadData();

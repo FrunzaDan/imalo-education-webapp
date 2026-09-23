@@ -1,4 +1,5 @@
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { HttpErrorResponse } from '@angular/common/http';
 import { forkJoin } from 'rxjs';
 import { RouterModule } from '@angular/router';
 import { DatePipe } from '@angular/common';
@@ -18,6 +19,7 @@ import {
   todayWeekdayKey,
   upcomingBirthdays as computeUpcomingBirthdays,
 } from './dashboard-data';
+import { extractErrorMessage } from '../../utils/extract-error-message';
 
 @Component({
   selector: 'app-dashboard',
@@ -35,6 +37,7 @@ export class DashboardComponent implements OnInit {
   private readonly schools = signal<School[]>([]);
   private readonly allAttendance = signal<ScholarAttendance[]>([]);
   loading = signal(true);
+  readonly loadError = signal<string | null>(null);
 
   readonly recentActivity = this.globalAuditLogService.entries;
 
@@ -79,8 +82,8 @@ export class DashboardComponent implements OnInit {
         this.allAttendance.set(allAttendance);
         this.loading.set(false);
       },
-      error: (err) => {
-        console.error('Failed to load dashboard data:', err);
+      error: (error: HttpErrorResponse) => {
+        this.loadError.set(extractErrorMessage(error, 'Failed to load the dashboard'));
         this.loading.set(false);
       },
     });

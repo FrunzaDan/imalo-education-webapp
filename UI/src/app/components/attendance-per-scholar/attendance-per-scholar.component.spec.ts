@@ -1,4 +1,5 @@
 import { provideZonelessChangeDetection } from '@angular/core';
+import { HttpErrorResponse } from '@angular/common/http';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { of, throwError } from 'rxjs';
 import { AttendancePerScholarComponent } from './attendance-per-scholar.component';
@@ -6,7 +7,6 @@ import { ScholarsService } from '../../services/scholars.service';
 import { SchoolsService } from '../../services/schools.service';
 import { AttendanceService } from '../../services/attendance.service';
 import { CsvExportService } from '../../services/csv-export.service';
-import { NotificationService } from '../../services/notification.service';
 import { DEFAULT_MONTH, getWeekdayDatesInMonth } from '../../utils/weekday-dates';
 import type { Scholar } from '../../interfaces/scholar';
 import type { School } from '../../interfaces/school';
@@ -58,25 +58,35 @@ function makeExistingRecord(): AttendanceRecord {
 interface SetupOptions {
   attendance?: AttendanceRecord[];
   saveResult?: 'success' | 'error';
+  loadResult?: 'success' | 'scholar-error' | 'attendance-error';
   routeScholarId?: string | null;
 }
 
 function setup(options: SetupOptions = {}) {
-  const scholarsService = { getScholars: vi.fn(() => of([SCHOLAR])) };
+  const notFound = new HttpErrorResponse({
+    status: 404,
+    error: { status: 404, title: 'Scholar not found.', detail: 'Scholar with ID scholar-1 not found.' },
+  });
+  const scholarsService = {
+    getScholarById: vi.fn(() =>
+      options.loadResult === 'scholar-error' ? throwError(() => notFound) : of(SCHOLAR),
+    ),
+  };
   const schoolsService = { getSchoolById: vi.fn(() => of(SCHOOL)) };
   const saveAttendance = vi.fn(() =>
     options.saveResult === 'error'
-      ? throwError(
-          () => new Error('saveAttendance id=scholar-1 failed: Scholar not found.'),
-        )
-      : of({ message: 'Attendance record saved successfully.' }),
+      ? throwError(() => notFound)
+      : of(undefined),
   );
   const attendanceService = {
-    getAttendanceByScholarId: vi.fn(() => of(options.attendance ?? [makeExistingRecord()])),
+    getAttendanceByScholarId: vi.fn(() =>
+      options.loadResult === 'attendance-error'
+        ? throwError(() => new HttpErrorResponse({ status: 500 }))
+        : of(options.attendance ?? [makeExistingRecord()]),
+    ),
     saveAttendance,
   };
   const csvExportService = { export: vi.fn() };
-  const notificationService = { show: vi.fn() };
 
   TestBed.configureTestingModule({
     imports: [AttendancePerScholarComponent],
@@ -86,7 +96,6 @@ function setup(options: SetupOptions = {}) {
       { provide: SchoolsService, useValue: schoolsService },
       { provide: AttendanceService, useValue: attendanceService },
       { provide: CsvExportService, useValue: csvExportService },
-      { provide: NotificationService, useValue: notificationService },
     ],
   });
 
@@ -105,7 +114,6 @@ function setup(options: SetupOptions = {}) {
     schoolsService,
     attendanceService,
     csvExportService,
-    notificationService,
   };
 }
 
@@ -153,7 +161,27 @@ describe('AttendancePerScholarComponent', () => {
 
     it('does nothing and calls no service when the route has no scholar id', () => {
       const { scholarsService } = setup({ routeScholarId: null });
-      expect(scholarsService.getScholars).not.toHaveBeenCalled();
+      expect(scholarsService.getScholarById).not.toHaveBeenCalled();
+    });
+
+    it('shows the load error, not the form, when the scholar cannot be loaded', () => {
+      const { fixture, attendanceService } = setup({ loadResult: 'scholar-error' });
+      const el: HTMLElement = fixture.nativeElement;
+
+      expect(el.querySelector('[role="alert"]')?.textContent).toContain(
+        'Scholar with ID scholar-1 not found.',
+      );
+      expect(el.querySelector('table')).toBeNull();
+      expect(attendanceService.getAttendanceByScholarId).not.toHaveBeenCalled();
+    });
+
+    it('shows the load error, not an empty (saveable) month, when attendance cannot be loaded', () => {
+      const { fixture, component } = setup({ loadResult: 'attendance-error' });
+      const el: HTMLElement = fixture.nativeElement;
+
+      expect(component.loadError()).toBe('Failed to load attendance (500). Please try again.');
+      expect(el.querySelector('table')).toBeNull();
+      expect(el.textContent).not.toContain('Save Changes');
     });
 
     it('defaults to the month of the latest existing attendance record', () => {
@@ -439,8 +467,8 @@ describe('AttendancePerScholarComponent', () => {
   });
 
   describe('save', () => {
-    it('sends the scholar id and the persisted records — without the form-only flag — and shows a success notification', () => {
-      const { component, attendanceService, notificationService } = setup();
+    it('sends the scholar id and the persisted records — without the form-only flag', () => {
+      const { component, attendanceService } = setup();
 
       component.save();
 
@@ -448,7 +476,6 @@ describe('AttendancePerScholarComponent', () => {
         makeExistingRecord(),
       ]);
       expect(component.recordsToSave()[0]).not.toHaveProperty('persisted');
-      expect(notificationService.show).toHaveBeenCalledWith('Attendance saved successfully!');
       expect(component.isSaving()).toBe(false);
       expect(component.hasUnsavedChanges()).toBe(false);
     });
@@ -477,16 +504,31 @@ describe('AttendancePerScholarComponent', () => {
       ]);
     });
 
-    it('shows the server-provided error message on failure and clears isSaving', () => {
-      const { component, notificationService } = setup({ saveResult: 'error' });
+    it('shows the server-provided error inline on failure, keeping the unsaved edits', () => {
+      const ctx = setup({ saveResult: 'error' });
+      click(ctx, UNTOUCHED_DATE, 'present');
 
-      component.save();
+      ctx.component.save();
+      ctx.fixture.detectChanges();
 
-      expect(notificationService.show).toHaveBeenCalledWith(
-        expect.stringContaining('Scholar not found.'),
-        'error',
+      expect(ctx.component.saveError()).toBe('Scholar with ID scholar-1 not found.');
+      expect(ctx.fixture.nativeElement.querySelector('.app-alert')?.textContent).toContain(
+        'Scholar with ID scholar-1 not found.',
       );
-      expect(component.isSaving()).toBe(false);
+      expect(ctx.component.isSaving()).toBe(false);
+      expect(ctx.component.hasUnsavedChanges()).toBe(true);
+    });
+
+    it('asks the browser to confirm a reload or tab close only while there are unsaved changes', () => {
+      const ctx = setup();
+      const clean = new Event('beforeunload', { cancelable: true }) as BeforeUnloadEvent;
+      ctx.component.onBeforeUnload(clean);
+      expect(clean.defaultPrevented).toBe(false);
+
+      click(ctx, UNTOUCHED_DATE, 'present');
+      const dirty = new Event('beforeunload', { cancelable: true }) as BeforeUnloadEvent;
+      ctx.component.onBeforeUnload(dirty);
+      expect(dirty.defaultPrevented).toBe(true);
     });
 
     it('is a no-op while a save is already in flight', () => {

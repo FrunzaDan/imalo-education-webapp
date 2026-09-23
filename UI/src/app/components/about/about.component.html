@@ -1,5 +1,5 @@
 <div class="about-page">
-  <h2 class="page-title">About This Application</h2>
+  <h1 class="page-title">About This Application</h1>
   <p class="about-lead">
     Imalo Education Webapp is a small full-stack learning project: an Angular
     single-page frontend talking to an ASP.NET Core Web API, which persists
@@ -122,9 +122,6 @@ docker run -e "ACCEPT_EULA=1" -e "MSSQL_SA_PASSWORD=MyStrongPassw0rd?" -p 1433:1
           Add 20 test scholars
         }
       </button>
-      @if (resultMessage()) {
-        <p class="about-result">{{ resultMessage() }}</p>
-      }
     </div>
   </div>
 

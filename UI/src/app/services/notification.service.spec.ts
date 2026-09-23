@@ -16,28 +16,38 @@ describe('NotificationService', () => {
     expect(service.notifications()).toEqual([]);
   });
 
-  it('adds a notification with an incrementing id and default type/duration', () => {
+  it('adds a success notification with an incrementing id by default', () => {
     service.show('Saved');
 
-    const [notification] = service.notifications();
-    expect(notification).toMatchObject({ id: 1, message: 'Saved', type: 'success' });
+    expect(service.notifications()).toEqual([{ id: 1, message: 'Saved', type: 'success' }]);
   });
 
   it('assigns distinct, increasing ids across calls', () => {
     service.show('First');
     service.show('Second');
 
-    const ids = service.notifications().map((n) => n.id);
-    expect(ids).toEqual([1, 2]);
+    expect(service.notifications().map((n) => n.id)).toEqual([1, 2]);
   });
 
-  it('supports the error type', () => {
+  it('auto-dismisses a success notification after 6 seconds', () => {
+    service.show('Saved');
+
+    vi.advanceTimersByTime(5999);
+    expect(service.notifications()).toHaveLength(1);
+
+    vi.advanceTimersByTime(1);
+    expect(service.notifications()).toEqual([]);
+  });
+
+  it('keeps an error notification until it is dismissed', () => {
     service.show('Failed', 'error');
 
-    expect(service.notifications()[0].type).toBe('error');
+    vi.advanceTimersByTime(60_000);
+
+    expect(service.notifications()).toEqual([{ id: 1, message: 'Failed', type: 'error' }]);
   });
 
-  it('auto-dismisses after the given duration, leaving other notifications intact', () => {
+  it('honors an explicit duration, leaving other notifications intact', () => {
     service.show('Short-lived', 'success', 1000);
     service.show('Long-lived', 'success', 5000);
 
@@ -47,19 +57,18 @@ describe('NotificationService', () => {
   });
 
   it('dismiss(id) removes only the matching notification', () => {
-    service.show('Keep me', 'success', 5000);
-    service.show('Remove me', 'success', 5000);
-    const idToRemove = service.notifications()[1].id;
+    service.show('Keep me');
+    service.show('Remove me');
 
-    service.dismiss(idToRemove);
+    service.dismiss(service.notifications()[1].id);
 
     expect(service.notifications().map((n) => n.message)).toEqual(['Keep me']);
   });
 
   it('dismiss on an unknown id is a no-op', () => {
-    service.show('Stays', 'success', 5000);
+    service.show('Stays');
 
     expect(() => service.dismiss(9999)).not.toThrow();
-    expect(service.notifications().length).toBe(1);
+    expect(service.notifications()).toHaveLength(1);
   });
 });

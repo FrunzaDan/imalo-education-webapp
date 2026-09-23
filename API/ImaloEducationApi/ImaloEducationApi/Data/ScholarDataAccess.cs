@@ -116,7 +116,7 @@ public class ScholarDataAccess : IScholarDataAccess
 
             // Best-effort: runs after the transaction has committed, on its own
             // connection, so a logging failure can never roll back a successful create.
-            await LogAuditAsync(insertedId, AuditAction.Created, null, cancellationToken);
+            await LogAuditAsync(insertedId, AuditAction.Created);
 
             return scholar;
         }
@@ -168,34 +168,43 @@ public class ScholarDataAccess : IScholarDataAccess
         if (scholarId == Guid.Empty)
             throw new ArgumentException("Scholar ID must not be empty.", nameof(scholarId));
 
-        const string sql = """
-
-                                           SELECT s.ScholarId, s.FirstName, s.LastName, s.BirthDate, s.Grade, s.SchoolId, ps.ScheduleJson,
-                                                  mother.FirstName AS MotherFirstName, mother.LastName AS MotherLastName, mother.PhoneNumber AS MotherPhoneNumber,
-                                                  father.FirstName AS FatherFirstName, father.LastName AS FatherLastName, father.PhoneNumber AS FatherPhoneNumber
-                                           FROM dbo.Scholar AS s
-                                           LEFT JOIN dbo.ScholarPickupSchedule AS ps ON s.ScholarId = ps.ScholarId
-                                           LEFT JOIN dbo.ScholarParent AS mother ON mother.ScholarId = s.ScholarId AND mother.Role = 'Mother'
-                                           LEFT JOIN dbo.ScholarParent AS father ON father.ScholarId = s.ScholarId AND father.Role = 'Father'
-                                           WHERE s.ScholarId = @ScholarId;
-                           """;
-
         await using var connection = new SqlConnection(_connectionString);
-        await using var command = new SqlCommand(sql, connection);
-        AddParam(command, "@ScholarId", SqlDbType.UniqueIdentifier, scholarId);
-
         await connection.OpenAsync(cancellationToken);
-        await using var reader = await command.ExecuteReaderAsync(cancellationToken);
 
-        if (await reader.ReadAsync(cancellationToken))
+        var scholar = await ReadScholarAsync(connection, null, scholarId, cancellationToken);
+        if (scholar != null)
         {
-            var scholar = TryMapScholarFromReader(reader);
             _logger.LogInformation("Retrieved scholar with ID: {ScholarId}", scholarId);
             return scholar;
         }
 
         _logger.LogWarning("No scholar found with ID: {ScholarId}", scholarId);
         return null;
+    }
+
+    // One scholar with its schedule and parents. Inside an update's transaction the Scholar row
+    // is read WITH (UPDLOCK), so no other update can change it between this read and the
+    // UPDATE — what the audit entry says changed is what this update changed.
+    private async Task<Scholar?> ReadScholarAsync(SqlConnection connection, SqlTransaction? transaction,
+        Guid scholarId, CancellationToken cancellationToken)
+    {
+        var lockHint = transaction is null ? "" : " WITH (UPDLOCK)";
+        var sql = $"""
+                   SELECT s.ScholarId, s.FirstName, s.LastName, s.BirthDate, s.Grade, s.SchoolId, ps.ScheduleJson,
+                          mother.FirstName AS MotherFirstName, mother.LastName AS MotherLastName, mother.PhoneNumber AS MotherPhoneNumber,
+                          father.FirstName AS FatherFirstName, father.LastName AS FatherLastName, father.PhoneNumber AS FatherPhoneNumber
+                   FROM dbo.Scholar AS s{lockHint}
+                   LEFT JOIN dbo.ScholarPickupSchedule AS ps ON s.ScholarId = ps.ScholarId
+                   LEFT JOIN dbo.ScholarParent AS mother ON mother.ScholarId = s.ScholarId AND mother.Role = 'Mother'
+                   LEFT JOIN dbo.ScholarParent AS father ON father.ScholarId = s.ScholarId AND father.Role = 'Father'
+                   WHERE s.ScholarId = @ScholarId;
+                   """;
+
+        await using var command = new SqlCommand(sql, connection, transaction);
+        AddParam(command, "@ScholarId", SqlDbType.UniqueIdentifier, scholarId);
+
+        await using var reader = await command.ExecuteReaderAsync(cancellationToken);
+        return await reader.ReadAsync(cancellationToken) ? TryMapScholarFromReader(reader) : null;
     }
 
     public async Task<Scholar?> UpdateScholarAsync(Scholar scholar, CancellationToken cancellationToken)
@@ -244,6 +253,11 @@ public class ScholarDataAccess : IScholarDataAccess
 
         try
         {
+            // What's stored now, for the audit entry's "Updated: ..." details. Null when the
+            // scholar doesn't exist (the UPDATE below reports that) or its stored schedule is
+            // unreadable — the update still goes ahead then, it just can't say what changed.
+            var before = await ReadScholarAsync(connection, transaction, scholar.ScholarId, cancellationToken);
+
             await using var updateScholarCmd = new SqlCommand(updateScholarSql, connection, transaction);
             AddParam(updateScholarCmd, "@ScholarId", SqlDbType.UniqueIdentifier, scholar.ScholarId);
             AddParam(updateScholarCmd, "@FirstName", SqlDbType.NVarChar, scholar.FirstName ?? string.Empty, 100);
@@ -303,7 +317,8 @@ public class ScholarDataAccess : IScholarDataAccess
 
             await transaction.CommitAsync(cancellationToken);
 
-            await LogAuditAsync(scholar.ScholarId, AuditAction.Edited, null, cancellationToken);
+            await LogAuditAsync(scholar.ScholarId, AuditAction.Edited,
+                before is null ? null : ScholarChanges.Describe(before, scholar));
 
             _logger.LogInformation("Updated scholar with ID: {ScholarId}", scholar.ScholarId);
             return scholar;
@@ -340,7 +355,7 @@ public class ScholarDataAccess : IScholarDataAccess
             return false; // Scholar not found
         }
 
-        await LogAuditAsync(scholarId, AuditAction.Deleted, null, cancellationToken);
+        await LogAuditAsync(scholarId, AuditAction.Deleted);
 
         _logger.LogInformation("Deleted scholar with ID: {ScholarId}", scholarId);
         return true;
@@ -478,8 +493,11 @@ public class ScholarDataAccess : IScholarDataAccess
     // after that mutation's own transaction has committed), so a DB hiccup
     // while writing the log must never turn an otherwise-successful request
     // into a 500 — it's swallowed and logged instead. Uses its own connection
-    // rather than sharing the caller's, for the same reason.
-    private async Task LogAuditAsync(Guid scholarId, AuditAction action, string? details, CancellationToken cancellationToken)
+    // rather than sharing the caller's, for the same reason. Takes no
+    // CancellationToken on purpose: the change is already saved, so its entry
+    // is written even if the client that made it has since disconnected (the
+    // customer and employee apps' audit loggers do the same).
+    private async Task LogAuditAsync(Guid scholarId, AuditAction action, string? details = null)
     {
         const string sql = """
                             INSERT INTO dbo.ScholarAuditLog (ScholarId, ActionType, Details)
@@ -495,8 +513,8 @@ public class ScholarDataAccess : IScholarDataAccess
             AddParam(command, "@ActionType", SqlDbType.VarChar, action.ToString(), 20);
             AddParam(command, "@Details", SqlDbType.NVarChar, ToDbValue(details), 500);
 
-            await connection.OpenAsync(cancellationToken);
-            await command.ExecuteNonQueryAsync(cancellationToken);
+            await connection.OpenAsync();
+            await command.ExecuteNonQueryAsync();
         }
         catch (Exception ex)
         {

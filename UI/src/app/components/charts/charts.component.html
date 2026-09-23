@@ -1,11 +1,14 @@
 @if (loading()) {
 <div class="loading-message">Loading charts...</div>
+} @else if (loadError(); as error) {
+<h1 class="page-title">Charts</h1>
+<div class="app-alert" role="alert">{{ error }}</div>
 } @else {
-<h2 class="page-title">Charts</h2>
+<h1 class="page-title">Charts</h1>
 
 <section class="app-card charts-card">
   <div class="charts-card__header">
-    <h3 class="charts-card__title">Monthly overview</h3>
+    <h2 class="charts-card__title">Monthly overview</h2>
     <div class="month-nav">
       <button
         type="button"
@@ -54,7 +57,7 @@
   </div>
 
   <div class="charts-card__chart">
-    <h4 class="charts-card__chart-title">Scholars present per day</h4>
+    <h3 class="charts-card__chart-title">Scholars present per day</h3>
     <app-bar-chart
       [points]="dailyPresentBars()"
       series1Label="Present"
@@ -64,7 +67,7 @@
   </div>
 
   <div class="charts-card__chart">
-    <h4 class="charts-card__chart-title">Revenue per day</h4>
+    <h3 class="charts-card__chart-title">Revenue per day</h3>
     <app-bar-chart
       [points]="dailyRevenueBars()"
       series1Label="Transport"
@@ -77,7 +80,7 @@
 
 <section class="app-card charts-card">
   <div class="charts-card__header">
-    <h3 class="charts-card__title">Yearly overview</h3>
+    <h2 class="charts-card__title">Yearly overview</h2>
     <div class="year-nav">
       <button
         type="button"
@@ -127,7 +130,7 @@
 
   <div class="charts-card__chart-row">
     <div class="charts-card__chart">
-      <h4 class="charts-card__chart-title">Scholars present per month</h4>
+      <h3 class="charts-card__chart-title">Scholars present per month</h3>
       <app-bar-chart
         [points]="monthlyPresentBars()"
         series1Label="Present"
@@ -137,7 +140,7 @@
     </div>
 
     <div class="charts-card__chart">
-      <h4 class="charts-card__chart-title">Revenue per month</h4>
+      <h3 class="charts-card__chart-title">Revenue per month</h3>
       <app-bar-chart
         [points]="monthlyRevenueBars()"
         series1Label="Transport"
@@ -151,7 +154,7 @@
 
 <section class="app-card charts-card">
   <div class="charts-card__header">
-    <h3 class="charts-card__title">Scholars overview</h3>
+    <h2 class="charts-card__title">Scholars overview</h2>
   </div>
 
   <div class="charts-card__stats">
@@ -171,7 +174,7 @@
 
   <div class="charts-card__chart-row">
     <div class="charts-card__chart">
-      <h4 class="charts-card__chart-title">Scholars by class</h4>
+      <h3 class="charts-card__chart-title">Scholars by class</h3>
       <app-bar-chart
         [points]="classCounts()"
         series1Label="Scholars"
@@ -181,7 +184,7 @@
     </div>
 
     <div class="charts-card__chart">
-      <h4 class="charts-card__chart-title">Scholars by school</h4>
+      <h3 class="charts-card__chart-title">Scholars by school</h3>
       <app-bar-chart
         [points]="schoolCounts()"
         series1Label="Scholars"

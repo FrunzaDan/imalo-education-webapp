@@ -12,7 +12,7 @@
   font-family: inherit;
 }
 
-.api-down-card h2 {
+.api-down-card h1 {
   color: var(--orange-text-color);
   margin-bottom: var(--space-3);
 }

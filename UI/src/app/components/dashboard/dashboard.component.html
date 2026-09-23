@@ -1,8 +1,11 @@
 @if (loading()) {
 <div class="loading-message">Loading dashboard...</div>
+} @else if (loadError(); as error) {
+<h1 class="page-title">Dashboard</h1>
+<div class="app-alert" role="alert">{{ error }}</div>
 } @else {
 <div class="page-toolbar">
-  <h2 class="page-title dashboard-title">Dashboard</h2>
+  <h1 class="page-title dashboard-title">Dashboard</h1>
   <span class="dashboard-today">{{ today | date: 'fullDate' }}</span>
 </div>
 
@@ -33,7 +36,7 @@
 
 <div class="dashboard-grid">
   <section class="app-card dashboard-panel">
-    <h3 class="dashboard-panel__title">Today's Pickups</h3>
+    <h2 class="dashboard-panel__title">Today's Pickups</h2>
     @if (todaysPickups().length === 0) {
     <p class="dashboard-panel__empty">
       @if (isWeekend()) { It's the weekend — no pickups scheduled. } @else { No pickups
@@ -59,7 +62,7 @@
   </section>
 
   <section class="app-card dashboard-panel">
-    <h3 class="dashboard-panel__title">Upcoming Birthdays</h3>
+    <h2 class="dashboard-panel__title">Upcoming Birthdays</h2>
     @if (upcomingBirthdays().length === 0) {
     <p class="dashboard-panel__empty">No birthdays in the next 30 days.</p>
     } @else {
@@ -81,7 +84,7 @@
   </section>
 
   <section class="app-card dashboard-panel dashboard-panel--wide">
-    <h3 class="dashboard-panel__title">Recent Activity</h3>
+    <h2 class="dashboard-panel__title">Recent Activity</h2>
     @if (recentActivity().length === 0) {
     <p class="dashboard-panel__empty">No recorded actions yet.</p>
     } @else {

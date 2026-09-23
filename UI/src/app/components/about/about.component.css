@@ -79,8 +79,3 @@
   font-size: inherit;
 }
 
-.about-result {
-  margin-top: var(--space-3);
-  font-style: italic;
-  color: var(--cyan-dark-color);
-}

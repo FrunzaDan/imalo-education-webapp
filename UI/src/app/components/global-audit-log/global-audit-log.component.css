@@ -1,5 +1,4 @@
 .audit-log-link {
-  cursor: pointer;
   text-decoration: underline;
   color: var(--cyan-dark-color);
 }
@@ -14,6 +13,13 @@
   color: var(--dark-main-color);
   opacity: 0.6;
   font-style: italic;
+}
+
+.audit-log-empty {
+  padding: var(--space-5) var(--space-4);
+  text-align: center;
+  font-style: italic;
+  opacity: 0.65;
 }
 
 .audit-log-pagination {

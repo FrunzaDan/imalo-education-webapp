@@ -1,7 +1,10 @@
 @if (loading()) {
 <div class="loading-message">Loading attendance...</div>
+} @else if (loadError(); as error) {
+<h1 class="page-title">Attendance</h1>
+<div class="app-alert" role="alert">{{ error }}</div>
 } @else {
-<h2 class="page-title">Attendance</h2>
+<h1 class="page-title">Attendance</h1>
 
 <div class="page-toolbar">
   <div class="month-nav">

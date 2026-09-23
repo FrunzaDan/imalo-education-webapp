@@ -2,24 +2,24 @@ import { TitleCasePipe } from '@angular/common';
 import {
   Component,
   computed,
-  effect,
   inject,
   input,
   linkedSignal,
   signal,
-  untracked,
 } from '@angular/core';
 import { rxResource, toSignal } from '@angular/core/rxjs-interop';
 import { FormField, FormRoot, form } from '@angular/forms/signals';
+import { HttpErrorResponse } from '@angular/common/http';
 import { Router, RouterModule } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { WEEK_DAYS } from '../../constants/week-days';
 import { ScholarsService } from '../../services/scholars.service';
 import { SchoolsService } from '../../services/schools.service';
-import { NotificationService } from '../../services/notification.service';
+import { extractErrorMessage } from '../../utils/extract-error-message';
 import {
   ScholarFormModel,
   emptyScholarForm,
+  isScholarFormDirty,
   scholarFormSchema,
   toFormModel,
   toScholar,
@@ -34,12 +34,13 @@ import {
   imports: [FormField, FormRoot, RouterModule, TitleCasePipe],
   templateUrl: './scholar-form.component.html',
   styleUrl: './scholar-form.component.css',
+  // Refresh / closing the tab isn't a router navigation, so guard it here too.
+  host: { '(window:beforeunload)': 'onBeforeUnload($event)' },
 })
 export class ScholarFormComponent {
   private readonly router = inject(Router);
   private readonly scholarsService = inject(ScholarsService);
   private readonly schoolsService = inject(SchoolsService);
-  private readonly notificationService = inject(NotificationService);
 
   // Bound from the `:scholarId` route param by withComponentInputBinding() in
   // app.config.ts; absent on the create route.
@@ -57,13 +58,31 @@ export class ScholarFormComponent {
     stream: ({ params: scholarId }) => this.scholarsService.getScholarById(scholarId),
   });
 
+  // Load failures are shown inline, in place of the form (an edit form with
+  // nothing loaded into it would only invite a broken save).
+  readonly loadError = computed(() => {
+    const error = this.scholarResource.error();
+    return error ? extractErrorMessage(error as HttpErrorResponse, 'Failed to load scholar') : null;
+  });
+
   // The form model is a signal that re-derives from the loaded scholar and
   // stays writable for the user's edits — no patchValue copy step.
-  readonly model = linkedSignal<ScholarFormModel>(() =>
+  private readonly baseline = computed(() =>
     this.scholarResource.hasValue()
       ? toFormModel(this.scholarResource.value())
       : emptyScholarForm(),
   );
+  readonly model = linkedSignal<ScholarFormModel>(() => this.baseline());
+
+  private readonly saved = signal(false);
+
+  // Read by unsavedChangesGuard: edits that differ from the loaded (or blank)
+  // scholar and haven't been saved. Putting a value back clears it.
+  readonly hasUnsavedChanges = computed(
+    () => !this.saved() && isScholarFormDirty(this.model(), this.baseline()),
+  );
+
+  readonly saveError = signal<string | null>(null);
   readonly invalidSummary = signal<string | null>(null);
 
   readonly scholarForm = form(this.model, scholarFormSchema, {
@@ -102,27 +121,13 @@ export class ScholarFormComponent {
     },
   ] as const;
 
-  constructor() {
-    effect(() => {
-      const error = this.scholarResource.error();
-      if (!error) return;
-      untracked(() => {
-        console.error('Failed to load scholar:', error.message);
-        this.notificationService.show(
-          'Failed to load scholar. Check console for details.',
-          'error',
-        );
-      });
-    });
-  }
-
   // Runs only when the form is valid (FormRoot -> submit()); the form's own
   // submitting() state replaces the old hand-rolled isSubmitting signal.
   private async save(): Promise<void> {
     this.invalidSummary.set(null);
+    this.saveError.set(null);
     const scholar = toScholar(this.model(), this.scholarId() ?? null);
     const isEditMode = this.isEditMode();
-    const verb = isEditMode ? 'update' : 'create';
 
     try {
       const savedScholar = await firstValueFrom(
@@ -130,19 +135,20 @@ export class ScholarFormComponent {
           ? this.scholarsService.updateScholar(scholar)
           : this.scholarsService.createScholar(scholar),
       );
-      this.notificationService.show(
-        isEditMode
-          ? 'Scholar updated successfully!'
-          : 'Scholar created successfully!',
-      );
+      // Saved — leaving now must not trigger the unsaved-changes prompt.
+      this.saved.set(true);
       await this.router.navigate(['/scholars', savedScholar.scholarId]);
-    } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
-      console.error(
-        `Error ${isEditMode ? 'updating' : 'creating'} scholar:`,
-        message,
+    } catch (error) {
+      this.saveError.set(
+        extractErrorMessage(
+          error as HttpErrorResponse,
+          isEditMode ? 'Failed to update scholar' : 'Failed to create scholar',
+        ),
       );
-      this.notificationService.show(`Failed to ${verb} scholar. ${message}`, 'error');
     }
+  }
+
+  onBeforeUnload(event: BeforeUnloadEvent): void {
+    if (this.hasUnsavedChanges()) event.preventDefault();
   }
 }

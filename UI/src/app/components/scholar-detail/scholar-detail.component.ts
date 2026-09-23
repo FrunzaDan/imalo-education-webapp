@@ -1,13 +1,15 @@
-import { Component, computed, effect, inject, input, untracked } from '@angular/core';
+import { Component, computed, effect, inject, input, signal, untracked } from '@angular/core';
 import { rxResource } from '@angular/core/rxjs-interop';
 import { DatePipe, TitleCasePipe } from '@angular/common';
+import { HttpErrorResponse } from '@angular/common/http';
 import { Router, RouterModule } from '@angular/router';
 import { ScholarsService } from '../../services/scholars.service';
 import { SchoolsService } from '../../services/schools.service';
-import { NotificationService } from '../../services/notification.service';
-import { ConfirmModalService } from '../../services/confirm-modal.service';
+import { ConfirmDialogService } from '../../services/confirm-dialog.service';
 import { AuditLogService } from '../../services/audit-log.service';
+import { auditActionLabel } from '../../utils/audit-action-label';
 import { WEEK_DAYS } from '../../constants/week-days';
+import { extractErrorMessage } from '../../utils/extract-error-message';
 
 @Component({
   selector: 'app-scholar-detail',
@@ -19,8 +21,7 @@ export class ScholarDetailComponent {
   private readonly scholarsService = inject(ScholarsService);
   private readonly schoolsService = inject(SchoolsService);
   private readonly router = inject(Router);
-  private readonly notificationService = inject(NotificationService);
-  private readonly confirmModalService = inject(ConfirmModalService);
+  private readonly confirmDialogService = inject(ConfirmDialogService);
   private readonly auditLogService = inject(AuditLogService);
 
   // Bound from the `:scholarId` route param by withComponentInputBinding() in
@@ -36,7 +37,10 @@ export class ScholarDetailComponent {
   readonly scholar = computed(() =>
     this.scholarResource.hasValue() ? this.scholarResource.value() : null,
   );
-  readonly loadError = computed(() => this.scholarResource.error()?.message ?? null);
+  readonly loadError = computed(() => {
+    const error = this.scholarResource.error();
+    return error ? extractErrorMessage(error as HttpErrorResponse, 'Failed to load scholar') : null;
+  });
 
   // Idle (no request) until the scholar has loaded and has a school.
   private readonly schoolResource = rxResource({
@@ -47,11 +51,15 @@ export class ScholarDetailComponent {
     this.schoolResource.hasValue() ? this.schoolResource.value() : null,
   );
 
+  readonly auditActionLabel = auditActionLabel;
   readonly auditLog = this.auditLogService.entries;
   readonly auditLogLoading = this.auditLogService.loading;
   readonly auditLogError = this.auditLogService.error;
 
   readonly daysOfWeek = WEEK_DAYS;
+
+  readonly deleting = signal(false);
+  readonly deleteError = signal<string | null>(null);
 
   constructor() {
     effect(() => {
@@ -83,25 +91,20 @@ export class ScholarDetailComponent {
     const scholar = this.scholar();
     if (!scholar?.scholarId) return;
 
-    const confirmed = await this.confirmModalService.confirm(
+    const confirmed = await this.confirmDialogService.confirm(
       `Are you sure you want to delete ${scholar.firstName} ${scholar.lastName}?`,
-      { title: 'Delete scholar', confirmText: 'Delete', variant: 'danger' },
+      { title: 'Delete scholar?', confirmLabel: 'Delete', variant: 'danger' },
     );
     if (!confirmed) return;
 
+    this.deleting.set(true);
+    this.deleteError.set(null);
+
     this.scholarsService.deleteScholar(scholar.scholarId).subscribe({
-      next: () => {
-        this.notificationService.show(
-          `Scholar ${scholar.firstName} ${scholar.lastName} deleted successfully.`,
-        );
-        this.router.navigate(['/scholars']);
-      },
-      error: (err) => {
-        console.error('Failed to delete scholar:', err.message);
-        this.notificationService.show(
-          'Failed to delete scholar. See console for details.',
-          'error',
-        );
+      next: () => this.router.navigate(['/scholars']),
+      error: (error: HttpErrorResponse) => {
+        this.deleting.set(false);
+        this.deleteError.set(extractErrorMessage(error, 'Failed to delete scholar'));
       },
     });
   }

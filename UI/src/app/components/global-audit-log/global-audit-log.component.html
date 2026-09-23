@@ -1,60 +1,58 @@
-<h2 class="page-title">Audit Log</h2>
+<h1 class="page-title">Audit log</h1>
 
 <div class="page-toolbar">
   <button
     type="button"
     class="app-button app-button--danger"
-    [disabled]="clearing() || loading() || totalItems() === 0"
+    [disabled]="loading() || clearing() || totalItems() === 0"
     (click)="clearAuditLog()"
   >
-    {{ clearing() ? 'Clearing...' : 'Clear Audit Log' }}
+    {{ clearing() ? 'Clearing…' : 'Clear audit log' }}
   </button>
 </div>
 
+@if (clearError(); as error) {
+<div class="app-alert" role="alert">{{ error }}</div>
+}
 @if (loading()) {
-<div class="loading-message">Loading audit log...</div>
+<div class="loading-message" role="status">Loading audit log…</div>
 } @else if (error(); as errorMessage) {
-<div class="app-error-message" role="alert">{{ errorMessage }}</div>
+<div class="app-alert" role="alert">{{ errorMessage }}</div>
+} @else if (entries().length === 0) {
+<p class="audit-log-empty">No recorded actions yet.</p>
 } @else {
 <table class="app-table">
+  <caption class="visually-hidden">
+    Audit log, page {{ currentPage() }} of {{ totalPages() }}, newest first
+  </caption>
   <thead>
     <tr>
-      <th class="table-header">Date</th>
-      <th class="table-header">Scholar</th>
-      <th class="table-header">Action</th>
-      <th class="table-header">Details</th>
+      <th scope="col" class="table-header">Date</th>
+      <th scope="col" class="table-header">Scholar</th>
+      <th scope="col" class="table-header">Action</th>
+      <th scope="col" class="table-header">Details</th>
     </tr>
   </thead>
   <tbody>
-    @for (entry of entries(); track trackByScholarAuditLogId($index, entry)) {
+    @for (entry of entries(); track entry.scholarAuditLogId) {
     <tr class="table-row">
       <td class="table-cell">{{ entry.occurredAt | date: 'medium' }}</td>
       <td class="table-cell">
         @if (entry.scholarFirstName || entry.scholarLastName) {
-        <a
-          (click)="navigateToScholar(entry)"
-          (keydown.enter)="navigateToScholar(entry)"
-          class="audit-log-link"
-          role="link"
-          tabindex="0"
-        >{{ scholarLabel(entry) }}</a>
+        <a class="audit-log-link" [routerLink]="['/scholars', entry.scholarId]">{{ scholarLabel(entry) }}</a>
         } @else {
         <span class="audit-log-deleted">{{ scholarLabel(entry) }}</span>
         }
       </td>
-      <td class="table-cell">{{ entry.actionType }}</td>
+      <td class="table-cell">{{ auditActionLabel(entry.actionType) }}</td>
       <td class="table-cell">{{ entry.details }}</td>
-    </tr>
-    } @empty {
-    <tr class="table-row">
-      <td colspan="4" class="table-cell table-cell--empty">No recorded actions yet.</td>
     </tr>
     }
   </tbody>
 </table>
 
 @if (totalPages() > 1) {
-<nav class="audit-log-pagination">
+<nav class="audit-log-pagination" aria-label="Audit log pages">
   <button
     type="button"
     class="app-button"
@@ -63,7 +61,7 @@
   >
     Previous
   </button>
-  <span>Page {{ currentPage() }} of {{ totalPages() }}</span>
+  <span aria-live="polite">Page {{ currentPage() }} of {{ totalPages() }}</span>
   <button
     type="button"
     class="app-button"

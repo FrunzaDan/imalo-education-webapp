@@ -275,6 +275,18 @@ select.app-input {
   color: var(--orange-text-color);
 }
 
+/* Page-level error (a load or an action that failed), shown inline where the
+   user is looking. .app-error-message stays for field-level messages. */
+.app-alert {
+  margin: 0 0 var(--space-4);
+  padding: var(--space-3) var(--space-4);
+  border: var(--border-width) solid var(--orange-main-color);
+  border-left: var(--border-width-thick) solid var(--orange-main-color);
+  border-radius: var(--radius-md);
+  background-color: #fff;
+  color: var(--orange-text-color);
+}
+
 .app-error-message {
   color: var(--orange-text-color);
   font-size: 0.875rem;
@@ -406,5 +418,55 @@ select.app-input {
   .app-card {
     box-shadow: none;
     border: none;
+  }
+}
+
+/* Programmatic focus target after route changes — not an interactive control. */
+main:focus,
+main [tabindex='-1']:focus {
+  outline: none;
+}
+
+/* Hidden on screen, still read by screen readers (e.g. a table's <caption>). */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Skip link: first tab stop on every page, hidden until focused (WCAG 2.4.1). */
+.skip-link {
+  position: absolute;
+  top: var(--space-2);
+  left: var(--space-2);
+  z-index: 2000;
+  padding: var(--space-2) var(--space-4);
+  border: var(--border-width-thick) solid var(--cyan-dark-color);
+  border-radius: var(--radius-md);
+  background-color: #fff;
+  color: var(--cyan-dark-color);
+  font-weight: 500;
+  transform: translateY(-200%);
+}
+
+.skip-link:focus {
+  transform: translateY(0);
+}
+
+/* Respect the OS "reduce motion" setting (WCAG 2.3.3). */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }

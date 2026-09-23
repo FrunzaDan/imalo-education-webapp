@@ -1,4 +1,5 @@
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { HttpErrorResponse } from '@angular/common/http';
 import { FormField, form } from '@angular/forms/signals';
 import { forkJoin } from 'rxjs';
 import { ScholarsService } from '../../services/scholars.service';
@@ -20,6 +21,7 @@ import {
   topCategory,
   totalOf,
 } from './charts-data';
+import { extractErrorMessage } from '../../utils/extract-error-message';
 
 @Component({
   selector: 'app-charts',
@@ -36,6 +38,7 @@ export class ChartsComponent implements OnInit {
   private readonly allAttendance = signal<ScholarAttendance[]>([]);
   private readonly schools = signal<School[]>([]);
   loading = signal(true);
+  readonly loadError = signal<string | null>(null);
 
   readonly classCounts = computed(() => countByGrade(this.scholars()));
   readonly schoolCounts = computed(() => countBySchool(this.scholars(), this.schools()));
@@ -110,8 +113,8 @@ export class ChartsComponent implements OnInit {
         this.schools.set(schools);
         this.loading.set(false);
       },
-      error: (err) => {
-        console.error('Failed to load chart data:', err);
+      error: (error: HttpErrorResponse) => {
+        this.loadError.set(extractErrorMessage(error, 'Failed to load chart data'));
         this.loading.set(false);
       },
     });

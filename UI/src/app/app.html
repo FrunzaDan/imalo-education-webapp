@@ -1,18 +1,22 @@
-<app-navbar class="no-print"></app-navbar>
-
-@if (apiAvailable()) {
-<router-outlet />
-} @else {
-<div class="api-down-card">
-  <h2>⚠️ API is not running</h2>
-  <p>
-    Please start the backend server at
-    <code>{{ environment.apiUrl }}</code>
-  </p>
-</div>
-}
-
+<a class="skip-link no-print" href="#main" (click)="skipToContent($event)"
+  >Skip to main content</a
+>
+<header class="no-print">
+  <app-navbar></app-navbar>
+</header>
+<main id="main" tabindex="-1" #main>
+  @if (apiAvailable()) {
+  <router-outlet />
+  } @else {
+  <div class="api-down-card" role="alert">
+    <h1>⚠️ API is not running</h1>
+    <p>
+      Please start the backend server at
+      <code>{{ environment.apiUrl }}</code>
+    </p>
+  </div>
+  }
+</main>
 <app-footer class="no-print"></app-footer>
-
 <app-notification></app-notification>
-<app-confirm-modal></app-confirm-modal>
+<app-confirm-dialog></app-confirm-dialog>

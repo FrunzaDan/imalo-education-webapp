@@ -1,13 +1,13 @@
 import { provideZonelessChangeDetection } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
+import { HttpErrorResponse } from '@angular/common/http';
 import { Router, provideRouter } from '@angular/router';
 import { of, throwError } from 'rxjs';
 import { ScholarDetailComponent } from './scholar-detail.component';
 import { ScholarsService } from '../../services/scholars.service';
 import { SchoolsService } from '../../services/schools.service';
 import { AuditLogService } from '../../services/audit-log.service';
-import { ConfirmModalService } from '../../services/confirm-modal.service';
-import { NotificationService } from '../../services/notification.service';
+import { ConfirmDialogService } from '../../services/confirm-dialog.service';
 import type { Scholar } from '../../interfaces/scholar';
 import type { School } from '../../interfaces/school';
 
@@ -25,28 +25,41 @@ const SCHOLAR: Scholar = {
 };
 const SCHOOL: School = { schoolId: 1, name: 'Test School', color: '#336699', lunchPrice: 15, transportPrice: 10 };
 
-async function setup(options: { scholar?: Scholar; loadError?: boolean } = {}) {
+async function setup(
+  options: { scholar?: Scholar; loadError?: boolean; deleteError?: boolean; confirmed?: boolean } = {},
+) {
   const getScholarById = vi.fn(() =>
     options.loadError
-      ? throwError(() => new Error('getScholarById id=scholar-1 failed: Scholar not found.'))
+      ? throwError(
+          () =>
+            new HttpErrorResponse({
+              status: 404,
+              error: { status: 404, title: 'Scholar not found.', detail: 'Scholar with ID scholar-1 not found.' },
+            }),
+        )
       : of(options.scholar ?? SCHOLAR),
   );
   const getSchoolById = vi.fn(() => of(SCHOOL));
   const loadAuditLog = vi.fn();
+  const deleteScholar = vi.fn(() =>
+    options.deleteError
+      ? throwError(() => new HttpErrorResponse({ status: 0 }))
+      : of(undefined),
+  );
+  const confirm = vi.fn().mockResolvedValue(options.confirmed ?? true);
 
   TestBed.configureTestingModule({
     imports: [ScholarDetailComponent],
     providers: [
       provideZonelessChangeDetection(),
       provideRouter([]),
-      { provide: ScholarsService, useValue: { getScholarById } },
+      { provide: ScholarsService, useValue: { getScholarById, deleteScholar } },
       { provide: SchoolsService, useValue: { getSchoolById } },
       {
         provide: AuditLogService,
         useValue: { entries: () => [], loading: () => false, error: () => null, loadAuditLog },
       },
-      { provide: ConfirmModalService, useValue: { confirm: vi.fn() } },
-      { provide: NotificationService, useValue: { show: vi.fn() } },
+      { provide: ConfirmDialogService, useValue: { confirm } },
     ],
   });
 
@@ -55,7 +68,15 @@ async function setup(options: { scholar?: Scholar; loadError?: boolean } = {}) {
   fixture.detectChanges();
   await fixture.whenStable();
   fixture.detectChanges();
-  return { fixture, component: fixture.componentInstance, getScholarById, getSchoolById, loadAuditLog };
+  return {
+    fixture,
+    component: fixture.componentInstance,
+    getScholarById,
+    getSchoolById,
+    loadAuditLog,
+    deleteScholar,
+    confirm,
+  };
 }
 
 describe('ScholarDetailComponent', () => {
@@ -82,8 +103,10 @@ describe('ScholarDetailComponent', () => {
     const { component, fixture, getSchoolById } = await setup({ loadError: true });
 
     expect(component.scholar()).toBeNull();
-    expect(component.loadError()).toContain('Scholar not found');
-    expect(fixture.nativeElement.textContent).toContain('Failed to load scholar.');
+    expect(component.loadError()).toBe('Scholar with ID scholar-1 not found.');
+    expect(fixture.nativeElement.querySelector('[role="alert"]')?.textContent).toContain(
+      'Scholar with ID scholar-1 not found.',
+    );
     expect(fixture.nativeElement.textContent).not.toContain('Loading scholar details');
     expect(getSchoolById).not.toHaveBeenCalled();
   });
@@ -95,5 +118,44 @@ describe('ScholarDetailComponent', () => {
     component.navigateToUpdateScholar();
 
     expect(navigate).toHaveBeenCalledWith(['/scholars/update', 'scholar-1']);
+  });
+
+  describe('deleteScholar', () => {
+    it('asks first, then deletes and returns to the scholar list', async () => {
+      const { component, deleteScholar, confirm } = await setup();
+      const navigate = vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
+
+      await component.deleteScholar();
+
+      expect(confirm).toHaveBeenCalledWith(
+        expect.stringContaining('Ana Popescu'),
+        expect.objectContaining({ variant: 'danger' }),
+      );
+      expect(deleteScholar).toHaveBeenCalledWith('scholar-1');
+      expect(navigate).toHaveBeenCalledWith(['/scholars']);
+    });
+
+    it('does nothing when the user cancels', async () => {
+      const { component, deleteScholar } = await setup({ confirmed: false });
+
+      await component.deleteScholar();
+
+      expect(deleteScholar).not.toHaveBeenCalled();
+    });
+
+    it('shows the failure inline and stays on the page', async () => {
+      const { component, fixture } = await setup({ deleteError: true });
+      const navigate = vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
+
+      await component.deleteScholar();
+      fixture.detectChanges();
+
+      expect(component.deleteError()).toBe('Could not reach the server. It may be offline.');
+      expect(component.deleting()).toBe(false);
+      expect(fixture.nativeElement.querySelector('.app-alert')?.textContent).toContain(
+        'Could not reach the server',
+      );
+      expect(navigate).not.toHaveBeenCalled();
+    });
   });
 });

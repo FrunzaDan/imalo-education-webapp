@@ -21,6 +21,6 @@ The three layers only talk over HTTP — nothing shares process or memory. Angul
 
 ## Known limitations (deliberate, not bugs)
 
-No authentication/authorization anywhere; CORS is wide open; API error responses leak exception text. Each doc above notes these again in its own Gotchas section where relevant — don't "fix" them without checking with the user first.
+No authentication/authorization anywhere — deliberate, the app runs locally only; each doc notes this in its own Gotchas section where relevant, don't "fix" it without checking with the user first. CORS is limited to the UI's origins (`Cors:AllowedOrigins`), and API errors are Problem Details that include exception text only in Development (see [[api]]).
 
 Unit tests exist for both layers' pure business logic, plus `ScholarsController` (against a mocked `IScholarDataAccess`), a handful of pure Angular services, and three `TestBed` component specs (`AttendancePerScholarComponent`, `ScholarDetailComponent`, `ScholarFormComponent`) (`API/ImaloEducationApi/ImaloEducationApi.Tests`, `UI/**/*.spec.ts`, run via `build.sh` — see [[build-and-run]]). Still no coverage for `ScholarDataAccess`'s actual SQL, the other 9 Angular components, or the remaining `HttpClient`-backed Angular services — see each doc's Gotchas section.

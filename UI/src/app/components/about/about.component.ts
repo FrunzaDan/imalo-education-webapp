@@ -1,6 +1,7 @@
 import { Component, inject, signal } from '@angular/core';
 import { catchError, concatMap, from, map, of, switchMap, toArray } from 'rxjs';
 import { ApiLoggerService } from '../../services/api-logger.service';
+import { NotificationService } from '../../services/notification.service';
 import { ScholarsService } from '../../services/scholars.service';
 import { AttendanceService } from '../../services/attendance.service';
 import { SchoolsService } from '../../services/schools.service';
@@ -198,16 +199,19 @@ function randomParent(chance: number): RandomParent {
 })
 export class AboutComponent {
   private readonly apiLoggerService = inject(ApiLoggerService);
+  private readonly notificationService = inject(NotificationService);
   private readonly scholarsService = inject(ScholarsService);
   private readonly attendanceService = inject(AttendanceService);
   private readonly schoolsService = inject(SchoolsService);
 
   readonly apiLoggingEnabled = this.apiLoggerService.enabled;
   readonly addingTestScholars = signal(false);
-  readonly resultMessage = signal<string | null>(null);
 
   toggleApiLogging(): void {
     this.apiLoggerService.toggle();
+    this.notificationService.show(
+      `API call logging turned ${this.apiLoggingEnabled() ? 'on' : 'off'}.`,
+    );
   }
 
   addTestScholars(): void {
@@ -215,13 +219,13 @@ export class AboutComponent {
       return;
     }
     this.addingTestScholars.set(true);
-    this.resultMessage.set(null);
 
     this.schoolsService.getSchools().subscribe((schools) => {
       if (schools.length === 0) {
         this.addingTestScholars.set(false);
-        this.resultMessage.set(
-          'No schools available — cannot generate test scholars.',
+        this.notificationService.show(
+          'No schools available, so no test scholars were added.',
+          'error',
         );
         return;
       }
@@ -233,12 +237,12 @@ export class AboutComponent {
       from(scholars)
         .pipe(
           concatMap((scholar) =>
-            this.scholarsService.createScholar(scholar).pipe(
+            this.scholarsService.createScholarSilently(scholar).pipe(
               switchMap((created) => {
                 const school = schools.find((school) => school.schoolId === created.schoolId);
                 const attendance = this.buildRandomAttendance(school);
                 return this.attendanceService
-                  .saveAttendance(created.scholarId, attendance)
+                  .saveAttendanceSilently(created.scholarId, attendance)
                   .pipe(
                     catchError((err) => {
                       console.warn(
@@ -262,10 +266,11 @@ export class AboutComponent {
           this.addingTestScholars.set(false);
           const succeeded = results.filter(Boolean).length;
           const failed = results.length - succeeded;
-          this.resultMessage.set(
+          this.notificationService.show(
             failed === 0
               ? `Added ${succeeded} test scholars (with random schedules and attendance).`
-              : `Added ${succeeded} test scholars (${failed} failed — see console).`,
+              : `Added ${succeeded} test scholars; ${failed} could not be added.`,
+            failed === 0 ? 'success' : 'error',
           );
         });
     });
