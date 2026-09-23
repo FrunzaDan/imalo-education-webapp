@@ -13,7 +13,7 @@ public class WireFormatTests
     // ---- PickupSchedule ----
 
     [Fact]
-    public void PickUpSchedule_ReadsHourMinuteTimesAndNulls()
+    public void PickupSchedule_ReadsHourMinuteTimesAndNulls()
     {
         var schedule = JsonSerializer.Deserialize<PickupSchedule>(
             """{"monday":"08:00","tuesday":null,"wednesday":"13:30","friday":"17:45"}""", Web)!;
@@ -26,7 +26,7 @@ public class WireFormatTests
     }
 
     [Fact]
-    public void PickUpSchedule_WritesHourMinuteNotTimeOnlyDefault()
+    public void PickupSchedule_WritesHourMinuteNotTimeOnlyDefault()
     {
         var json = JsonSerializer.Serialize(new PickupSchedule { Monday = new TimeOnly(13, 30) }, Web);
 
@@ -35,7 +35,7 @@ public class WireFormatTests
     }
 
     [Fact]
-    public void PickUpSchedule_DayNamesAreCaseInsensitive()
+    public void PickupSchedule_DayNamesAreCaseInsensitive()
     {
         // Schedules stored before the typed class were a Dictionary with lowercase keys;
         // the typed class itself is stored PascalCase. Both must read back.
@@ -48,7 +48,7 @@ public class WireFormatTests
     }
 
     [Fact]
-    public void PickUpSchedule_RejectsUnknownDay()
+    public void PickupSchedule_RejectsUnknownDay()
     {
         Assert.Throws<JsonException>(() =>
             JsonSerializer.Deserialize<PickupSchedule>("""{"saturday":"08:00"}""", Web));
@@ -61,7 +61,7 @@ public class WireFormatTests
     [InlineData("not-a-time")]
     [InlineData("8:00")] // not zero-padded — strict HH:mm only
     [InlineData("08:00:00")] // TimeOnly's default format, still not HH:mm
-    public void PickUpSchedule_RejectsNonStrictTimeFormats(string invalidTime)
+    public void PickupSchedule_RejectsNonStrictTimeFormats(string invalidTime)
     {
         var ex = Assert.Throws<JsonException>(() =>
             JsonSerializer.Deserialize<PickupSchedule>($$"""{"monday":"{{invalidTime}}"}""", Web));
@@ -70,7 +70,7 @@ public class WireFormatTests
     }
 
     [Fact]
-    public void PickUpSchedule_ReadsEmptyOrWhitespaceAsNoPickup()
+    public void PickupSchedule_ReadsEmptyOrWhitespaceAsNoPickup()
     {
         var schedule = JsonSerializer.Deserialize<PickupSchedule>("""{"monday":"","tuesday":"   "}""", Web)!;
 

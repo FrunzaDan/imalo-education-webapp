@@ -8,10 +8,6 @@ import { isPlatformBrowser } from '@angular/common';
 import { catchError, tap, throwError } from 'rxjs';
 import { ApiLoggerService } from './api-logger.service';
 
-// Learning-project aid: every API call the Angular app makes is mirrored to
-// the browser console so it's easy to see exactly what's being sent/received
-// while poking around the app. Not something you'd want in a real production
-// app — toggled off from the About page, and skipped entirely during SSR.
 export const apiLoggerInterceptor: HttpInterceptorFn = (req, next) => {
   if (
     !isPlatformBrowser(inject(PLATFORM_ID)) ||

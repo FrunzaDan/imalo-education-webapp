@@ -1,5 +1,5 @@
 import { HttpClient, HttpHeaders } from '@angular/common/http';
-import { Injectable } from '@angular/core';
+import { inject, Injectable } from '@angular/core';
 import { Observable, throwError } from 'rxjs';
 import { environment } from '../../environments/environment';
 import { Scholar } from '../interfaces/scholar';
@@ -7,10 +7,9 @@ import { catchHttpError } from '../utils/http-error';
 
 @Injectable({ providedIn: 'root' })
 export class ScholarsService {
+  private readonly http = inject(HttpClient);
   private baseUrl = `${environment.apiUrl}/api/scholars`;
   private jsonHeaders = new HttpHeaders({ 'Content-Type': 'application/json' });
-
-  constructor(private http: HttpClient) {}
 
   // ---- CRUD METHODS ----
 

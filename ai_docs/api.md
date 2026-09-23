@@ -42,7 +42,7 @@ All under `api/Scholars`. All return `500` with `{ message, details = ex.Message
 
 **Other**
 - `GET /health` — liveness only (`AddHealthChecks()`, no DB probe), mapped directly in `Program.cs`, not part of `ScholarsController`.
-- `GET /swagger` — Swagger UI, development environment only.
+- `GET /openapi/v1.json` — the OpenAPI document from ASP.NET Core's built-in generator (`AddOpenApi`/`MapOpenApi`), and `GET /swagger` — Swagger UI showing it (`Swashbuckle.AspNetCore.SwaggerUI` only); development environment only, the same setup as the sibling apps.
 
 ## How it works
 
@@ -60,12 +60,13 @@ All under `api/Scholars`. All return `500` with `{ message, details = ex.Message
 ## Gotchas / conventions
 
 - **No authentication/authorization.** `UseAuthorization()` is called but nothing configures `AddAuthentication`/a scheme — every endpoint, including `DELETE /api/scholars/audit-log/all`, is open to anyone who can reach the API. Known, deliberately deferred for this learning project.
-- **CORS is wide open** (`AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader()`), flagged in-line with `// TODO: Restrict to specific origins in production`.
+- **CORS allows only the Angular app's origins**, read from `Cors:AllowedOrigins` in `appsettings.json` (`http(s)://localhost:4204`), with the methods the API uses (`GET`/`POST`/`PUT`/`DELETE`) and the `Content-Type` header — the same mechanism as the sibling apps. A new UI origin (another port, a deployed host) must be added there.
 - **Exception messages leak to clients** — every catch-all `500` response includes `details = ex.Message` verbatim. Known, deliberately deferred.
 - **Unit tests** — `API/ImaloEducationApi/ImaloEducationApi.Tests` (xUnit), two layers:
-  - `Models/` — `Scholar`'s validation attributes (`ValidateBirthDate`, `ValidatePhoneNumber` — digits only, 9–12, the same rule as the sibling apps) individually and through `Validator.TryValidateObject`, the same path ASP.NET Core's `ModelState` binding uses; `WireFormatTests` pins the JSON shapes the UI depends on (`PickupSchedule` read/write/rejection, `DateOnly` dates, cost `[Range]`, `AuditAction` by name, `ActionDate` with `+00:00`).
+  - `Models/` — `Scholar`'s validation attributes (`ValidateBirthDate`, `ValidatePhoneNumber` — digits only, 9–12, the same rule as the sibling apps) individually and through `Validator.TryValidateObject`, the same path ASP.NET Core's `ModelState` binding uses; `WireFormatTests` pins the JSON shapes the UI depends on (`PickupSchedule` read/write/rejection, `DateOnly` dates, cost `[Range]`, `AuditAction` by name, `OccurredAt` as UTC ending in `Z`).
   - `Controllers/ScholarsControllerTests.cs` — `ScholarsController` against a Moq mock of `IScholarDataAccess` (status codes, `ModelState`-invalid shape, not-found vs. success vs. exception branching for every endpoint). `ScholarDataAccess` was given an `IScholarDataAccess` interface (`Data/IScholarDataAccess.cs`) purely so this mock could exist — there's still no second implementation and none is planned.
   - Still **no real-DB coverage** — `ScholarDataAccess`'s own SQL (transactions, cascade deletes, the per-role `Parents` joins, best-effort audit logging) is untested; that would need an integration test against a real SQL Server, not a mock.
-  - Run via `dotnet test API/ImaloEducationApi/ImaloEducationApi.Tests` or as part of [[build-and-run]]'s `build.sh`.
+  - Run via `dotnet test API/ImaloEducationApi/ImaloEducationApi.slnx` (from inside the repo, so the root `global.json` selects Microsoft Testing Platform) or as part of [[build-and-run]]'s `build.sh`. `dotnet test --coverage` adds a coverage report.
+  - Packages: `xunit.v3.mtp-v2`, `Moq`, `Microsoft.Testing.Extensions.CodeCoverage` — identical to the sibling apps; versions live in `API/ImaloEducationApi/Directory.Packages.props` (Central Package Management), shared build settings in `Directory.Build.props`. Tests use `TestContext.Current.CancellationToken`, never `CancellationToken.None`.
 - Direct SQL via `SqlCommand`, not stored procedures or an ORM — a deliberate simplicity choice for this project (contrast with sibling projects that route everything through stored procs).
 - The API is plain HTTP (`http://localhost:5244`, see `Properties/launchSettings.json`) — no HTTPS launch profile, so none of the usual dev-cert trust issues apply here. `Program.cs` still calls `app.UseHttpsRedirection()` though; with no HTTPS endpoint to redirect *to*, it can't do anything useful and logs `Failed to determine the https port for redirect.` (`Microsoft.AspNetCore.HttpsPolicy.HttpsRedirectionMiddleware`, warn level) on the first incoming request — confirmed by actually running the API. Harmless (every request still gets served over HTTP), but it's a leftover inconsistency worth removing rather than "fixing" by adding a real HTTPS profile, since this stack is deliberately HTTP-only/local-only.

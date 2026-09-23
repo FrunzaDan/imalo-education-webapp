@@ -1,5 +1,5 @@
 import { HttpClient } from '@angular/common/http';
-import { Injectable } from '@angular/core';
+import { inject, Injectable } from '@angular/core';
 import { Observable, of, shareReplay } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
 import { School } from '../interfaces/school';
@@ -8,12 +8,11 @@ import { School } from '../interfaces/school';
   providedIn: 'root',
 })
 export class SchoolsService {
+  private readonly http = inject(HttpClient);
   private schoolsUrl = '../../assets/schools.json';
 
   // Cache the loaded schools
   private schoolsCache$: Observable<School[]> | null = null;
-
-  constructor(private http: HttpClient) {}
 
   getSchools(): Observable<School[]> {
     if (!this.schoolsCache$) {

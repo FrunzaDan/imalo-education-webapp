@@ -1,5 +1,9 @@
-import { Injectable } from '@angular/core';
-import { HttpClient, HttpErrorResponse, HttpResponse } from '@angular/common/http';
+import { inject, Injectable } from '@angular/core';
+import {
+  HttpClient,
+  HttpErrorResponse,
+  HttpResponse,
+} from '@angular/common/http';
 import { catchError, map, Observable, of, switchMap, timer } from 'rxjs';
 import { environment } from '../../environments/environment';
 
@@ -9,14 +13,9 @@ const POLL_INTERVAL_MS = 15000;
   providedIn: 'root',
 })
 export class HealthService {
+  private readonly http = inject(HttpClient);
   private readonly healthUrl = `${environment.apiUrl}/health`;
 
-  constructor(private readonly http: HttpClient) {}
-
-  /**
-   * Checks if the API is reachable and responding.
-   * @returns Observable<boolean> - true if API is healthy, false otherwise
-   */
   checkApiHealth(): Observable<boolean> {
     return this.http
       .get(this.healthUrl, { observe: 'response', responseType: 'text' })
@@ -29,18 +28,12 @@ export class HealthService {
       );
   }
 
-  /**
-   * Re-checks API health every POLL_INTERVAL_MS (starting immediately), so a
-   * status shown in the UI reflects the API coming up or going down after the
-   * initial load, not just its state at app startup.
-   */
   pollApiHealth(): Observable<boolean> {
     return timer(0, POLL_INTERVAL_MS).pipe(
       switchMap(() => this.checkApiHealth()),
     );
   }
 
-  /** Logs health check errors in a consistent format */
   private logHealthError(error: HttpErrorResponse) {
     console.error(
       `API health check failed! | URL: ${this.healthUrl} | Error: ${

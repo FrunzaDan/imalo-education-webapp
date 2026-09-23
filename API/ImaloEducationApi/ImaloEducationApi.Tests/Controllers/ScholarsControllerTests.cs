@@ -38,7 +38,7 @@ public class ScholarsControllerTests
         var (controller, dataAccess) = MakeController();
         controller.ModelState.AddModelError("FirstName", "The FirstName field is required.");
 
-        var result = await controller.CreateScholar(SampleScholar(), CancellationToken.None);
+        var result = await controller.CreateScholar(SampleScholar(), TestContext.Current.CancellationToken);
 
         var badRequest = Assert.IsType<BadRequestObjectResult>(result.Result);
         Assert.Equal(400, badRequest.StatusCode);
@@ -53,7 +53,7 @@ public class ScholarsControllerTests
         dataAccess.Setup(d => d.CreateScholarAsync(It.IsAny<Scholar>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(created);
 
-        var result = await controller.CreateScholar(SampleScholar(), CancellationToken.None);
+        var result = await controller.CreateScholar(SampleScholar(), TestContext.Current.CancellationToken);
 
         var createdAt = Assert.IsType<CreatedAtActionResult>(result.Result);
         Assert.Equal(nameof(ScholarsController.GetScholarById), createdAt.ActionName);
@@ -67,7 +67,7 @@ public class ScholarsControllerTests
         dataAccess.Setup(d => d.CreateScholarAsync(It.IsAny<Scholar>(), It.IsAny<CancellationToken>()))
             .ThrowsAsync(new InvalidOperationException("boom"));
 
-        var result = await controller.CreateScholar(SampleScholar(), CancellationToken.None);
+        var result = await controller.CreateScholar(SampleScholar(), TestContext.Current.CancellationToken);
 
         var statusResult = Assert.IsType<ObjectResult>(result.Result);
         Assert.Equal(500, statusResult.StatusCode);
@@ -80,7 +80,7 @@ public class ScholarsControllerTests
         dataAccess.Setup(d => d.CreateScholarAsync(It.IsAny<Scholar>(), It.IsAny<CancellationToken>()))
             .ThrowsAsync(new Exception("db is down"));
 
-        var result = await controller.CreateScholar(SampleScholar(), CancellationToken.None);
+        var result = await controller.CreateScholar(SampleScholar(), TestContext.Current.CancellationToken);
 
         var statusResult = Assert.IsType<ObjectResult>(result.Result);
         Assert.Equal(500, statusResult.StatusCode);
@@ -97,7 +97,7 @@ public class ScholarsControllerTests
         var scholars = new List<Scholar> { SampleScholar(), SampleScholar() };
         dataAccess.Setup(d => d.GetScholarsAsync(It.IsAny<CancellationToken>())).ReturnsAsync(scholars);
 
-        var result = await controller.GetScholars(CancellationToken.None);
+        var result = await controller.GetScholars(TestContext.Current.CancellationToken);
 
         var ok = Assert.IsType<OkObjectResult>(result.Result);
         var returned = Assert.IsAssignableFrom<IEnumerable<Scholar>>(ok.Value);
@@ -110,7 +110,7 @@ public class ScholarsControllerTests
         var (controller, dataAccess) = MakeController();
         dataAccess.Setup(d => d.GetScholarsAsync(It.IsAny<CancellationToken>())).ThrowsAsync(new Exception("boom"));
 
-        var result = await controller.GetScholars(CancellationToken.None);
+        var result = await controller.GetScholars(TestContext.Current.CancellationToken);
 
         Assert.Equal(500, ((ObjectResult)result.Result!).StatusCode);
     }
@@ -122,7 +122,7 @@ public class ScholarsControllerTests
         var scholar = SampleScholar();
         dataAccess.Setup(d => d.GetScholarByIdAsync(scholar.ScholarId, It.IsAny<CancellationToken>())).ReturnsAsync(scholar);
 
-        var result = await controller.GetScholarById(scholar.ScholarId, CancellationToken.None);
+        var result = await controller.GetScholarById(scholar.ScholarId, TestContext.Current.CancellationToken);
 
         var ok = Assert.IsType<OkObjectResult>(result.Result);
         Assert.Equal(scholar.ScholarId, ((Scholar)ok.Value!).ScholarId);
@@ -135,7 +135,7 @@ public class ScholarsControllerTests
         var id = Guid.NewGuid();
         dataAccess.Setup(d => d.GetScholarByIdAsync(id, It.IsAny<CancellationToken>())).ReturnsAsync((Scholar?)null);
 
-        var result = await controller.GetScholarById(id, CancellationToken.None);
+        var result = await controller.GetScholarById(id, TestContext.Current.CancellationToken);
 
         Assert.IsType<NotFoundObjectResult>(result.Result);
     }
@@ -150,7 +150,7 @@ public class ScholarsControllerTests
         var (controller, dataAccess) = MakeController();
         var scholar = SampleScholar();
 
-        var result = await controller.UpdateScholar(Guid.NewGuid(), scholar, CancellationToken.None);
+        var result = await controller.UpdateScholar(Guid.NewGuid(), scholar, TestContext.Current.CancellationToken);
 
         Assert.IsType<BadRequestObjectResult>(result);
         dataAccess.Verify(d => d.UpdateScholarAsync(It.IsAny<Scholar>(), It.IsAny<CancellationToken>()), Times.Never);
@@ -163,7 +163,7 @@ public class ScholarsControllerTests
         var scholar = SampleScholar();
         controller.ModelState.AddModelError("LastName", "The LastName field is required.");
 
-        var result = await controller.UpdateScholar(scholar.ScholarId, scholar, CancellationToken.None);
+        var result = await controller.UpdateScholar(scholar.ScholarId, scholar, TestContext.Current.CancellationToken);
 
         Assert.IsType<BadRequestObjectResult>(result);
     }
@@ -175,7 +175,7 @@ public class ScholarsControllerTests
         var scholar = SampleScholar();
         dataAccess.Setup(d => d.UpdateScholarAsync(scholar, It.IsAny<CancellationToken>())).ReturnsAsync((Scholar?)null);
 
-        var result = await controller.UpdateScholar(scholar.ScholarId, scholar, CancellationToken.None);
+        var result = await controller.UpdateScholar(scholar.ScholarId, scholar, TestContext.Current.CancellationToken);
 
         Assert.IsType<NotFoundObjectResult>(result);
     }
@@ -187,7 +187,7 @@ public class ScholarsControllerTests
         var scholar = SampleScholar();
         dataAccess.Setup(d => d.UpdateScholarAsync(scholar, It.IsAny<CancellationToken>())).ReturnsAsync(scholar);
 
-        var result = await controller.UpdateScholar(scholar.ScholarId, scholar, CancellationToken.None);
+        var result = await controller.UpdateScholar(scholar.ScholarId, scholar, TestContext.Current.CancellationToken);
 
         var ok = Assert.IsType<OkObjectResult>(result);
         Assert.Equal(scholar.ScholarId, ((Scholar)ok.Value!).ScholarId);
@@ -201,7 +201,7 @@ public class ScholarsControllerTests
         dataAccess.Setup(d => d.UpdateScholarAsync(scholar, It.IsAny<CancellationToken>()))
             .ThrowsAsync(new Exception("boom"));
 
-        var result = await controller.UpdateScholar(scholar.ScholarId, scholar, CancellationToken.None);
+        var result = await controller.UpdateScholar(scholar.ScholarId, scholar, TestContext.Current.CancellationToken);
 
         Assert.Equal(500, ((ObjectResult)result).StatusCode);
     }
@@ -217,7 +217,7 @@ public class ScholarsControllerTests
         var id = Guid.NewGuid();
         dataAccess.Setup(d => d.DeleteScholarAsync(id, It.IsAny<CancellationToken>())).ReturnsAsync(true);
 
-        var result = await controller.DeleteScholar(id, CancellationToken.None);
+        var result = await controller.DeleteScholar(id, TestContext.Current.CancellationToken);
 
         Assert.IsType<NoContentResult>(result);
     }
@@ -229,7 +229,7 @@ public class ScholarsControllerTests
         var id = Guid.NewGuid();
         dataAccess.Setup(d => d.DeleteScholarAsync(id, It.IsAny<CancellationToken>())).ReturnsAsync(false);
 
-        var result = await controller.DeleteScholar(id, CancellationToken.None);
+        var result = await controller.DeleteScholar(id, TestContext.Current.CancellationToken);
 
         Assert.IsType<NotFoundObjectResult>(result);
     }
@@ -242,7 +242,7 @@ public class ScholarsControllerTests
         dataAccess.Setup(d => d.DeleteScholarAsync(id, It.IsAny<CancellationToken>()))
             .ThrowsAsync(new Exception("boom"));
 
-        var result = await controller.DeleteScholar(id, CancellationToken.None);
+        var result = await controller.DeleteScholar(id, TestContext.Current.CancellationToken);
 
         Assert.Equal(500, ((ObjectResult)result).StatusCode);
     }
@@ -266,7 +266,7 @@ public class ScholarsControllerTests
         };
         dataAccess.Setup(d => d.GetAuditLogByScholarIdAsync(id, It.IsAny<CancellationToken>())).ReturnsAsync(entries);
 
-        var result = await controller.GetScholarAuditLog(id, CancellationToken.None);
+        var result = await controller.GetScholarAuditLog(id, TestContext.Current.CancellationToken);
 
         var ok = Assert.IsType<OkObjectResult>(result.Result);
         Assert.Single((IEnumerable<AuditLogEntry>)ok.Value!);
@@ -280,7 +280,7 @@ public class ScholarsControllerTests
     {
         var (controller, dataAccess) = MakeController();
 
-        var result = await controller.GetAllAuditLog(pageNumber, pageSize, CancellationToken.None);
+        var result = await controller.GetAllAuditLog(pageNumber, pageSize, TestContext.Current.CancellationToken);
 
         Assert.IsType<BadRequestObjectResult>(result.Result);
         dataAccess.Verify(
@@ -295,7 +295,7 @@ public class ScholarsControllerTests
         var page = new PagedResponse<GlobalAuditLogEntry>([], 45, 2, 20);
         dataAccess.Setup(d => d.GetAllAuditLogAsync(2, 20, It.IsAny<CancellationToken>())).ReturnsAsync(page);
 
-        var result = await controller.GetAllAuditLog(2, 20, CancellationToken.None);
+        var result = await controller.GetAllAuditLog(2, 20, TestContext.Current.CancellationToken);
 
         var ok = Assert.IsType<OkObjectResult>(result.Result);
         Assert.Equal(45, ((PagedResponse<GlobalAuditLogEntry>)ok.Value!).TotalItems);
@@ -307,7 +307,7 @@ public class ScholarsControllerTests
         var (controller, dataAccess) = MakeController();
         dataAccess.Setup(d => d.DeleteAllAuditLogAsync(It.IsAny<CancellationToken>())).Returns(Task.CompletedTask);
 
-        var result = await controller.DeleteAllAuditLog(CancellationToken.None);
+        var result = await controller.DeleteAllAuditLog(TestContext.Current.CancellationToken);
 
         Assert.IsType<NoContentResult>(result);
     }
@@ -321,7 +321,7 @@ public class ScholarsControllerTests
     {
         var (controller, dataAccess) = MakeController();
 
-        var result = await controller.CreateOrUpdateAttendance(Guid.Empty, [], CancellationToken.None);
+        var result = await controller.CreateOrUpdateAttendance(Guid.Empty, [], TestContext.Current.CancellationToken);
 
         Assert.IsType<BadRequestObjectResult>(result);
         dataAccess.Verify(
@@ -334,7 +334,7 @@ public class ScholarsControllerTests
     {
         var (controller, _) = MakeController();
 
-        var result = await controller.CreateOrUpdateAttendance(Guid.NewGuid(), null!, CancellationToken.None);
+        var result = await controller.CreateOrUpdateAttendance(Guid.NewGuid(), null!, TestContext.Current.CancellationToken);
 
         Assert.IsType<BadRequestObjectResult>(result);
     }
@@ -350,7 +350,7 @@ public class ScholarsControllerTests
             new() { Date = date, Present = false, LunchSelected = true },
         };
 
-        var result = await controller.CreateOrUpdateAttendance(id, records, CancellationToken.None);
+        var result = await controller.CreateOrUpdateAttendance(id, records, TestContext.Current.CancellationToken);
 
         var badRequest = Assert.IsType<BadRequestObjectResult>(result);
         var dates = Assert.IsAssignableFrom<IEnumerable<DateOnly>>(
@@ -376,7 +376,7 @@ public class ScholarsControllerTests
             new() { Date = badDate2, Present = false, TransportSelected = true },
         };
 
-        var result = await controller.CreateOrUpdateAttendance(id, records, CancellationToken.None);
+        var result = await controller.CreateOrUpdateAttendance(id, records, TestContext.Current.CancellationToken);
 
         var badRequest = Assert.IsType<BadRequestObjectResult>(result);
         var dates = Assert.IsAssignableFrom<IEnumerable<DateOnly>>(
@@ -400,7 +400,7 @@ public class ScholarsControllerTests
             new() { Date = repeated },
         };
 
-        var result = await controller.CreateOrUpdateAttendance(id, records, CancellationToken.None);
+        var result = await controller.CreateOrUpdateAttendance(id, records, TestContext.Current.CancellationToken);
 
         var badRequest = Assert.IsType<BadRequestObjectResult>(result);
         var dates = Assert.IsAssignableFrom<IEnumerable<DateOnly>>(
@@ -421,7 +421,7 @@ public class ScholarsControllerTests
             new() { Date = new DateOnly(2024, 3, 4), Present = false, TransportSelected = true },
         };
 
-        var result = await controller.CreateOrUpdateAttendance(id, records, CancellationToken.None);
+        var result = await controller.CreateOrUpdateAttendance(id, records, TestContext.Current.CancellationToken);
 
         Assert.IsType<BadRequestObjectResult>(result);
     }
@@ -439,7 +439,7 @@ public class ScholarsControllerTests
             .Setup(d => d.CreateOrUpdateAttendanceAsync(id, records, It.IsAny<CancellationToken>()))
             .ReturnsAsync(true);
 
-        var result = await controller.CreateOrUpdateAttendance(id, records, CancellationToken.None);
+        var result = await controller.CreateOrUpdateAttendance(id, records, TestContext.Current.CancellationToken);
 
         Assert.IsType<OkObjectResult>(result);
     }
@@ -454,7 +454,7 @@ public class ScholarsControllerTests
             .Setup(d => d.CreateOrUpdateAttendanceAsync(id, records, It.IsAny<CancellationToken>()))
             .ReturnsAsync(true);
 
-        var result = await controller.CreateOrUpdateAttendance(id, records, CancellationToken.None);
+        var result = await controller.CreateOrUpdateAttendance(id, records, TestContext.Current.CancellationToken);
 
         var ok = Assert.IsType<OkObjectResult>(result);
         Assert.Equal(200, ok.StatusCode);
@@ -470,7 +470,7 @@ public class ScholarsControllerTests
             .Setup(d => d.CreateOrUpdateAttendanceAsync(id, records, It.IsAny<CancellationToken>()))
             .ReturnsAsync(false);
 
-        var result = await controller.CreateOrUpdateAttendance(id, records, CancellationToken.None);
+        var result = await controller.CreateOrUpdateAttendance(id, records, TestContext.Current.CancellationToken);
 
         Assert.Equal(500, ((ObjectResult)result).StatusCode);
     }
@@ -480,7 +480,7 @@ public class ScholarsControllerTests
     {
         var (controller, _) = MakeController();
 
-        var result = await controller.GetAttendance(Guid.Empty, CancellationToken.None);
+        var result = await controller.GetAttendance(Guid.Empty, TestContext.Current.CancellationToken);
 
         Assert.IsType<BadRequestObjectResult>(result.Result);
     }
@@ -493,7 +493,7 @@ public class ScholarsControllerTests
         dataAccess.Setup(d => d.GetAttendanceByScholarIdAsync(id, It.IsAny<CancellationToken>()))
             .ReturnsAsync([]);
 
-        var result = await controller.GetAttendance(id, CancellationToken.None);
+        var result = await controller.GetAttendance(id, TestContext.Current.CancellationToken);
 
         var ok = Assert.IsType<OkObjectResult>(result.Result);
         Assert.Empty((IEnumerable<AttendanceRecord>)ok.Value!);
@@ -504,7 +504,7 @@ public class ScholarsControllerTests
     {
         var (controller, _) = MakeController();
 
-        var result = await controller.DeleteAttendance(Guid.Empty, CancellationToken.None);
+        var result = await controller.DeleteAttendance(Guid.Empty, TestContext.Current.CancellationToken);
 
         Assert.IsType<BadRequestObjectResult>(result);
     }
@@ -516,7 +516,7 @@ public class ScholarsControllerTests
         var id = Guid.NewGuid();
         dataAccess.Setup(d => d.DeleteAttendanceAsync(id, It.IsAny<CancellationToken>())).ReturnsAsync(false);
 
-        var result = await controller.DeleteAttendance(id, CancellationToken.None);
+        var result = await controller.DeleteAttendance(id, TestContext.Current.CancellationToken);
 
         Assert.IsType<NotFoundObjectResult>(result);
     }
@@ -528,7 +528,7 @@ public class ScholarsControllerTests
         var id = Guid.NewGuid();
         dataAccess.Setup(d => d.DeleteAttendanceAsync(id, It.IsAny<CancellationToken>())).ReturnsAsync(true);
 
-        var result = await controller.DeleteAttendance(id, CancellationToken.None);
+        var result = await controller.DeleteAttendance(id, TestContext.Current.CancellationToken);
 
         Assert.IsType<NoContentResult>(result);
     }
@@ -542,7 +542,7 @@ public class ScholarsControllerTests
         dataAccess.Setup(d => d.GetAllAttendanceAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync([new ScholarAttendance(scholarId, records)]);
 
-        var result = await controller.GetAllAttendance(CancellationToken.None);
+        var result = await controller.GetAllAttendance(TestContext.Current.CancellationToken);
 
         var ok = Assert.IsType<OkObjectResult>(result.Result);
         var item = Assert.Single(Assert.IsAssignableFrom<IEnumerable<ScholarAttendance>>(ok.Value));
@@ -556,7 +556,7 @@ public class ScholarsControllerTests
         dataAccess.Setup(d => d.GetAllAttendanceAsync(It.IsAny<CancellationToken>()))
             .ThrowsAsync(new Exception("boom"));
 
-        var result = await controller.GetAllAttendance(CancellationToken.None);
+        var result = await controller.GetAllAttendance(TestContext.Current.CancellationToken);
 
         Assert.Equal(500, ((ObjectResult)result.Result!).StatusCode);
     }

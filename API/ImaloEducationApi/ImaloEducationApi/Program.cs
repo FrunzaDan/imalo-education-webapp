@@ -10,9 +10,8 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers(options =>
     options.Conventions.Add(new RouteTokenTransformerConvention(new KebabCaseParameterTransformer())));
 
-// Swagger for development & documentation
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+// OpenAPI document from ASP.NET Core's built-in generator (/openapi/v1.json), shown by Swagger UI.
+builder.Services.AddOpenApi();
 
 // Custom Services
 builder.Services.AddScoped<IScholarDataAccess, ScholarDataAccess>();
@@ -21,16 +20,15 @@ builder.Services.AddSingleton<AppLogger>();
 // Health checks (liveness only — no DB probe)
 builder.Services.AddHealthChecks();
 
-// CORS Configuration
+// Only the Angular app's own origins may call the API from a browser.
+var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? [];
+
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowSpecificOrigin", policy =>
-    {
-        policy
-            .AllowAnyOrigin() // TODO: Restrict to specific origins in production
-            .AllowAnyMethod()
-            .AllowAnyHeader();
-    });
+    options.AddDefaultPolicy(policy => policy
+        .WithOrigins(allowedOrigins)
+        .WithMethods("GET", "POST", "PUT", "DELETE")
+        .WithHeaders("Content-Type"));
 });
 
 // Logging Configuration (optional fine-tuning)
@@ -53,12 +51,8 @@ using (var scope = app.Services.CreateScope())
 // Enable Swagger in development only
 if (app.Environment.IsDevelopment())
 {
-    app.UseSwagger();
-    app.UseSwaggerUI(options =>
-    {
-        options.SwaggerEndpoint("/swagger/v1/swagger.json", "ImaloEducation API v1");
-        options.RoutePrefix = "swagger";
-    });
+    app.MapOpenApi();
+    app.UseSwaggerUI(options => options.SwaggerEndpoint("/openapi/v1.json", "v1"));
 }
 
 // Optional: Swagger in production with auth
@@ -67,11 +61,8 @@ if (app.Environment.IsDevelopment())
 // Enforce HTTPS redirection
 app.UseHttpsRedirection();
 
-// Use routing
-app.UseRouting();
-
 // Enable CORS (should come *before* authorization)
-app.UseCors("AllowSpecificOrigin");
+app.UseCors();
 
 app.UseMiddleware<RequestLoggingMiddleware>();
 

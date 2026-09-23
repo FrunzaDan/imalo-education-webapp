@@ -77,7 +77,7 @@ public class ScholarModelValidationTests
     }
 
     [Fact]
-    public void FutureDateOfBirth_FailsValidation()
+    public void FutureBirthDate_FailsValidation()
     {
         var scholar = ValidScholar();
         scholar.BirthDate = DateOnly.FromDateTime(DateTime.UtcNow).AddDays(5);

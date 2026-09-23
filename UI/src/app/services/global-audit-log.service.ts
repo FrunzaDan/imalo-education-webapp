@@ -1,5 +1,5 @@
 import { HttpClient, HttpErrorResponse, HttpParams } from '@angular/common/http';
-import { computed, Injectable, signal } from '@angular/core';
+import { computed, inject, Injectable, signal } from '@angular/core';
 import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
 import { GlobalAuditLogEntry } from '../interfaces/global-audit-log-entry';
@@ -13,6 +13,7 @@ export interface LoadAllAuditLogParams {
 
 @Injectable({ providedIn: 'root' })
 export class GlobalAuditLogService {
+  private readonly http = inject(HttpClient);
   private readonly API_URL = `${environment.apiUrl}/api/scholars/audit-log/all`;
 
   private readonly state = signal({
@@ -29,8 +30,6 @@ export class GlobalAuditLogService {
   readonly error = computed(() => this.state().error);
   readonly pageNumber = computed(() => this.state().pageNumber);
   readonly totalItems = computed(() => this.state().totalItems);
-
-  constructor(private http: HttpClient) {}
 
   loadAllAuditLog(params: LoadAllAuditLogParams): void {
     this.state.update((state) => ({ ...state, loading: true, error: null }));

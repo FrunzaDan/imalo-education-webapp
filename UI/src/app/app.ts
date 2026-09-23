@@ -1,14 +1,8 @@
-import {
-  Component,
-  Inject,
-  OnDestroy,
-  OnInit,
-  PLATFORM_ID,
-  signal,
-} from '@angular/core';
+import { Component, inject, PLATFORM_ID } from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
 import { isPlatformBrowser } from '@angular/common';
 import { RouterOutlet } from '@angular/router';
-import { Subscription } from 'rxjs';
+import { of } from 'rxjs';
 import { environment } from '../environments/environment';
 import { NavbarComponent } from './components/navbar/navbar.component';
 import { FooterComponent } from './components/footer/footer.component';
@@ -28,32 +22,19 @@ import { HealthService } from './services/health.service';
   templateUrl: './app.html',
   styleUrl: './app.css',
 })
-export class App implements OnInit, OnDestroy {
-  title = 'ImaloEducationWebapp';
-  environment = environment;
-  apiAvailable = signal(true);
+export class App {
+  protected readonly environment = environment;
 
-  private healthSubscription?: Subscription;
+  private readonly healthService = inject(HealthService);
+  private readonly platformId = inject(PLATFORM_ID);
 
-  constructor(
-    private healthService: HealthService,
-    @Inject(PLATFORM_ID) private platformId: object,
-  ) {}
-
-  ngOnInit(): void {
-    // Repeated polling only makes sense in the browser — during SSR/prerendering
-    // it would keep the zone permanently "unstable", which hangs the build's
-    // prerender step waiting for a stability signal that never arrives.
-    if (!isPlatformBrowser(this.platformId)) return;
-
-    this.healthSubscription = this.healthService
-      .pollApiHealth()
-      .subscribe((status) => {
-        this.apiAvailable.set(status);
-      });
-  }
-
-  ngOnDestroy(): void {
-    this.healthSubscription?.unsubscribe();
-  }
+  // Repeated polling only makes sense in the browser — during SSR/prerendering
+  // it would keep the app permanently "unstable", which hangs the build's
+  // prerender step waiting for a stability signal that never arrives.
+  readonly apiAvailable = toSignal(
+    isPlatformBrowser(this.platformId)
+      ? this.healthService.pollApiHealth()
+      : of(true),
+    { initialValue: true },
+  );
 }

@@ -9,13 +9,13 @@ public class ScholarValidationTests
         Scholar.ValidateBirthDate(date, new ValidationContext(new object()));
 
     [Fact]
-    public void ValidateDateOfBirth_AcceptsPastDate()
+    public void ValidateBirthDate_AcceptsPastDate()
     {
         Assert.Equal(ValidationResult.Success, Validate(DateOnly.FromDateTime(DateTime.UtcNow).AddYears(-10)));
     }
 
     [Fact]
-    public void ValidateDateOfBirth_RejectsFutureDate()
+    public void ValidateBirthDate_RejectsFutureDate()
     {
         var result = Validate(DateOnly.FromDateTime(DateTime.UtcNow).AddDays(1));
 

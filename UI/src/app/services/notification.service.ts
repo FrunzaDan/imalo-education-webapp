@@ -6,7 +6,7 @@ export interface Notification {
   type: 'success' | 'error';
 }
 
-const DEFAULT_DURATION_MS = 3000;
+const DEFAULT_DURATION_MS = 6000;
 
 @Injectable({ providedIn: 'root' })
 export class NotificationService {
@@ -15,7 +15,11 @@ export class NotificationService {
 
   private nextId = 0;
 
-  show(message: string, type: Notification['type'] = 'success', durationMs = DEFAULT_DURATION_MS): void {
+  show(
+    message: string,
+    type: Notification['type'] = 'success',
+    durationMs = DEFAULT_DURATION_MS,
+  ): void {
     const id = ++this.nextId;
     this._notifications.update((list) => [...list, { id, message, type }]);
 

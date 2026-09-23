@@ -1,5 +1,5 @@
 import { HttpClient } from '@angular/common/http';
-import { Injectable } from '@angular/core';
+import { inject, Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { AttendanceRecord } from '../interfaces/attendance-record';
 import { ScholarAttendance } from '../interfaces/scholar-attendance';
@@ -10,10 +10,9 @@ import { catchHttpError } from '../utils/http-error';
   providedIn: 'root',
 })
 export class AttendanceService {
+  private readonly http = inject(HttpClient);
   // Base API endpoint
   private baseUrl = `${environment.apiUrl}/api/scholars`;
-
-  constructor(private http: HttpClient) {}
 
   // ----------------------------
   // Fetch all scholars' attendance

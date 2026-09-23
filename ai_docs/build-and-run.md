@@ -11,6 +11,7 @@ How to compile and run the three layers (DB, API, Angular UI) locally, via `buil
 - `UI/vitest-base.config.ts` — Vitest config for the Angular app, see [[angular-frontend]] Gotchas.
 - `run.sh` — repo root, full dev environment orchestration.
 - `.run/` — gitignored logs written by `run.sh` (`api.log`, `sqlpackage.log`).
+- `global.json` (repo root) — .NET 10 SDK, and `dotnet test` on Microsoft Testing Platform.
 - `DB/ImaloEducation/global.json` — pins the DB project's build to the .NET 8 SDK.
 - `UI/angular.json` — `outputMode: "server"`, `ssr.entry: src/server.ts`.
 - `UI/src/server.ts` — standalone Node/Express SSR server.
@@ -61,7 +62,7 @@ docker run \
 
 ## Gotchas / conventions
 
-- **`DB/ImaloEducation/global.json` pins the .NET 8 SDK.** The `.sqlproj`'s `Microsoft.Build.Sql` SDK (`1.0.0`) unconditionally imports `NuGet.Build.Tasks.Pack` from whichever .NET SDK is currently selected — the .NET 10 SDKs installed on this machine (`10.0.100`, `10.0.300`) don't ship that folder, only `8.0.417` does, so building the `.sqlproj` fails with `MSB4019` without the pin. Unrelated to the API's `net10.0` target (the DB project isn't a `.csproj`). If a fresh machine's SDKs all include `NuGet.Build.Tasks.Pack`, this pin becomes a no-op — don't remove it speculatively without checking a real build first.
+- **`DB/ImaloEducation/global.json` pins the .NET 8 SDK** — a deliberate choice kept alongside the Docker SQL Server setup; the same pin exists in both sibling apps. `Microsoft.Build.Sql` is 2.3.0 (the same version as the sibling apps) and builds cleanly under it; its dacpac deploys with the pinned `sqlpackage`. Don't remove the pin without checking with the user.
 - **`sqlpackage` version is pinned deliberately** — don't bump it without checking it actually runs against the .NET runtime installed on the target machine.
 - No TLS/dev-cert setup needed anywhere in this stack — the API has no HTTPS profile and `environment.ts` points at plain `http://localhost:5244`. `Program.cs` still calls `app.UseHttpsRedirection()` though, which is dead weight with no HTTPS endpoint configured — see [[api]] Gotchas.
 - No seed data, no test login — the DB schema is created purely by the pre-deployment script + `.sqlproj` tables, and the app has no auth (see [[api]]).

@@ -1,4 +1,8 @@
-import { ApplicationConfig, provideZonelessChangeDetection } from '@angular/core';
+import {
+  ApplicationConfig,
+  provideBrowserGlobalErrorListeners,
+  provideZonelessChangeDetection,
+} from '@angular/core';
 import { provideRouter, withComponentInputBinding } from '@angular/router';
 
 import { routes } from './app.routes';
@@ -16,6 +20,7 @@ import { apiLoggerInterceptor } from './services/api-logger.interceptor';
 
 export const appConfig: ApplicationConfig = {
   providers: [
+    provideBrowserGlobalErrorListeners(),
     provideZonelessChangeDetection(),
     // Binds route params (:scholarId) straight onto components' input()s.
     provideRouter(routes, withComponentInputBinding()),
