@@ -48,21 +48,29 @@ export class ScholarFormComponent {
   readonly isEditMode = computed(() => !!this.scholarId());
 
   // SchoolsService swallows errors into [], so this never errors.
-  readonly schools = toSignal(this.schoolsService.getSchools(), { initialValue: [] });
+  readonly schools = toSignal(this.schoolsService.getSchools(), {
+    initialValue: [],
+  });
   readonly weekDays = WEEK_DAYS;
 
   // Only loads in edit mode (params() is undefined on the create route, which
   // leaves the resource idle).
   private readonly scholarResource = rxResource({
     params: () => this.scholarId(),
-    stream: ({ params: scholarId }) => this.scholarsService.getScholarById(scholarId),
+    stream: ({ params: scholarId }) =>
+      this.scholarsService.getScholarById(scholarId),
   });
 
   // Load failures are shown inline, in place of the form (an edit form with
   // nothing loaded into it would only invite a broken save).
   readonly loadError = computed(() => {
     const error = this.scholarResource.error();
-    return error ? extractErrorMessage(error as HttpErrorResponse, 'Failed to load scholar') : null;
+    return error
+      ? extractErrorMessage(
+          error as HttpErrorResponse,
+          'Failed to load scholar',
+        )
+      : null;
   });
 
   // The form model is a signal that re-derives from the loaded scholar and

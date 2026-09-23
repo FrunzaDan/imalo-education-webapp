@@ -85,11 +85,14 @@ export class ScholarTableComponent implements OnInit {
               schoolName,
               grade: scholar.grade,
               schoolColor,
-              birthDate: parseDateOnly(scholar.birthDate).toLocaleDateString('en-GB', {
-                day: '2-digit',
-                month: 'short',
-                year: 'numeric',
-              }),
+              birthDate: parseDateOnly(scholar.birthDate).toLocaleDateString(
+                'en-GB',
+                {
+                  day: '2-digit',
+                  month: 'short',
+                  year: 'numeric',
+                },
+              ),
               textColor,
             };
           });
@@ -104,7 +107,9 @@ export class ScholarTableComponent implements OnInit {
           this.loading.set(false);
         },
         error: (error: HttpErrorResponse) => {
-          this.loadError.set(extractErrorMessage(error, 'Failed to load scholars'));
+          this.loadError.set(
+            extractErrorMessage(error, 'Failed to load scholars'),
+          );
           this.loading.set(false);
         },
       });
@@ -142,7 +147,9 @@ export class ScholarTableComponent implements OnInit {
   readonly allSelected = computed(
     () =>
       this.displayedScholarData().length > 0 &&
-      this.displayedScholarData().every((s) => this.selectedScholarIds().has(s.scholarId)),
+      this.displayedScholarData().every((s) =>
+        this.selectedScholarIds().has(s.scholarId),
+      ),
   );
 
   isSelected(scholarId: string): boolean {
@@ -174,7 +181,8 @@ export class ScholarTableComponent implements OnInit {
   }
 
   async bulkDeleteSelected(): Promise<void> {
-    if (this.selectedScholarIds().size === 0 || this.bulkDeleteInProgress()) return;
+    if (this.selectedScholarIds().size === 0 || this.bulkDeleteInProgress())
+      return;
 
     const ids = Array.from(this.selectedScholarIds());
     const confirmed = await this.confirmDialogService.confirm(
@@ -217,9 +225,15 @@ export class ScholarTableComponent implements OnInit {
       'scholars',
       [
         { header: 'Name', value: (s: TransformedScholarData) => s.name },
-        { header: 'School', value: (s: TransformedScholarData) => s.schoolName },
+        {
+          header: 'School',
+          value: (s: TransformedScholarData) => s.schoolName,
+        },
         { header: 'Grade', value: (s: TransformedScholarData) => s.grade },
-        { header: 'Birth Date', value: (s: TransformedScholarData) => s.birthDate },
+        {
+          header: 'Birth Date',
+          value: (s: TransformedScholarData) => s.birthDate,
+        },
       ],
       this.displayedScholarData(),
     );

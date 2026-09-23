@@ -16,7 +16,9 @@ describe('AuditLogService', () => {
   const urlFor = (scholarId: string) =>
     `${environment.apiUrl}/api/scholars/${scholarId}/audit-log`;
 
-  const buildEntry = (overrides: Partial<AuditLogEntry> = {}): AuditLogEntry => ({
+  const buildEntry = (
+    overrides: Partial<AuditLogEntry> = {},
+  ): AuditLogEntry => ({
     scholarAuditLogId: 1,
     scholarId: 'scholar-1',
     actionType: 'Edited',
@@ -83,7 +85,10 @@ describe('AuditLogService', () => {
 
     httpMock
       .expectOne(urlFor('scholar-1'))
-      .flush({ status: 500, detail: 'boom' }, { status: 500, statusText: 'Server Error' });
+      .flush(
+        { status: 500, detail: 'boom' },
+        { status: 500, statusText: 'Server Error' },
+      );
     await settle();
 
     expect(service.loading()).toBe(false);
@@ -98,7 +103,9 @@ describe('AuditLogService', () => {
       .flush(null, { status: 500, statusText: 'Server Error' });
     await settle();
 
-    expect(service.error()).toBe('Failed to load the audit trail (500). Please try again.');
+    expect(service.error()).toBe(
+      'Failed to load the audit trail (500). Please try again.',
+    );
   });
 
   it('re-requests when asked to load the same scholar again', async () => {
@@ -120,7 +127,9 @@ describe('AuditLogService', () => {
     load('scholar-2');
 
     expect(first.cancelled).toBe(true);
-    httpMock.expectOne(urlFor('scholar-2')).flush([buildEntry({ scholarId: 'scholar-2' })]);
+    httpMock
+      .expectOne(urlFor('scholar-2'))
+      .flush([buildEntry({ scholarId: 'scholar-2' })]);
     await settle();
     expect(service.entries()[0].scholarId).toBe('scholar-2');
   });

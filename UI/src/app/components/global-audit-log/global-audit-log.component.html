@@ -12,64 +12,77 @@
 </div>
 
 @if (clearError(); as error) {
-<div class="app-alert" role="alert">{{ error }}</div>
+  <div class="app-alert" role="alert">{{ error }}</div>
 }
 @if (loading()) {
-<div class="loading-message" role="status">Loading audit log…</div>
+  <div class="loading-message" role="status">Loading audit log…</div>
 } @else if (error(); as errorMessage) {
-<div class="app-alert" role="alert">{{ errorMessage }}</div>
+  <div class="app-alert" role="alert">{{ errorMessage }}</div>
 } @else if (entries().length === 0) {
-<p class="audit-log-empty">No recorded actions yet.</p>
+  <p class="audit-log-empty">No recorded actions yet.</p>
 } @else {
-<table class="app-table">
-  <caption class="visually-hidden">
-    Audit log, page {{ currentPage() }} of {{ totalPages() }}, newest first
-  </caption>
-  <thead>
-    <tr>
-      <th scope="col" class="table-header">Date</th>
-      <th scope="col" class="table-header">Scholar</th>
-      <th scope="col" class="table-header">Action</th>
-      <th scope="col" class="table-header">Details</th>
-    </tr>
-  </thead>
-  <tbody>
-    @for (entry of entries(); track entry.scholarAuditLogId) {
-    <tr class="table-row">
-      <td class="table-cell">{{ entry.occurredAt | date: 'medium' }}</td>
-      <td class="table-cell">
-        @if (entry.scholarFirstName || entry.scholarLastName) {
-        <a class="audit-log-link" [routerLink]="['/scholars', entry.scholarId]">{{ scholarLabel(entry) }}</a>
-        } @else {
-        <span class="audit-log-deleted">{{ scholarLabel(entry) }}</span>
-        }
-      </td>
-      <td class="table-cell">{{ auditActionLabel(entry.actionType) }}</td>
-      <td class="table-cell">{{ entry.details }}</td>
-    </tr>
-    }
-  </tbody>
-</table>
+  <table class="app-table">
+    <caption class="visually-hidden">
+      Audit log, page
+      {{
+        currentPage()
+      }}
+      of
+      {{
+        totalPages()
+      }}, newest first
+    </caption>
+    <thead>
+      <tr>
+        <th scope="col" class="table-header">Date</th>
+        <th scope="col" class="table-header">Scholar</th>
+        <th scope="col" class="table-header">Action</th>
+        <th scope="col" class="table-header">Details</th>
+      </tr>
+    </thead>
+    <tbody>
+      @for (entry of entries(); track entry.scholarAuditLogId) {
+        <tr class="table-row">
+          <td class="table-cell">{{ entry.occurredAt | date: 'medium' }}</td>
+          <td class="table-cell">
+            @if (entry.scholarFirstName || entry.scholarLastName) {
+              <a
+                class="audit-log-link"
+                [routerLink]="['/scholars', entry.scholarId]"
+                >{{ scholarLabel(entry) }}</a
+              >
+            } @else {
+              <span class="audit-log-deleted">{{ scholarLabel(entry) }}</span>
+            }
+          </td>
+          <td class="table-cell">{{ auditActionLabel(entry.actionType) }}</td>
+          <td class="table-cell">{{ entry.details }}</td>
+        </tr>
+      }
+    </tbody>
+  </table>
 
-@if (totalPages() > 1) {
-<nav class="audit-log-pagination" aria-label="Audit log pages">
-  <button
-    type="button"
-    class="app-button"
-    [disabled]="currentPage() === 1"
-    (click)="goToPage(currentPage() - 1)"
-  >
-    Previous
-  </button>
-  <span aria-live="polite">Page {{ currentPage() }} of {{ totalPages() }}</span>
-  <button
-    type="button"
-    class="app-button"
-    [disabled]="currentPage() === totalPages()"
-    (click)="goToPage(currentPage() + 1)"
-  >
-    Next
-  </button>
-</nav>
-}
+  @if (totalPages() > 1) {
+    <nav class="audit-log-pagination" aria-label="Audit log pages">
+      <button
+        type="button"
+        class="app-button"
+        [disabled]="currentPage() === 1"
+        (click)="goToPage(currentPage() - 1)"
+      >
+        Previous
+      </button>
+      <span aria-live="polite"
+        >Page {{ currentPage() }} of {{ totalPages() }}</span
+      >
+      <button
+        type="button"
+        class="app-button"
+        [disabled]="currentPage() === totalPages()"
+        (click)="goToPage(currentPage() + 1)"
+      >
+        Next
+      </button>
+    </nav>
+  }
 }

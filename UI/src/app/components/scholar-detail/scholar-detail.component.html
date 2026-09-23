@@ -1,142 +1,144 @@
 @if (scholar(); as scholarValue) {
- <div class="scholar-detail-page">
-  <div class="page-toolbar">
-    <button
-      type="button"
-      class="app-button"
-      (click)="navigateToUpdateScholar()"
-    >
-      Edit Scholar
-    </button>
-    <button
-      type="button"
-      class="app-button app-button--danger"
-      [disabled]="deleting()"
-      (click)="deleteScholar()"
-    >
-      {{ deleting() ? 'Deleting...' : 'Delete Scholar' }}
-    </button>
-    <button
-      type="button"
-      [routerLink]="['/attendance', scholarValue.scholarId]"
-      class="app-button app-button--ghost"
-    >
-      View Attendance
-    </button>
-  </div>
+  <div class="scholar-detail-page">
+    <div class="page-toolbar">
+      <button
+        type="button"
+        class="app-button"
+        (click)="navigateToUpdateScholar()"
+      >
+        Edit Scholar
+      </button>
+      <button
+        type="button"
+        class="app-button app-button--danger"
+        [disabled]="deleting()"
+        (click)="deleteScholar()"
+      >
+        {{ deleting() ? 'Deleting...' : 'Delete Scholar' }}
+      </button>
+      <button
+        type="button"
+        [routerLink]="['/attendance', scholarValue.scholarId]"
+        class="app-button app-button--ghost"
+      >
+        View Attendance
+      </button>
+    </div>
 
-  @if (deleteError(); as error) {
-  <div class="app-alert" role="alert">{{ error }}</div>
-  }
+    @if (deleteError(); as error) {
+      <div class="app-alert" role="alert">{{ error }}</div>
+    }
 
-  <div class="scholar-detail-container app-card">
-    <h1 class="page-title">{{ scholarValue.firstName }} {{ scholarValue.lastName }}</h1>
-    <section class="detail-section">
-      <dl class="detail-list">
-        <dt>Grade</dt>
-        <dd>{{ scholarValue.grade }}</dd>
-        <dt>Birth Date</dt>
-        <dd>{{ scholarValue.birthDate | date: 'longDate' }}</dd>
-        <dt>School</dt>
-        <dd>{{ school()?.name || 'Unknown' }}</dd>
-      </dl>
-    </section>
-    @if (
-      scholarValue.motherFirstName ||
-      scholarValue.motherLastName ||
-      scholarValue.motherPhoneNumber ||
-      scholarValue.fatherFirstName ||
-      scholarValue.fatherLastName ||
-      scholarValue.fatherPhoneNumber
-    ) {
+    <div class="scholar-detail-container app-card">
+      <h1 class="page-title">
+        {{ scholarValue.firstName }} {{ scholarValue.lastName }}
+      </h1>
       <section class="detail-section">
-        <h2>Parents</h2>
         <dl class="detail-list">
-          @if (
-            scholarValue.motherFirstName ||
-            scholarValue.motherLastName ||
-            scholarValue.motherPhoneNumber
-          ) {
-            <dt>Mother</dt>
-            <dd>
-              {{
-                formatParent(
-                  scholarValue.motherFirstName,
-                  scholarValue.motherLastName,
-                  scholarValue.motherPhoneNumber
-                )
-              }}
-            </dd>
-          }
-          @if (
-            scholarValue.fatherFirstName ||
-            scholarValue.fatherLastName ||
-            scholarValue.fatherPhoneNumber
-          ) {
-            <dt>Father</dt>
-            <dd>
-              {{
-                formatParent(
-                  scholarValue.fatherFirstName,
-                  scholarValue.fatherLastName,
-                  scholarValue.fatherPhoneNumber
-                )
-              }}
-            </dd>
-          }
+          <dt>Grade</dt>
+          <dd>{{ scholarValue.grade }}</dd>
+          <dt>Birth Date</dt>
+          <dd>{{ scholarValue.birthDate | date: 'longDate' }}</dd>
+          <dt>School</dt>
+          <dd>{{ school()?.name || 'Unknown' }}</dd>
         </dl>
       </section>
-    }
-    @if (scholarValue.pickupSchedule) {
-      <section class="detail-section">
-        <h2>Pick-Up Schedule</h2>
-        <table class="pickup-schedule">
-          <thead>
-            <tr>
-              <th>Day</th>
-              <th>Time</th>
-            </tr>
-          </thead>
-          <tbody>
-            @for (day of daysOfWeek; track day) {
-              <tr>
-                <td>{{ day | titlecase }}</td>
-                <td>{{ scholarValue.pickupSchedule[day] || '—' }}</td>
-              </tr>
+      @if (
+        scholarValue.motherFirstName ||
+        scholarValue.motherLastName ||
+        scholarValue.motherPhoneNumber ||
+        scholarValue.fatherFirstName ||
+        scholarValue.fatherLastName ||
+        scholarValue.fatherPhoneNumber
+      ) {
+        <section class="detail-section">
+          <h2>Parents</h2>
+          <dl class="detail-list">
+            @if (
+              scholarValue.motherFirstName ||
+              scholarValue.motherLastName ||
+              scholarValue.motherPhoneNumber
+            ) {
+              <dt>Mother</dt>
+              <dd>
+                {{
+                  formatParent(
+                    scholarValue.motherFirstName,
+                    scholarValue.motherLastName,
+                    scholarValue.motherPhoneNumber
+                  )
+                }}
+              </dd>
             }
-          </tbody>
-        </table>
-      </section>
-    } @else {
-      <section class="detail-section">
-        <h2>Pick-Up Schedule</h2>
-        <p class="detail-muted">Pick-Up Schedule not available.</p>
-      </section>
-    }
-    <section class="detail-section">
-      <h2>Audit trail</h2>
-      @if (auditLogLoading()) {
-        <p class="detail-muted" role="status">Loading audit trail…</p>
-      } @else if (auditLogError(); as errorMessage) {
-        <p class="app-alert" role="alert">{{ errorMessage }}</p>
-      } @else if (auditLog().length === 0) {
-        <p class="detail-muted">No recorded actions yet.</p>
-      } @else {
-        <ul class="audit-trail-list">
-          @for (entry of auditLog(); track entry.scholarAuditLogId) {
-            <li>
-              <strong>{{ auditActionLabel(entry.actionType) }}</strong> on
-              {{ entry.occurredAt | date: 'medium' }}
-              @if (entry.details) {
-                <div class="audit-trail-details">{{ entry.details }}</div>
-              }
-            </li>
-          }
-        </ul>
+            @if (
+              scholarValue.fatherFirstName ||
+              scholarValue.fatherLastName ||
+              scholarValue.fatherPhoneNumber
+            ) {
+              <dt>Father</dt>
+              <dd>
+                {{
+                  formatParent(
+                    scholarValue.fatherFirstName,
+                    scholarValue.fatherLastName,
+                    scholarValue.fatherPhoneNumber
+                  )
+                }}
+              </dd>
+            }
+          </dl>
+        </section>
       }
-    </section>
+      @if (scholarValue.pickupSchedule) {
+        <section class="detail-section">
+          <h2>Pick-Up Schedule</h2>
+          <table class="pickup-schedule">
+            <thead>
+              <tr>
+                <th>Day</th>
+                <th>Time</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (day of daysOfWeek; track day) {
+                <tr>
+                  <td>{{ day | titlecase }}</td>
+                  <td>{{ scholarValue.pickupSchedule[day] || '—' }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </section>
+      } @else {
+        <section class="detail-section">
+          <h2>Pick-Up Schedule</h2>
+          <p class="detail-muted">Pick-Up Schedule not available.</p>
+        </section>
+      }
+      <section class="detail-section">
+        <h2>Audit trail</h2>
+        @if (auditLogLoading()) {
+          <p class="detail-muted" role="status">Loading audit trail…</p>
+        } @else if (auditLogError(); as errorMessage) {
+          <p class="app-alert" role="alert">{{ errorMessage }}</p>
+        } @else if (auditLog().length === 0) {
+          <p class="detail-muted">No recorded actions yet.</p>
+        } @else {
+          <ul class="audit-trail-list">
+            @for (entry of auditLog(); track entry.scholarAuditLogId) {
+              <li>
+                <strong>{{ auditActionLabel(entry.actionType) }}</strong> on
+                {{ entry.occurredAt | date: 'medium' }}
+                @if (entry.details) {
+                  <div class="audit-trail-details">{{ entry.details }}</div>
+                }
+              </li>
+            }
+          </ul>
+        }
+      </section>
+    </div>
   </div>
- </div>
 }
 
 @if (!scholar()) {

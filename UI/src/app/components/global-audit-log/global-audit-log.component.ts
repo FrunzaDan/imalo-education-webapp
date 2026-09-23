@@ -70,7 +70,9 @@ export class GlobalAuditLogComponent implements OnInit {
       },
       error: (error: HttpErrorResponse) => {
         this.clearing.set(false);
-        this.clearError.set(extractErrorMessage(error, 'Failed to clear the audit log'));
+        this.clearError.set(
+          extractErrorMessage(error, 'Failed to clear the audit log'),
+        );
       },
     });
   }

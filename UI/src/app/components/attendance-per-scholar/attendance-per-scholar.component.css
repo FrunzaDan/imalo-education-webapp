@@ -78,7 +78,8 @@
 }
 
 .attendance-table__total-row td {
-  border-top: var(--border-width-thick) solid rgba(var(--cyan-main-color-for-alpha), 0.3);
+  border-top: var(--border-width-thick) solid
+    rgba(var(--cyan-main-color-for-alpha), 0.3);
 }
 
 .attendance-table__total-row--grand {

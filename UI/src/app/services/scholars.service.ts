@@ -36,7 +36,11 @@ export class ScholarsService {
   updateScholar(scholar: Scholar): Observable<Scholar> {
     return this.http
       .put<Scholar>(this.urlWithId(scholar.scholarId), scholar)
-      .pipe(tap(() => this.notificationService.show('Scholar updated successfully.')));
+      .pipe(
+        tap(() =>
+          this.notificationService.show('Scholar updated successfully.'),
+        ),
+      );
   }
 
   deleteScholar(scholarId: string): Observable<void> {

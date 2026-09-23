@@ -13,14 +13,29 @@ export interface ChartPoint {
 }
 
 const MONTH_LABELS = [
-  'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+  'Jan',
+  'Feb',
+  'Mar',
+  'Apr',
+  'May',
+  'Jun',
+  'Jul',
+  'Aug',
+  'Sep',
+  'Oct',
+  'Nov',
+  'Dec',
 ];
 
-function flattenRecords(allAttendance: ScholarAttendance[]): AttendanceRecord[] {
+function flattenRecords(
+  allAttendance: ScholarAttendance[],
+): AttendanceRecord[] {
   return allAttendance.flatMap((sa) => sa.attendance);
 }
 
-function aggregate(records: AttendanceRecord[]): Omit<ChartPoint, 'key' | 'label'> {
+function aggregate(
+  records: AttendanceRecord[],
+): Omit<ChartPoint, 'key' | 'label'> {
   let present = 0;
   let lunchRevenue = 0;
   let transportRevenue = 0;
@@ -81,8 +96,10 @@ export function buildMonthlyPoints(
   }));
 }
 
-export const totalOf = (points: ChartPoint[], field: keyof Omit<ChartPoint, 'key' | 'label'>): number =>
-  points.reduce((sum, p) => sum + p[field], 0);
+export const totalOf = (
+  points: ChartPoint[],
+  field: keyof Omit<ChartPoint, 'key' | 'label'>,
+): number => points.reduce((sum, p) => sum + p[field], 0);
 
 // The point with the highest `present` count, or null when every point is 0
 // (nothing to call out yet — e.g. a future month with no attendance data).
@@ -120,17 +137,27 @@ export function countByGrade(scholars: Scholar[]): CategoryCount[] {
 
   const result = [...counts.entries()]
     .sort(([a], [b]) => a - b)
-    .map(([grade, value]) => ({ key: String(grade), label: `Class ${grade}`, value }));
+    .map(([grade, value]) => ({
+      key: String(grade),
+      label: `Class ${grade}`,
+      value,
+    }));
 
-  if (unassigned > 0) result.push({ key: 'unassigned', label: 'Unassigned', value: unassigned });
+  if (unassigned > 0)
+    result.push({ key: 'unassigned', label: 'Unassigned', value: unassigned });
   return result;
 }
 
 // Scholar headcount per school, ranked highest first so the busiest school
 // reads straight off the chart, with a trailing "Unassigned" bucket for a
 // null schoolId.
-export function countBySchool(scholars: Scholar[], schools: School[]): CategoryCount[] {
-  const nameById = new Map(schools.map((school) => [school.schoolId, school.name]));
+export function countBySchool(
+  scholars: Scholar[],
+  schools: School[],
+): CategoryCount[] {
+  const nameById = new Map(
+    schools.map((school) => [school.schoolId, school.name]),
+  );
   const counts = new Map<number | 'unassigned', number>();
 
   for (const scholar of scholars) {
@@ -141,7 +168,10 @@ export function countBySchool(scholars: Scholar[], schools: School[]): CategoryC
   return [...counts.entries()]
     .map(([key, value]) => ({
       key: String(key),
-      label: key === 'unassigned' ? 'Unassigned' : (nameById.get(key) ?? `School ${key}`),
+      label:
+        key === 'unassigned'
+          ? 'Unassigned'
+          : (nameById.get(key) ?? `School ${key}`),
       value,
     }))
     .sort((a, b) => b.value - a.value);

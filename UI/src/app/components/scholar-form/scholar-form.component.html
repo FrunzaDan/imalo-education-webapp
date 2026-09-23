@@ -1,206 +1,230 @@
 <div class="scholar-form-page app-card">
-  <h1 class="page-title">{{ isEditMode() ? 'Update Scholar' : 'Create New Scholar' }}</h1>
+  <h1 class="page-title">
+    {{ isEditMode() ? 'Update Scholar' : 'Create New Scholar' }}
+  </h1>
 
   @if (loadError(); as error) {
-  <div class="app-alert" role="alert">{{ error }}</div>
+    <div class="app-alert" role="alert">{{ error }}</div>
   } @else {
-  <form [formRoot]="scholarForm" class="scholar-form">
-    @if (saveError(); as error) {
-      <div class="app-alert" role="alert">{{ error }}</div>
-    }
-    @if (invalidSummary(); as summary) {
-      <div class="app-error-message" role="alert">{{ summary }}</div>
-    }
-
-    <!-- First Name -->
-    @let firstName = scholarForm.firstName();
-    @let firstNameError = firstName.touched() && firstName.invalid();
-    <div class="scholar-form__field">
-      <label for="firstName" class="app-label">First Name</label>
-      <input
-        type="text"
-        id="firstName"
-        class="app-input"
-        placeholder="Enter first name"
-        [formField]="scholarForm.firstName"
-        [class.error]="firstNameError"
-        [attr.aria-invalid]="firstNameError"
-        [attr.aria-describedby]="firstNameError ? 'firstName-error' : null"
-      />
-      @if (firstNameError) {
-        <div class="app-error-message" id="firstName-error">
-          {{ firstName.errors()[0].message }}
-        </div>
+    <form [formRoot]="scholarForm" class="scholar-form">
+      @if (saveError(); as error) {
+        <div class="app-alert" role="alert">{{ error }}</div>
       }
-    </div>
-
-    <!-- Last Name -->
-    @let lastName = scholarForm.lastName();
-    @let lastNameError = lastName.touched() && lastName.invalid();
-    <div class="scholar-form__field">
-      <label for="lastName" class="app-label">Last Name</label>
-      <input
-        type="text"
-        id="lastName"
-        class="app-input"
-        placeholder="Enter last name"
-        [formField]="scholarForm.lastName"
-        [class.error]="lastNameError"
-        [attr.aria-invalid]="lastNameError"
-        [attr.aria-describedby]="lastNameError ? 'lastName-error' : null"
-      />
-      @if (lastNameError) {
-        <div class="app-error-message" id="lastName-error">
-          {{ lastName.errors()[0].message }}
-        </div>
+      @if (invalidSummary(); as summary) {
+        <div class="app-error-message" role="alert">{{ summary }}</div>
       }
-    </div>
 
-    <!-- School -->
-    @let school = scholarForm.schoolId();
-    @let schoolError = school.touched() && school.invalid();
-    <div class="scholar-form__field">
-      <label for="schoolId" class="app-label">School</label>
-      <select
-        id="schoolId"
-        class="app-input"
-        [formField]="scholarForm.schoolId"
-        [class.error]="schoolError"
-        [attr.aria-invalid]="schoolError"
-        [attr.aria-describedby]="schoolError ? 'schoolId-error' : null"
-      >
-        <option value="" disabled>Select a school</option>
-        @for (school of schools(); track school.schoolId) {
-          <option [value]="school.schoolId">{{ school.name }}</option>
+      <!-- First Name -->
+      @let firstName = scholarForm.firstName();
+      @let firstNameError = firstName.touched() && firstName.invalid();
+      <div class="scholar-form__field">
+        <label for="firstName" class="app-label">First Name</label>
+        <input
+          type="text"
+          id="firstName"
+          class="app-input"
+          placeholder="Enter first name"
+          [formField]="scholarForm.firstName"
+          [class.error]="firstNameError"
+          [attr.aria-invalid]="firstNameError"
+          [attr.aria-describedby]="firstNameError ? 'firstName-error' : null"
+        />
+        @if (firstNameError) {
+          <div class="app-error-message" id="firstName-error">
+            {{ firstName.errors()[0].message }}
+          </div>
         }
-      </select>
-      @if (schoolError) {
-        <div class="app-error-message" id="schoolId-error">
-          {{ school.errors()[0].message }}
-        </div>
-      }
-    </div>
+      </div>
 
-    <!-- Grade -->
-    @let grade = scholarForm.grade();
-    @let gradeError = grade.touched() && grade.invalid();
-    <div class="scholar-form__field">
-      <label for="grade" class="app-label">Grade</label>
-      <input
-        type="number"
-        id="grade"
-        class="app-input"
-        placeholder="Enter grade (0-12)"
-        [formField]="scholarForm.grade"
-        [class.error]="gradeError"
-        [attr.aria-invalid]="gradeError"
-        [attr.aria-describedby]="gradeError ? 'grade-error' : null"
-      />
-      @if (gradeError) {
-        <div class="app-error-message" id="grade-error">
-          {{ grade.errors()[0].message }}
-        </div>
-      }
-    </div>
+      <!-- Last Name -->
+      @let lastName = scholarForm.lastName();
+      @let lastNameError = lastName.touched() && lastName.invalid();
+      <div class="scholar-form__field">
+        <label for="lastName" class="app-label">Last Name</label>
+        <input
+          type="text"
+          id="lastName"
+          class="app-input"
+          placeholder="Enter last name"
+          [formField]="scholarForm.lastName"
+          [class.error]="lastNameError"
+          [attr.aria-invalid]="lastNameError"
+          [attr.aria-describedby]="lastNameError ? 'lastName-error' : null"
+        />
+        @if (lastNameError) {
+          <div class="app-error-message" id="lastName-error">
+            {{ lastName.errors()[0].message }}
+          </div>
+        }
+      </div>
 
-    <!-- Birth date -->
-    @let birthDate = scholarForm.birthDate();
-    @let birthDateError = birthDate.touched() && birthDate.invalid();
-    <div class="scholar-form__field">
-      <label for="birthDate" class="app-label">Birth Date</label>
-      <input
-        type="date"
-        id="birthDate"
-        class="app-input"
-        [formField]="scholarForm.birthDate"
-        [class.error]="birthDateError"
-        [attr.aria-invalid]="birthDateError"
-        [attr.aria-describedby]="birthDateError ? 'birthDate-error' : null"
-      />
-      @if (birthDateError) {
-        <div class="app-error-message" id="birthDate-error">
-          {{ birthDate.errors()[0].message }}
-        </div>
-      }
-    </div>
+      <!-- School -->
+      @let school = scholarForm.schoolId();
+      @let schoolError = school.touched() && school.invalid();
+      <div class="scholar-form__field">
+        <label for="schoolId" class="app-label">School</label>
+        <select
+          id="schoolId"
+          class="app-input"
+          [formField]="scholarForm.schoolId"
+          [class.error]="schoolError"
+          [attr.aria-invalid]="schoolError"
+          [attr.aria-describedby]="schoolError ? 'schoolId-error' : null"
+        >
+          <option value="" disabled>Select a school</option>
+          @for (school of schools(); track school.schoolId) {
+            <option [value]="school.schoolId">{{ school.name }}</option>
+          }
+        </select>
+        @if (schoolError) {
+          <div class="app-error-message" id="schoolId-error">
+            {{ school.errors()[0].message }}
+          </div>
+        }
+      </div>
 
-    <!-- Parents -->
-    <fieldset class="scholar-form__group">
-      <legend class="app-label scholar-form__legend">Parents (Optional)</legend>
-      <div class="scholar-form__columns">
-        @for (parent of parents; track parent.key) {
-          <div class="scholar-form__parent">
-            <p class="parent-subheading">{{ parent.label }}</p>
-            <div class="scholar-form__stack">
+      <!-- Grade -->
+      @let grade = scholarForm.grade();
+      @let gradeError = grade.touched() && grade.invalid();
+      <div class="scholar-form__field">
+        <label for="grade" class="app-label">Grade</label>
+        <input
+          type="number"
+          id="grade"
+          class="app-input"
+          placeholder="Enter grade (0-12)"
+          [formField]="scholarForm.grade"
+          [class.error]="gradeError"
+          [attr.aria-invalid]="gradeError"
+          [attr.aria-describedby]="gradeError ? 'grade-error' : null"
+        />
+        @if (gradeError) {
+          <div class="app-error-message" id="grade-error">
+            {{ grade.errors()[0].message }}
+          </div>
+        }
+      </div>
+
+      <!-- Birth date -->
+      @let birthDate = scholarForm.birthDate();
+      @let birthDateError = birthDate.touched() && birthDate.invalid();
+      <div class="scholar-form__field">
+        <label for="birthDate" class="app-label">Birth Date</label>
+        <input
+          type="date"
+          id="birthDate"
+          class="app-input"
+          [formField]="scholarForm.birthDate"
+          [class.error]="birthDateError"
+          [attr.aria-invalid]="birthDateError"
+          [attr.aria-describedby]="birthDateError ? 'birthDate-error' : null"
+        />
+        @if (birthDateError) {
+          <div class="app-error-message" id="birthDate-error">
+            {{ birthDate.errors()[0].message }}
+          </div>
+        }
+      </div>
+
+      <!-- Parents -->
+      <fieldset class="scholar-form__group">
+        <legend class="app-label scholar-form__legend">
+          Parents (Optional)
+        </legend>
+        <div class="scholar-form__columns">
+          @for (parent of parents; track parent.key) {
+            <div class="scholar-form__parent">
+              <p class="parent-subheading">{{ parent.label }}</p>
+              <div class="scholar-form__stack">
+                <input
+                  type="text"
+                  class="app-input"
+                  placeholder="First name"
+                  [attr.aria-label]="parent.label + ' first name'"
+                  [formField]="parent.firstName"
+                  [class.error]="
+                    parent.firstName().touched() && parent.firstName().invalid()
+                  "
+                />
+                <input
+                  type="text"
+                  class="app-input"
+                  placeholder="Last name"
+                  [attr.aria-label]="parent.label + ' last name'"
+                  [formField]="parent.lastName"
+                  [class.error]="
+                    parent.lastName().touched() && parent.lastName().invalid()
+                  "
+                />
+                <input
+                  type="tel"
+                  class="app-input"
+                  [placeholder]="parent.phonePlaceholder"
+                  [attr.aria-label]="parent.label + ' phone number'"
+                  [formField]="parent.phoneNumber"
+                  [class.error]="
+                    parent.phoneNumber().touched() &&
+                    parent.phoneNumber().invalid()
+                  "
+                />
+              </div>
+              @for (
+                field of [
+                  parent.firstName,
+                  parent.lastName,
+                  parent.phoneNumber,
+                ];
+                track $index
+              ) {
+                @if (field().touched() && field().invalid()) {
+                  <div class="app-error-message">
+                    {{ field().errors()[0].message }}
+                  </div>
+                }
+              }
+            </div>
+          }
+        </div>
+      </fieldset>
+
+      <!-- Pick Up Schedule -->
+      <fieldset class="scholar-form__group">
+        <legend class="app-label scholar-form__legend">
+          Pick Up Schedule (Optional)
+        </legend>
+        <div class="scholar-form__days">
+          @for (day of weekDays; track day) {
+            <div class="scholar-form__day">
+              <label [for]="day" class="scholar-form__day-label">{{
+                day | titlecase
+              }}</label>
               <input
-                type="text"
+                type="time"
                 class="app-input"
-                placeholder="First name"
-                [attr.aria-label]="parent.label + ' first name'"
-                [formField]="parent.firstName"
-                [class.error]="parent.firstName().touched() && parent.firstName().invalid()"
-              />
-              <input
-                type="text"
-                class="app-input"
-                placeholder="Last name"
-                [attr.aria-label]="parent.label + ' last name'"
-                [formField]="parent.lastName"
-                [class.error]="parent.lastName().touched() && parent.lastName().invalid()"
-              />
-              <input
-                type="tel"
-                class="app-input"
-                [placeholder]="parent.phonePlaceholder"
-                [attr.aria-label]="parent.label + ' phone number'"
-                [formField]="parent.phoneNumber"
-                [class.error]="parent.phoneNumber().touched() && parent.phoneNumber().invalid()"
+                [id]="day"
+                [formField]="scholarForm.pickupSchedule[day]"
               />
             </div>
-            @for (field of [parent.firstName, parent.lastName, parent.phoneNumber]; track $index) {
-              @if (field().touched() && field().invalid()) {
-                <div class="app-error-message">{{ field().errors()[0].message }}</div>
-              }
-            }
-          </div>
-        }
-      </div>
-    </fieldset>
+          }
+        </div>
+      </fieldset>
 
-    <!-- Pick Up Schedule -->
-    <fieldset class="scholar-form__group">
-      <legend class="app-label scholar-form__legend">Pick Up Schedule (Optional)</legend>
-      <div class="scholar-form__days">
-        @for (day of weekDays; track day) {
-          <div class="scholar-form__day">
-            <label [for]="day" class="scholar-form__day-label">{{ day | titlecase }}</label>
-            <input
-              type="time"
-              class="app-input"
-              [id]="day"
-              [formField]="scholarForm.pickupSchedule[day]"
-            />
-          </div>
-        }
+      <!-- Submit Button -->
+      <div class="scholar-form__actions">
+        <button
+          type="submit"
+          [disabled]="scholarForm().submitting()"
+          class="app-button app-button--accent"
+        >
+          {{
+            scholarForm().submitting()
+              ? 'Saving...'
+              : isEditMode()
+                ? 'Update Scholar'
+                : 'Create Scholar'
+          }}
+        </button>
       </div>
-    </fieldset>
-
-    <!-- Submit Button -->
-    <div class="scholar-form__actions">
-      <button
-        type="submit"
-        [disabled]="scholarForm().submitting()"
-        class="app-button app-button--accent"
-      >
-        {{
-          scholarForm().submitting()
-            ? 'Saving...'
-            : isEditMode()
-              ? 'Update Scholar'
-              : 'Create Scholar'
-        }}
-      </button>
-    </div>
-  </form>
+    </form>
   }
 </div>

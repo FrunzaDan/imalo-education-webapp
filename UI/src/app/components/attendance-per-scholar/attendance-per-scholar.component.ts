@@ -41,7 +41,9 @@ import { HasUnsavedChanges } from '../../services/unsaved-changes.guard';
   // Refresh / closing the tab isn't a router navigation, so guard it here too.
   host: { '(window:beforeunload)': 'onBeforeUnload($event)' },
 })
-export class AttendancePerScholarComponent implements OnInit, HasUnsavedChanges {
+export class AttendancePerScholarComponent
+  implements OnInit, HasUnsavedChanges
+{
   private readonly scholarsService = inject(ScholarsService);
   private readonly schoolsService = inject(SchoolsService);
   private readonly attendanceService = inject(AttendanceService);
@@ -82,7 +84,10 @@ export class AttendancePerScholarComponent implements OnInit, HasUnsavedChanges 
     { month: string; loaded: AttendanceRecord[] },
     AttendanceDay[]
   >({
-    source: () => ({ month: this.selectedMonth(), loaded: this.loadedRecords() }),
+    source: () => ({
+      month: this.selectedMonth(),
+      loaded: this.loadedRecords(),
+    }),
     computation: ({ month, loaded }, previous) =>
       withWeekdayStubs(
         previous && previous.source.loaded === loaded
@@ -104,7 +109,9 @@ export class AttendancePerScholarComponent implements OnInit, HasUnsavedChanges 
       .sort((a, b) => a.date.localeCompare(b.date))
       .map((entry) => entry.index);
   });
-  readonly dayRows = computed(() => this.visibleIndexes().map((i) => this.days()[i]));
+  readonly dayRows = computed(() =>
+    this.visibleIndexes().map((i) => this.days()[i]),
+  );
 
   // The selected month as a Date (the 1st), so the invoice header can format
   // it with DatePipe instead of hand-building a "September 2026" string.
@@ -122,7 +129,10 @@ export class AttendancePerScholarComponent implements OnInit, HasUnsavedChanges 
   readonly recordsToSave = computed(() => toAttendanceRecords(this.days()));
 
   readonly totalSelectedLunchCost = computed(() =>
-    this.dayRows().reduce((sum, day) => sum + (day.lunchSelected ? day.lunchCost : 0), 0),
+    this.dayRows().reduce(
+      (sum, day) => sum + (day.lunchSelected ? day.lunchCost : 0),
+      0,
+    ),
   );
   readonly totalSelectedTransportCost = computed(() =>
     this.dayRows().reduce(
@@ -163,7 +173,9 @@ export class AttendancePerScholarComponent implements OnInit, HasUnsavedChanges 
           this.scholar.set(scholar);
         },
         error: (error: HttpErrorResponse) =>
-          this.loadError.set(extractErrorMessage(error, 'Failed to load attendance')),
+          this.loadError.set(
+            extractErrorMessage(error, 'Failed to load attendance'),
+          ),
       });
   }
 
@@ -199,7 +211,10 @@ export class AttendancePerScholarComponent implements OnInit, HasUnsavedChanges 
       return DEFAULT_MONTH;
     }
     // 'YYYY-MM-DD' sorts chronologically as a plain string.
-    const latest = records.map((r) => r.date).sort().at(-1)!;
+    const latest = records
+      .map((r) => r.date)
+      .sort()
+      .at(-1)!;
     return latest.substring(0, 7);
   }
 
@@ -242,7 +257,8 @@ export class AttendancePerScholarComponent implements OnInit, HasUnsavedChanges 
         day.lunchSelected().value.set(false); // the field is disabled too; belt and braces
         return;
       }
-      if (day.lunchCost().value() === 0) day.lunchCost().value.set(this.lunchPrice);
+      if (day.lunchCost().value() === 0)
+        day.lunchCost().value.set(this.lunchPrice);
       this.markPersisted(day);
     }
 
@@ -276,7 +292,8 @@ export class AttendancePerScholarComponent implements OnInit, HasUnsavedChanges 
     day.lunchSelected().value.set(isChecked);
     day.transportSelected().value.set(isChecked);
     if (isChecked) {
-      if (day.lunchCost().value() === 0) day.lunchCost().value.set(this.lunchPrice);
+      if (day.lunchCost().value() === 0)
+        day.lunchCost().value.set(this.lunchPrice);
       if (day.transportCost().value() === 0) {
         day.transportCost().value.set(this.transportPrice);
       }
@@ -292,16 +309,20 @@ export class AttendancePerScholarComponent implements OnInit, HasUnsavedChanges 
 
     this.isSaving.set(true);
     this.saveError.set(null);
-    this.attendanceService.saveAttendance(scholarId, this.recordsToSave()).subscribe({
-      next: () => {
-        this.isSaving.set(false);
-        this.hasUnsavedChanges.set(false);
-      },
-      error: (error: HttpErrorResponse) => {
-        this.isSaving.set(false);
-        this.saveError.set(extractErrorMessage(error, 'Failed to save attendance'));
-      },
-    });
+    this.attendanceService
+      .saveAttendance(scholarId, this.recordsToSave())
+      .subscribe({
+        next: () => {
+          this.isSaving.set(false);
+          this.hasUnsavedChanges.set(false);
+        },
+        error: (error: HttpErrorResponse) => {
+          this.isSaving.set(false);
+          this.saveError.set(
+            extractErrorMessage(error, 'Failed to save attendance'),
+          );
+        },
+      });
   }
 
   onBeforeUnload(event: BeforeUnloadEvent): void {
@@ -310,7 +331,9 @@ export class AttendancePerScholarComponent implements OnInit, HasUnsavedChanges 
 
   exportCsv(): void {
     const scholar = this.scholar();
-    const scholarName = scholar ? `${scholar.firstName}_${scholar.lastName}` : this.scholarId();
+    const scholarName = scholar
+      ? `${scholar.firstName}_${scholar.lastName}`
+      : this.scholarId();
 
     this.csvExportService.export(
       `attendance_${scholarName}_${this.selectedMonth()}`,
@@ -329,7 +352,10 @@ export class AttendancePerScholarComponent implements OnInit, HasUnsavedChanges 
           value: (r: AttendanceDay) => (r.transportSelected ? 'Yes' : 'No'),
         },
         { header: 'Lunch Cost', value: (r: AttendanceDay) => r.lunchCost },
-        { header: 'Transport Cost', value: (r: AttendanceDay) => r.transportCost },
+        {
+          header: 'Transport Cost',
+          value: (r: AttendanceDay) => r.transportCost,
+        },
       ],
       this.dayRows(),
     );

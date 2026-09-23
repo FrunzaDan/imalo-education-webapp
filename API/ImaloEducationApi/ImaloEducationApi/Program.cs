@@ -1,6 +1,5 @@
 using ImaloEducationApi.Data;
 using ImaloEducationApi.ErrorHandling;
-using ImaloEducationApi.Logging;
 using ImaloEducationApi.Routing;
 using Microsoft.AspNetCore.Mvc.ApplicationModels;
 
@@ -16,7 +15,6 @@ builder.Services.AddOpenApi();
 
 // Custom Services
 builder.Services.AddScoped<IScholarDataAccess, ScholarDataAccess>();
-builder.Services.AddSingleton<AppLogger>();
 
 // Health checks (liveness only — no DB probe)
 builder.Services.AddHealthChecks();
@@ -38,18 +36,7 @@ builder.Services.AddCors(options =>
         .WithHeaders("Content-Type"));
 });
 
-// Logging Configuration (optional fine-tuning)
-builder.Logging.ClearProviders();
-builder.Logging.AddConsole();
-
 var app = builder.Build();
-
-// Run ramp-up logging once on startup
-using (var scope = app.Services.CreateScope())
-{
-    var logger = scope.ServiceProvider.GetRequiredService<AppLogger>();
-    logger.LogRampUp();
-}
 
 // --------------------------------------------------
 // Configure Middleware
@@ -67,16 +54,7 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI(options => options.SwaggerEndpoint("/openapi/v1.json", "v1"));
 }
 
-// Enforce HTTPS redirection
-app.UseHttpsRedirection();
-
-// Enable CORS (should come *before* authorization)
 app.UseCors();
-
-app.UseMiddleware<RequestLoggingMiddleware>();
-
-// Authentication/Authorization middleware (if needed)
-app.UseAuthorization();
 
 // Every response here is live, frequently-mutated data (scholars/attendance),
 // never a fixed resource — without this, browsers apply heuristic caching to

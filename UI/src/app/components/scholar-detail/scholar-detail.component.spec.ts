@@ -22,11 +22,28 @@ const SCHOLAR: Scholar = {
   schoolId: 1,
   grade: 3,
   birthDate: '2016-01-01',
+  motherFirstName: null,
+  motherLastName: null,
+  motherPhoneNumber: null,
+  fatherFirstName: null,
+  fatherLastName: null,
+  fatherPhoneNumber: null,
 };
-const SCHOOL: School = { schoolId: 1, name: 'Test School', color: '#336699', lunchPrice: 15, transportPrice: 10 };
+const SCHOOL: School = {
+  schoolId: 1,
+  name: 'Test School',
+  color: '#336699',
+  lunchPrice: 15,
+  transportPrice: 10,
+};
 
 async function setup(
-  options: { scholar?: Scholar; loadError?: boolean; deleteError?: boolean; confirmed?: boolean } = {},
+  options: {
+    scholar?: Scholar;
+    loadError?: boolean;
+    deleteError?: boolean;
+    confirmed?: boolean;
+  } = {},
 ) {
   const getScholarById = vi.fn(() =>
     options.loadError
@@ -34,7 +51,11 @@ async function setup(
           () =>
             new HttpErrorResponse({
               status: 404,
-              error: { status: 404, title: 'Scholar not found.', detail: 'Scholar with ID scholar-1 not found.' },
+              error: {
+                status: 404,
+                title: 'Scholar not found.',
+                detail: 'Scholar with ID scholar-1 not found.',
+              },
             }),
         )
       : of(options.scholar ?? SCHOLAR),
@@ -57,7 +78,12 @@ async function setup(
       { provide: SchoolsService, useValue: { getSchoolById } },
       {
         provide: AuditLogService,
-        useValue: { entries: () => [], loading: () => false, error: () => null, loadAuditLog },
+        useValue: {
+          entries: () => [],
+          loading: () => false,
+          error: () => null,
+          loadAuditLog,
+        },
       },
       { provide: ConfirmDialogService, useValue: { confirm } },
     ],
@@ -81,7 +107,8 @@ async function setup(
 
 describe('ScholarDetailComponent', () => {
   it('loads the scholar by the bound id, then its school, and the audit log', async () => {
-    const { component, getScholarById, getSchoolById, loadAuditLog, fixture } = await setup();
+    const { component, getScholarById, getSchoolById, loadAuditLog, fixture } =
+      await setup();
 
     expect(getScholarById).toHaveBeenCalledWith('scholar-1');
     expect(getSchoolById).toHaveBeenCalledWith(1);
@@ -92,7 +119,9 @@ describe('ScholarDetailComponent', () => {
   });
 
   it('does not look up a school when the scholar has none', async () => {
-    const { component, getSchoolById } = await setup({ scholar: { ...SCHOLAR, schoolId: null } });
+    const { component, getSchoolById } = await setup({
+      scholar: { ...SCHOLAR, schoolId: null },
+    });
 
     expect(component.scholar()).not.toBeNull();
     expect(getSchoolById).not.toHaveBeenCalled();
@@ -100,20 +129,26 @@ describe('ScholarDetailComponent', () => {
   });
 
   it('shows the load error instead of "Loading…" forever when the scholar fails to load', async () => {
-    const { component, fixture, getSchoolById } = await setup({ loadError: true });
+    const { component, fixture, getSchoolById } = await setup({
+      loadError: true,
+    });
 
     expect(component.scholar()).toBeNull();
     expect(component.loadError()).toBe('Scholar with ID scholar-1 not found.');
-    expect(fixture.nativeElement.querySelector('[role="alert"]')?.textContent).toContain(
-      'Scholar with ID scholar-1 not found.',
+    expect(
+      fixture.nativeElement.querySelector('[role="alert"]')?.textContent,
+    ).toContain('Scholar with ID scholar-1 not found.');
+    expect(fixture.nativeElement.textContent).not.toContain(
+      'Loading scholar details',
     );
-    expect(fixture.nativeElement.textContent).not.toContain('Loading scholar details');
     expect(getSchoolById).not.toHaveBeenCalled();
   });
 
   it('sends the user to the update page for this scholar', async () => {
     const { component } = await setup();
-    const navigate = vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
+    const navigate = vi
+      .spyOn(TestBed.inject(Router), 'navigate')
+      .mockResolvedValue(true);
 
     component.navigateToUpdateScholar();
 
@@ -123,7 +158,9 @@ describe('ScholarDetailComponent', () => {
   describe('deleteScholar', () => {
     it('asks first, then deletes and returns to the scholar list', async () => {
       const { component, deleteScholar, confirm } = await setup();
-      const navigate = vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
+      const navigate = vi
+        .spyOn(TestBed.inject(Router), 'navigate')
+        .mockResolvedValue(true);
 
       await component.deleteScholar();
 
@@ -145,16 +182,20 @@ describe('ScholarDetailComponent', () => {
 
     it('shows the failure inline and stays on the page', async () => {
       const { component, fixture } = await setup({ deleteError: true });
-      const navigate = vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
+      const navigate = vi
+        .spyOn(TestBed.inject(Router), 'navigate')
+        .mockResolvedValue(true);
 
       await component.deleteScholar();
       fixture.detectChanges();
 
-      expect(component.deleteError()).toBe('Could not reach the server. It may be offline.');
-      expect(component.deleting()).toBe(false);
-      expect(fixture.nativeElement.querySelector('.app-alert')?.textContent).toContain(
-        'Could not reach the server',
+      expect(component.deleteError()).toBe(
+        'Could not reach the server. It may be offline.',
       );
+      expect(component.deleting()).toBe(false);
+      expect(
+        fixture.nativeElement.querySelector('.app-alert')?.textContent,
+      ).toContain('Could not reach the server');
       expect(navigate).not.toHaveBeenCalled();
     });
   });

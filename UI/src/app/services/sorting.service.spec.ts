@@ -20,16 +20,12 @@ describe('SortingService', () => {
       { name: 'charlie', age: null, joined: null },
     ];
 
-    expect(service.sort(data, 'name', 'string', true).map((r) => r.name)).toEqual([
-      'Alice',
-      'bob',
-      'charlie',
-    ]);
-    expect(service.sort(data, 'name', 'string', false).map((r) => r.name)).toEqual([
-      'charlie',
-      'bob',
-      'Alice',
-    ]);
+    expect(
+      service.sort(data, 'name', 'string', true).map((r) => r.name),
+    ).toEqual(['Alice', 'bob', 'charlie']);
+    expect(
+      service.sort(data, 'name', 'string', false).map((r) => r.name),
+    ).toEqual(['charlie', 'bob', 'Alice']);
   });
 
   it('sorts numbers ascending/descending', () => {
@@ -39,8 +35,12 @@ describe('SortingService', () => {
       { name: '', age: 20, joined: null },
     ];
 
-    expect(service.sort(data, 'age', 'number', true).map((r) => r.age)).toEqual([10, 20, 30]);
-    expect(service.sort(data, 'age', 'number', false).map((r) => r.age)).toEqual([30, 20, 10]);
+    expect(service.sort(data, 'age', 'number', true).map((r) => r.age)).toEqual(
+      [10, 20, 30],
+    );
+    expect(
+      service.sort(data, 'age', 'number', false).map((r) => r.age),
+    ).toEqual([30, 20, 10]);
   });
 
   it('sorts dates ascending/descending', () => {
@@ -50,16 +50,12 @@ describe('SortingService', () => {
       { name: '', age: null, joined: '2024-02-01' },
     ];
 
-    expect(service.sort(data, 'joined', 'date', true).map((r) => r.joined)).toEqual([
-      '2024-01-01',
-      '2024-02-01',
-      '2024-03-01',
-    ]);
-    expect(service.sort(data, 'joined', 'date', false).map((r) => r.joined)).toEqual([
-      '2024-03-01',
-      '2024-02-01',
-      '2024-01-01',
-    ]);
+    expect(
+      service.sort(data, 'joined', 'date', true).map((r) => r.joined),
+    ).toEqual(['2024-01-01', '2024-02-01', '2024-03-01']);
+    expect(
+      service.sort(data, 'joined', 'date', false).map((r) => r.joined),
+    ).toEqual(['2024-03-01', '2024-02-01', '2024-01-01']);
   });
 
   it('does not mutate the input array', () => {
@@ -81,16 +77,12 @@ describe('SortingService', () => {
       { name: 'a', age: null, joined: null },
     ];
 
-    expect(service.sort(data, 'name', 'string', true).map((r) => r.name)).toEqual([
-      null,
-      'a',
-      'b',
-    ]);
-    expect(service.sort(data, 'name', 'string', false).map((r) => r.name)).toEqual([
-      'b',
-      'a',
-      null,
-    ]);
+    expect(
+      service.sort(data, 'name', 'string', true).map((r) => r.name),
+    ).toEqual([null, 'a', 'b']);
+    expect(
+      service.sort(data, 'name', 'string', false).map((r) => r.name),
+    ).toEqual(['b', 'a', null]);
   });
 
   it('keeps all-null columns stable (no crash, order-neutral)', () => {

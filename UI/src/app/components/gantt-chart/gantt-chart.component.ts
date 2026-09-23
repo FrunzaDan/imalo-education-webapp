@@ -112,7 +112,9 @@ export class GanttChartComponent implements OnInit {
           this.loading.set(false);
         },
         error: (error: HttpErrorResponse) => {
-          this.loadError.set(extractErrorMessage(error, 'Failed to load pickup times'));
+          this.loadError.set(
+            extractErrorMessage(error, 'Failed to load pickup times'),
+          );
           this.loading.set(false);
         },
       });
@@ -152,11 +154,7 @@ export class GanttChartComponent implements OnInit {
     return this.minutesToTime(this.timeToMinutes(start) + this.SLOT_DURATION);
   }
 
-  private cellKey(
-    scholarId: string,
-    day: WeekDay,
-    slotStart: string,
-  ): string {
+  private cellKey(scholarId: string, day: WeekDay, slotStart: string): string {
     return `${scholarId}|${day}|${slotStart}`;
   }
 
@@ -165,7 +163,9 @@ export class GanttChartComponent implements OnInit {
     slot: TimeSlot,
     day: WeekDay,
   ): GanttCell | undefined {
-    return this.cellsByKey().get(this.cellKey(scholar.scholarId, day, slot.start));
+    return this.cellsByKey().get(
+      this.cellKey(scholar.scholarId, day, slot.start),
+    );
   }
 
   getSlotStyle(
@@ -173,22 +173,16 @@ export class GanttChartComponent implements OnInit {
     slot: TimeSlot,
     day: WeekDay,
   ): Record<string, string> {
-    return this.getCell(scholar, slot, day)?.style ?? GanttChartComponent.EMPTY_STYLE;
+    return (
+      this.getCell(scholar, slot, day)?.style ?? GanttChartComponent.EMPTY_STYLE
+    );
   }
 
-  getTimeRange(
-    scholar: Scholar,
-    slot: TimeSlot,
-    day: WeekDay,
-  ): string {
+  getTimeRange(scholar: Scholar, slot: TimeSlot, day: WeekDay): string {
     return this.getCell(scholar, slot, day)?.label ?? '';
   }
 
-  isTimeOccupied(
-    scholar: Scholar,
-    slot: TimeSlot,
-    day: WeekDay,
-  ): boolean {
+  isTimeOccupied(scholar: Scholar, slot: TimeSlot, day: WeekDay): boolean {
     return this.getCell(scholar, slot, day) !== undefined;
   }
 

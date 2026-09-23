@@ -50,7 +50,9 @@ export class DashboardComponent implements OnInit {
   private readonly monthDailyPoints = computed(() =>
     buildDailyPoints(this.allAttendance(), this.currentMonth),
   );
-  private readonly monthWeekdays = computed(() => weekdaysOfMonth(this.currentMonth));
+  private readonly monthWeekdays = computed(() =>
+    weekdaysOfMonth(this.currentMonth),
+  );
   readonly monthRevenue = computed(
     () =>
       totalOf(this.monthDailyPoints(), 'lunchRevenue') +
@@ -83,7 +85,9 @@ export class DashboardComponent implements OnInit {
         this.loading.set(false);
       },
       error: (error: HttpErrorResponse) => {
-        this.loadError.set(extractErrorMessage(error, 'Failed to load the dashboard'));
+        this.loadError.set(
+          extractErrorMessage(error, 'Failed to load the dashboard'),
+        );
         this.loading.set(false);
       },
     });

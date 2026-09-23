@@ -1,6 +1,9 @@
 import { TestBed } from '@angular/core/testing';
 import { ConfirmDialogService } from './confirm-dialog.service';
-import { HasUnsavedChanges, unsavedChangesGuard } from './unsaved-changes.guard';
+import {
+  HasUnsavedChanges,
+  unsavedChangesGuard,
+} from './unsaved-changes.guard';
 
 describe('unsavedChangesGuard', () => {
   let confirm: ReturnType<typeof vi.fn>;
@@ -8,7 +11,12 @@ describe('unsavedChangesGuard', () => {
   const run = (dirty: boolean) => {
     const component: HasUnsavedChanges = { hasUnsavedChanges: () => dirty };
     return TestBed.runInInjectionContext(() =>
-      unsavedChangesGuard(component, null as never, null as never, null as never),
+      unsavedChangesGuard(
+        component,
+        null as never,
+        null as never,
+        null as never,
+      ),
     );
   };
 

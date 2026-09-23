@@ -61,7 +61,8 @@ docker run \
 
 ## Gotchas / conventions
 
+- **Formatting is Prettier**, configured identically in all three apps (`UI/.prettierrc`, with the `angular` parser for `.html`; `UI/.editorconfig` matches too). Run `npm run format` in `UI/` before committing; `npm run format:check` lists files that aren't formatted.
 - **`DB/ImaloEducation/global.json` pins the .NET 8 SDK** — a deliberate choice kept alongside the Docker SQL Server setup; the same pin exists in both sibling apps. `Microsoft.Build.Sql` is 2.3.0 (the same version as the sibling apps) and builds cleanly under it; its dacpac deploys with the pinned `sqlpackage`. Don't remove the pin without checking with the user.
 - **`sqlpackage` version is pinned deliberately** — don't bump it without checking it actually runs against the .NET runtime installed on the target machine.
-- No TLS/dev-cert setup needed anywhere in this stack — the API has no HTTPS profile and `environment.ts` points at plain `http://localhost:5244`. `Program.cs` still calls `app.UseHttpsRedirection()` though, which is dead weight with no HTTPS endpoint configured — see [[api]] Gotchas.
+- No TLS/dev-cert setup needed anywhere in this stack — the API has no HTTPS profile and `environment.ts` points at plain `http://localhost:5244`. `Program.cs` has no `UseHttpsRedirection()` for the same reason.
 - No seed data, no test login — the DB schema is created purely by the pre-deployment script + `.sqlproj` tables, and the app has no auth (see [[api]]).

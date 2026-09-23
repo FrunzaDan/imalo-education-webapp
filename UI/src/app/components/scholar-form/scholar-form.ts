@@ -47,7 +47,13 @@ export const emptyScholarForm = (): ScholarFormModel => ({
   fatherFirstName: '',
   fatherLastName: '',
   fatherPhoneNumber: '',
-  pickupSchedule: { monday: '', tuesday: '', wednesday: '', thursday: '', friday: '' },
+  pickupSchedule: {
+    monday: '',
+    tuesday: '',
+    wednesday: '',
+    thursday: '',
+    friday: '',
+  },
 });
 
 // Matches the backend's ValidatePhoneNumber: digits only, 9–12 of them — the same rule the
@@ -80,7 +86,10 @@ export const scholarFormSchema = schema<ScholarFormModel>((p) => {
     // midnight, so "today" could compare as the future (or past) by the UTC offset.
     const date = parseDateOnly(value());
     return isNaN(date.getTime()) || date > new Date()
-      ? { kind: 'invalidDate', message: 'Please enter a valid date (not in the future).' }
+      ? {
+          kind: 'invalidDate',
+          message: 'Please enter a valid date (not in the future).',
+        }
       : undefined;
   });
 
@@ -95,7 +104,9 @@ export const scholarFormSchema = schema<ScholarFormModel>((p) => {
     maxLength(lastName, NAME_MAX_LENGTH, {
       message: `Last name can't exceed ${NAME_MAX_LENGTH} characters.`,
     });
-    pattern(phoneNumber, PHONE_PATTERN, { message: 'Not a valid phone number.' });
+    pattern(phoneNumber, PHONE_PATTERN, {
+      message: 'Not a valid phone number.',
+    });
   }
 });
 
@@ -137,7 +148,10 @@ export function toFormModel(scholar: Scholar): ScholarFormModel {
 
 // `scholarId` is the existing scholar's scholarId when editing; for a new one the server
 // assigns the real scholarId and this all-zero guid is just a placeholder.
-export function toScholar(model: ScholarFormModel, scholarId: string | null): Scholar {
+export function toScholar(
+  model: ScholarFormModel,
+  scholarId: string | null,
+): Scholar {
   return {
     scholarId: scholarId ?? '00000000-0000-0000-0000-000000000000',
     firstName: model.firstName,
@@ -156,5 +170,7 @@ export function toScholar(model: ScholarFormModel, scholarId: string | null): Sc
 }
 
 function mapWeekDays<T>(valueFor: (day: WeekDay) => T): Record<WeekDay, T> {
-  return Object.fromEntries(WEEK_DAYS.map((day) => [day, valueFor(day)])) as Record<WeekDay, T>;
+  return Object.fromEntries(
+    WEEK_DAYS.map((day) => [day, valueFor(day)]),
+  ) as Record<WeekDay, T>;
 }

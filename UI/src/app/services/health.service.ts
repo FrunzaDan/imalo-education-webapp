@@ -1,4 +1,4 @@
-import { inject, Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import {
   HttpClient,
   HttpErrorResponse,
@@ -13,15 +13,17 @@ const POLL_INTERVAL_MS = 15000;
   providedIn: 'root',
 })
 export class HealthService {
-  private readonly http = inject(HttpClient);
   private readonly healthUrl = `${environment.apiUrl}/health`;
 
+  private readonly http = inject(HttpClient);
+
   checkApiHealth(): Observable<boolean> {
+    // ASP.NET Core health checks answer with plain text ("Healthy"), not JSON.
     return this.http
       .get(this.healthUrl, { observe: 'response', responseType: 'text' })
       .pipe(
         map((response: HttpResponse<string>) => response.ok), // cleaner than status check
-        catchError((error: HttpErrorResponse) => {
+        catchError((error) => {
           this.logHealthError(error);
           return of(false);
         }),
@@ -34,13 +36,13 @@ export class HealthService {
     );
   }
 
-  private logHealthError(error: HttpErrorResponse) {
+  private logHealthError(error: unknown) {
+    const name = error instanceof Error ? error.name : 'Unknown';
+    const message = error instanceof Error ? error.message : 'No message';
+    const status =
+      error instanceof HttpErrorResponse ? ` | Status: ${error.status}` : '';
     console.error(
-      `API health check failed! | URL: ${this.healthUrl} | Error: ${
-        error.name
-      } | Message: ${error.message}${
-        error.status ? ` | Status: ${error.status}` : ''
-      }`,
+      `API health check failed! | URL: ${this.healthUrl} | Error: ${name} | Message: ${message}${status}`,
     );
   }
 }

@@ -25,13 +25,16 @@ export function todaysPickups(
   const dayKey = todayWeekdayKey(today);
   if (!dayKey) return [];
 
-  const schoolById = new Map(schools.map((school) => [school.schoolId, school]));
+  const schoolById = new Map(
+    schools.map((school) => [school.schoolId, school]),
+  );
 
   const pickups: TodayPickup[] = [];
   for (const scholar of scholars) {
     const time = scholar.pickupSchedule?.[dayKey];
     if (!time) continue;
-    const school = scholar.schoolId != null ? schoolById.get(scholar.schoolId) : undefined;
+    const school =
+      scholar.schoolId != null ? schoolById.get(scholar.schoolId) : undefined;
     pickups.push({
       scholarId: scholar.scholarId,
       name: `${scholar.firstName} ${scholar.lastName}`,
@@ -62,19 +65,31 @@ export function upcomingBirthdays(
   today: Date,
   withinDays = 30,
 ): UpcomingBirthday[] {
-  const todayMidnight = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  const todayMidnight = new Date(
+    today.getFullYear(),
+    today.getMonth(),
+    today.getDate(),
+  );
 
   const birthdays: UpcomingBirthday[] = [];
   for (const scholar of scholars) {
     if (!scholar.birthDate) continue;
-    const [birthYear, birthMonth, birthDay] = scholar.birthDate.split('-').map(Number);
+    const [birthYear, birthMonth, birthDay] = scholar.birthDate
+      .split('-')
+      .map(Number);
 
     let next = new Date(todayMidnight.getFullYear(), birthMonth - 1, birthDay);
     if (next.getTime() < todayMidnight.getTime()) {
-      next = new Date(todayMidnight.getFullYear() + 1, birthMonth - 1, birthDay);
+      next = new Date(
+        todayMidnight.getFullYear() + 1,
+        birthMonth - 1,
+        birthDay,
+      );
     }
 
-    const daysUntil = Math.round((next.getTime() - todayMidnight.getTime()) / 86_400_000);
+    const daysUntil = Math.round(
+      (next.getTime() - todayMidnight.getTime()) / 86_400_000,
+    );
     if (daysUntil > withinDays) continue;
 
     birthdays.push({

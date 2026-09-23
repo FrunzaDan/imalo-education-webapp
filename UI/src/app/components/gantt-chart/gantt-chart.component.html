@@ -1,43 +1,43 @@
 <h1 class="page-title">Pickup Time</h1>
 
 @if (loading()) {
-<div class="loading-message">Loading pickup times...</div>
+  <div class="loading-message">Loading pickup times...</div>
 } @else if (loadError(); as error) {
-<div class="app-alert" role="alert">{{ error }}</div>
+  <div class="app-alert" role="alert">{{ error }}</div>
 } @else {
-@for (day of weekDays; track day) {
-  <section class="gantt-container">
-    <h2 class="gantt-day-title">{{ formatDayTitle(day) }}</h2>
-    <div class="gantt-chart">
-      <!-- Header -->
-      <div class="gantt-header" [style.--slot-count]="timeSlots.length">
-        <div class="name-cell">Name</div>
-        @for (slot of timeSlots; track slot) {
-          <div class="time-slot">
-            {{ slot.displayLabel }}
-          </div>
-        }
-      </div>
-      <!-- Rows -->
-      @for (scholar of scholars(); track scholar) {
-        <div class="gantt-row" [style.--slot-count]="timeSlots.length">
-          <div class="name-cell">{{ scholar.firstName }}</div>
+  @for (day of weekDays; track day) {
+    <section class="gantt-container">
+      <h2 class="gantt-day-title">{{ formatDayTitle(day) }}</h2>
+      <div class="gantt-chart">
+        <!-- Header -->
+        <div class="gantt-header" [style.--slot-count]="timeSlots.length">
+          <div class="name-cell">Name</div>
           @for (slot of timeSlots; track slot) {
-            <div
-              class="time-slot"
-              [ngStyle]="getSlotStyle(scholar, slot, day)"
-            >
-              @if (isTimeOccupied(scholar, slot, day)) {
-                <span>{{ getTimeRange(scholar, slot, day) }}</span>
-                <div class="schedule-tooltip">
-                  {{ getTimeRange(scholar, slot, day) }}
-                </div>
-              }
+            <div class="time-slot">
+              {{ slot.displayLabel }}
             </div>
           }
         </div>
-      }
-    </div>
-  </section>
-}
+        <!-- Rows -->
+        @for (scholar of scholars(); track scholar) {
+          <div class="gantt-row" [style.--slot-count]="timeSlots.length">
+            <div class="name-cell">{{ scholar.firstName }}</div>
+            @for (slot of timeSlots; track slot) {
+              <div
+                class="time-slot"
+                [ngStyle]="getSlotStyle(scholar, slot, day)"
+              >
+                @if (isTimeOccupied(scholar, slot, day)) {
+                  <span>{{ getTimeRange(scholar, slot, day) }}</span>
+                  <div class="schedule-tooltip">
+                    {{ getTimeRange(scholar, slot, day) }}
+                  </div>
+                }
+              </div>
+            }
+          </div>
+        }
+      </div>
+    </section>
+  }
 }

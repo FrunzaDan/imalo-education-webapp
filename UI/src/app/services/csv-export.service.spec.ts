@@ -9,8 +9,10 @@ describe('CsvExportService', () => {
 
   // escape() is private; accessed via bracket notation to unit-test the CSV
   // quoting rules directly without going through the DOM-triggering export().
-  const escape = (service: CsvExportService, value: string | number | null | undefined) =>
-    (service as any).escape(value);
+  const escape = (
+    service: CsvExportService,
+    value: string | number | null | undefined,
+  ) => (service as any).escape(value);
 
   it('leaves plain values unquoted', () => {
     expect(escape(service, 'hello')).toBe('hello');

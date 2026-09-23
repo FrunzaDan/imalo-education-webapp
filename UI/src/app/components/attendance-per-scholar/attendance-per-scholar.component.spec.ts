@@ -7,7 +7,10 @@ import { ScholarsService } from '../../services/scholars.service';
 import { SchoolsService } from '../../services/schools.service';
 import { AttendanceService } from '../../services/attendance.service';
 import { CsvExportService } from '../../services/csv-export.service';
-import { DEFAULT_MONTH, getWeekdayDatesInMonth } from '../../utils/weekday-dates';
+import {
+  DEFAULT_MONTH,
+  getWeekdayDatesInMonth,
+} from '../../utils/weekday-dates';
 import type { Scholar } from '../../interfaces/scholar';
 import type { School } from '../../interfaces/school';
 import type { AttendanceRecord } from '../../interfaces/attendance-record';
@@ -26,6 +29,12 @@ const SCHOLAR: Scholar = {
   schoolId: 1,
   grade: 3,
   birthDate: '2016-01-01',
+  motherFirstName: null,
+  motherLastName: null,
+  motherPhoneNumber: null,
+  fatherFirstName: null,
+  fatherLastName: null,
+  fatherPhoneNumber: null,
 };
 
 const SCHOOL: School = {
@@ -65,18 +74,22 @@ interface SetupOptions {
 function setup(options: SetupOptions = {}) {
   const notFound = new HttpErrorResponse({
     status: 404,
-    error: { status: 404, title: 'Scholar not found.', detail: 'Scholar with ID scholar-1 not found.' },
+    error: {
+      status: 404,
+      title: 'Scholar not found.',
+      detail: 'Scholar with ID scholar-1 not found.',
+    },
   });
   const scholarsService = {
     getScholarById: vi.fn(() =>
-      options.loadResult === 'scholar-error' ? throwError(() => notFound) : of(SCHOLAR),
+      options.loadResult === 'scholar-error'
+        ? throwError(() => notFound)
+        : of(SCHOLAR),
     ),
   };
   const schoolsService = { getSchoolById: vi.fn(() => of(SCHOOL)) };
   const saveAttendance = vi.fn(() =>
-    options.saveResult === 'error'
-      ? throwError(() => notFound)
-      : of(undefined),
+    options.saveResult === 'error' ? throwError(() => notFound) : of(undefined),
   );
   const attendanceService = {
     getAttendanceByScholarId: vi.fn(() =>
@@ -99,11 +112,13 @@ function setup(options: SetupOptions = {}) {
     ],
   });
 
-  const fixture: ComponentFixture<AttendancePerScholarComponent> = TestBed.createComponent(
-    AttendancePerScholarComponent,
-  );
+  const fixture: ComponentFixture<AttendancePerScholarComponent> =
+    TestBed.createComponent(AttendancePerScholarComponent);
   // The route's :scholarId reaches the component as an input (withComponentInputBinding()).
-  const routeId = options.routeScholarId === undefined ? SCHOLAR.scholarId : options.routeScholarId;
+  const routeId =
+    options.routeScholarId === undefined
+      ? SCHOLAR.scholarId
+      : options.routeScholarId;
   if (routeId !== null) fixture.componentRef.setInput('scholarId', routeId);
   fixture.detectChanges(); // runs ngOnInit; every service call above is a synchronous `of`/`throwError`
 
@@ -124,17 +139,27 @@ function dayRow(component: AttendancePerScholarComponent, date: string) {
 }
 
 // A March 2024 weekday with no saved record.
-const UNTOUCHED_DATE = getWeekdayDatesInMonth(2024, 3).find((d) => d !== EXISTING_DATE)!;
+const UNTOUCHED_DATE = getWeekdayDatesInMonth(2024, 3).find(
+  (d) => d !== EXISTING_DATE,
+)!;
 
 type Box = 'present' | 'lunch' | 'transport' | 'both';
 const BOX_ORDER: Box[] = ['present', 'lunch', 'transport', 'both'];
 
 type Setup = ReturnType<typeof setup>;
 
-function checkbox({ fixture, component }: Setup, date: string, box: Box): HTMLInputElement {
+function checkbox(
+  { fixture, component }: Setup,
+  date: string,
+  box: Box,
+): HTMLInputElement {
   const index = component.dayRows().findIndex((r) => r.date === date);
-  const rowEl = fixture.nativeElement.querySelectorAll('.attendance-table__row')[index];
-  return rowEl.querySelectorAll('input[type="checkbox"]')[BOX_ORDER.indexOf(box)];
+  const rowEl = fixture.nativeElement.querySelectorAll(
+    '.attendance-table__row',
+  )[index];
+  return rowEl.querySelectorAll('input[type="checkbox"]')[
+    BOX_ORDER.indexOf(box)
+  ];
 }
 
 // A real user click: toggles the box, fires `input` then `change`, then re-renders.
@@ -156,7 +181,9 @@ describe('AttendancePerScholarComponent', () => {
 
     it('shows a loading message before the scholar has loaded', () => {
       const { fixture } = setup({ routeScholarId: null });
-      expect(fixture.nativeElement.textContent).toContain('Loading attendance...');
+      expect(fixture.nativeElement.textContent).toContain(
+        'Loading attendance...',
+      );
     });
 
     it('does nothing and calls no service when the route has no scholar id', () => {
@@ -165,7 +192,9 @@ describe('AttendancePerScholarComponent', () => {
     });
 
     it('shows the load error, not the form, when the scholar cannot be loaded', () => {
-      const { fixture, attendanceService } = setup({ loadResult: 'scholar-error' });
+      const { fixture, attendanceService } = setup({
+        loadResult: 'scholar-error',
+      });
       const el: HTMLElement = fixture.nativeElement;
 
       expect(el.querySelector('[role="alert"]')?.textContent).toContain(
@@ -179,7 +208,9 @@ describe('AttendancePerScholarComponent', () => {
       const { fixture, component } = setup({ loadResult: 'attendance-error' });
       const el: HTMLElement = fixture.nativeElement;
 
-      expect(component.loadError()).toBe('Failed to load attendance (500). Please try again.');
+      expect(component.loadError()).toBe(
+        'Failed to load attendance (500). Please try again.',
+      );
       expect(el.querySelector('table')).toBeNull();
       expect(el.textContent).not.toContain('Save Changes');
     });
@@ -213,7 +244,7 @@ describe('AttendancePerScholarComponent', () => {
       expect(row.transportSelected).toBe(false);
     });
 
-    it('lists the month\'s weekdays in date order, whatever order the records arrived in', () => {
+    it("lists the month's weekdays in date order, whatever order the records arrived in", () => {
       const { component } = setup({
         attendance: [
           { ...makeExistingRecord(), date: '2024-03-20' },
@@ -248,7 +279,9 @@ describe('AttendancePerScholarComponent', () => {
       expect(row.lunchSelected).toBe(true);
       expect(row.lunchCost).toBe(SCHOOL.lunchPrice);
       expect(row.persisted).toBe(true);
-      expect(component.recordsToSave().map((r) => r.date)).toContain(UNTOUCHED_DATE);
+      expect(component.recordsToSave().map((r) => r.date)).toContain(
+        UNTOUCHED_DATE,
+      );
       expect(component.hasUnsavedChanges()).toBe(true);
       expect(fixture.nativeElement.textContent).toContain('Unsaved changes');
     });
@@ -299,7 +332,9 @@ describe('AttendancePerScholarComponent', () => {
       const row = dayRow(ctx.component, UNTOUCHED_DATE);
       expect(row.present).toBe(true);
       expect(row.persisted).toBe(true);
-      expect(ctx.component.recordsToSave().map((r) => r.date)).toContain(UNTOUCHED_DATE);
+      expect(ctx.component.recordsToSave().map((r) => r.date)).toContain(
+        UNTOUCHED_DATE,
+      );
     });
 
     it('unchecking Present again on a just-touched day leaves it persisted (all false)', () => {
@@ -320,7 +355,9 @@ describe('AttendancePerScholarComponent', () => {
 
       const row = dayRow(ctx.component, EXISTING_DATE);
       expect(row.persisted).toBe(true);
-      expect(ctx.component.recordsToSave().map((r) => r.date)).toContain(EXISTING_DATE);
+      expect(ctx.component.recordsToSave().map((r) => r.date)).toContain(
+        EXISTING_DATE,
+      );
       expect(row.lunchSelected).toBe(false);
     });
   });
@@ -427,20 +464,24 @@ describe('AttendancePerScholarComponent', () => {
       click(ctx, UNTOUCHED_DATE, 'transport');
 
       expect(ctx.component.totalSelectedLunchCost()).toBe(15); // from the existing record
-      expect(ctx.component.totalSelectedTransportCost()).toBe(SCHOOL.transportPrice);
+      expect(ctx.component.totalSelectedTransportCost()).toBe(
+        SCHOOL.transportPrice,
+      );
       expect(ctx.component.grandTotal()).toBe(15 + SCHOOL.transportPrice);
       expect(ctx.fixture.nativeElement.textContent).toContain('25.00');
     });
   });
 
   describe('changing the month', () => {
-    it('shows the new month\'s weekdays, with nothing persisted outside March', () => {
+    it("shows the new month's weekdays, with nothing persisted outside March", () => {
       const { component } = setup();
 
       component.monthForm.month().value.set('2024-04');
 
       expect(component.selectedMonth()).toBe('2024-04');
-      expect(component.dayRows().length).toBe(getWeekdayDatesInMonth(2024, 4).length);
+      expect(component.dayRows().length).toBe(
+        getWeekdayDatesInMonth(2024, 4).length,
+      );
       expect(component.dayRows().every((r) => !r.persisted)).toBe(true);
     });
 
@@ -462,7 +503,9 @@ describe('AttendancePerScholarComponent', () => {
 
       component.monthForm.month().value.set('2024-04');
 
-      expect(component.recordsToSave().map((r) => r.date)).toEqual([EXISTING_DATE]);
+      expect(component.recordsToSave().map((r) => r.date)).toEqual([
+        EXISTING_DATE,
+      ]);
     });
   });
 
@@ -472,9 +515,10 @@ describe('AttendancePerScholarComponent', () => {
 
       component.save();
 
-      expect(attendanceService.saveAttendance).toHaveBeenCalledWith(SCHOLAR.scholarId, [
-        makeExistingRecord(),
-      ]);
+      expect(attendanceService.saveAttendance).toHaveBeenCalledWith(
+        SCHOLAR.scholarId,
+        [makeExistingRecord()],
+      );
       expect(component.recordsToSave()[0]).not.toHaveProperty('persisted');
       expect(component.isSaving()).toBe(false);
       expect(component.hasUnsavedChanges()).toBe(false);
@@ -487,10 +531,8 @@ describe('AttendancePerScholarComponent', () => {
 
       ctx.component.save();
 
-      const saved = ctx.attendanceService.saveAttendance.mock.calls[0] as unknown as [
-        string,
-        AttendanceRecord[],
-      ];
+      const saved = ctx.attendanceService.saveAttendance.mock
+        .calls[0] as unknown as [string, AttendanceRecord[]];
       expect(saved[1]).toEqual([
         makeExistingRecord(),
         {
@@ -511,22 +553,28 @@ describe('AttendancePerScholarComponent', () => {
       ctx.component.save();
       ctx.fixture.detectChanges();
 
-      expect(ctx.component.saveError()).toBe('Scholar with ID scholar-1 not found.');
-      expect(ctx.fixture.nativeElement.querySelector('.app-alert')?.textContent).toContain(
+      expect(ctx.component.saveError()).toBe(
         'Scholar with ID scholar-1 not found.',
       );
+      expect(
+        ctx.fixture.nativeElement.querySelector('.app-alert')?.textContent,
+      ).toContain('Scholar with ID scholar-1 not found.');
       expect(ctx.component.isSaving()).toBe(false);
       expect(ctx.component.hasUnsavedChanges()).toBe(true);
     });
 
     it('asks the browser to confirm a reload or tab close only while there are unsaved changes', () => {
       const ctx = setup();
-      const clean = new Event('beforeunload', { cancelable: true }) as BeforeUnloadEvent;
+      const clean = new Event('beforeunload', {
+        cancelable: true,
+      }) as BeforeUnloadEvent;
       ctx.component.onBeforeUnload(clean);
       expect(clean.defaultPrevented).toBe(false);
 
       click(ctx, UNTOUCHED_DATE, 'present');
-      const dirty = new Event('beforeunload', { cancelable: true }) as BeforeUnloadEvent;
+      const dirty = new Event('beforeunload', {
+        cancelable: true,
+      }) as BeforeUnloadEvent;
       ctx.component.onBeforeUnload(dirty);
       expect(dirty.defaultPrevented).toBe(true);
     });

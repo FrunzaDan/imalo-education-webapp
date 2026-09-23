@@ -10,7 +10,9 @@ export interface HasUnsavedChanges {
 // Asks before leaving a page with unsaved edits — covers the nav links and
 // browser back/forward. (Closing/reloading the tab isn't a router navigation;
 // the components handle that with a `beforeunload` listener.)
-export const unsavedChangesGuard: CanDeactivateFn<HasUnsavedChanges> = (component) => {
+export const unsavedChangesGuard: CanDeactivateFn<HasUnsavedChanges> = (
+  component,
+) => {
   if (!component.hasUnsavedChanges()) return true;
 
   return inject(ConfirmDialogService).confirm(

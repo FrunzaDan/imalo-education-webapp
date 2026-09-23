@@ -8,10 +8,17 @@
     [formField]="searchForm.term"
     aria-label="Search scholars by name"
   />
-  <button [routerLink]="['/create-scholar']" class="app-button app-button--accent">
+  <button
+    [routerLink]="['/create-scholar']"
+    class="app-button app-button--accent"
+  >
     Create Scholar
   </button>
-  <button type="button" class="app-button app-button--ghost" (click)="exportCsv()">
+  <button
+    type="button"
+    class="app-button app-button--ghost"
+    (click)="exportCsv()"
+  >
     Export CSV
   </button>
   <button
@@ -28,112 +35,119 @@
   </button>
 </div>
 @if (loading()) {
-<div class="loading-message">Loading scholars...</div>
+  <div class="loading-message">Loading scholars...</div>
 } @else if (loadError(); as error) {
-<div class="app-alert" role="alert">{{ error }}</div>
+  <div class="app-alert" role="alert">{{ error }}</div>
 } @else {
-<table class="app-table">
-  <thead>
-    <tr>
-      <th class="table-header">
-        <input
-          type="checkbox"
-          aria-label="Select all scholars"
-          [checked]="allSelected()"
-          (change)="toggleSelectAll($any($event.target).checked)"
-        />
-      </th>
-      <th class="table-header sortable" (click)="sortData('name', 'string')">
-        Student Name
-        <span class="sort-icon">
-          <span [class.active]="currentSortColumn === 'name' && isAscending"
-            >↑</span
+  <table class="app-table">
+    <thead>
+      <tr>
+        <th class="table-header">
+          <input
+            type="checkbox"
+            aria-label="Select all scholars"
+            [checked]="allSelected()"
+            (change)="toggleSelectAll($any($event.target).checked)"
+          />
+        </th>
+        <th class="table-header sortable" (click)="sortData('name', 'string')">
+          Student Name
+          <span class="sort-icon">
+            <span [class.active]="currentSortColumn === 'name' && isAscending"
+              >↑</span
+            >
+            <span [class.active]="currentSortColumn === 'name' && !isAscending"
+              >↓</span
+            >
+          </span>
+        </th>
+        <th
+          class="table-header sortable"
+          (click)="sortData('schoolName', 'string')"
+        >
+          School
+          <span class="sort-icon">
+            <span
+              [class.active]="currentSortColumn === 'schoolName' && isAscending"
+              >↑</span
+            >
+            <span
+              [class.active]="
+                currentSortColumn === 'schoolName' && !isAscending
+              "
+              >↓</span
+            >
+          </span>
+        </th>
+        <th class="table-header sortable" (click)="sortData('grade', 'number')">
+          Grade
+          <span class="sort-icon">
+            <span [class.active]="currentSortColumn === 'grade' && isAscending"
+              >↑</span
+            >
+            <span [class.active]="currentSortColumn === 'grade' && !isAscending"
+              >↓</span
+            >
+          </span>
+        </th>
+        <th
+          class="table-header sortable"
+          (click)="sortData('birthDate', 'date')"
+        >
+          Birth Date
+          <span class="sort-icon">
+            <span
+              [class.active]="currentSortColumn === 'birthDate' && isAscending"
+              >↑</span
+            >
+            <span
+              [class.active]="currentSortColumn === 'birthDate' && !isAscending"
+              >↓</span
+            >
+          </span>
+        </th>
+      </tr>
+    </thead>
+    <tbody>
+      @for (scholar of displayedScholarData(); track scholar.scholarId) {
+        <tr
+          class="table-row table-row--link"
+          [routerLink]="['/scholars', scholar.scholarId]"
+        >
+          <td class="table-cell" (click)="$event.stopPropagation()">
+            <input
+              type="checkbox"
+              [attr.aria-label]="'Select ' + scholar.name"
+              [checked]="isSelected(scholar.scholarId)"
+              (change)="
+                toggleSelection(scholar.scholarId, $any($event.target).checked)
+              "
+            />
+          </td>
+          <td class="table-cell">{{ scholar.name }}</td>
+          <td
+            class="table-cell"
+            [ngStyle]="{
+              'background-color': scholar.schoolColor,
+              color: scholar.textColor,
+            }"
           >
-          <span [class.active]="currentSortColumn === 'name' && !isAscending"
-            >↓</span
-          >
-        </span>
-      </th>
-      <th
-        class="table-header sortable"
-        (click)="sortData('schoolName', 'string')"
-      >
-        School
-        <span class="sort-icon">
-          <span
-            [class.active]="currentSortColumn === 'schoolName' && isAscending"
-            >↑</span
-          >
-          <span
-            [class.active]="currentSortColumn === 'schoolName' && !isAscending"
-            >↓</span
-          >
-        </span>
-      </th>
-      <th class="table-header sortable" (click)="sortData('grade', 'number')">
-        Grade
-        <span class="sort-icon">
-          <span [class.active]="currentSortColumn === 'grade' && isAscending"
-            >↑</span
-          >
-          <span [class.active]="currentSortColumn === 'grade' && !isAscending"
-            >↓</span
-          >
-        </span>
-      </th>
-      <th class="table-header sortable" (click)="sortData('birthDate', 'date')">
-        Birth Date
-        <span class="sort-icon">
-          <span
-            [class.active]="currentSortColumn === 'birthDate' && isAscending"
-            >↑</span
-          >
-          <span
-            [class.active]="currentSortColumn === 'birthDate' && !isAscending"
-            >↓</span
-          >
-        </span>
-      </th>
-    </tr>
-  </thead>
-  <tbody>
-    @for (scholar of displayedScholarData(); track scholar.scholarId) {
-    <tr
-      class="table-row table-row--link"
-      [routerLink]="['/scholars', scholar.scholarId]"
-    >
-      <td class="table-cell" (click)="$event.stopPropagation()">
-        <input
-          type="checkbox"
-          [attr.aria-label]="'Select ' + scholar.name"
-          [checked]="isSelected(scholar.scholarId)"
-          (change)="toggleSelection(scholar.scholarId, $any($event.target).checked)"
-        />
-      </td>
-      <td class="table-cell">{{ scholar.name }}</td>
-      <td
-        class="table-cell"
-        [ngStyle]="{
-          'background-color': scholar.schoolColor,
-          color: scholar.textColor
-        }"
-      >
-        {{ scholar.schoolName }}
-      </td>
-      <td class="table-cell">{{ scholar.grade }}</td>
-      <td class="table-cell">{{ scholar.birthDate }}</td>
-    </tr>
-    } @empty {
-    <tr class="table-row">
-      <td colspan="5" class="table-cell table-cell--empty">
-        @if (searchTerm()) {
-          No scholars match "{{ searchTerm() }}".
-        } @else {
-          No scholars yet.
-        }
-      </td>
-    </tr>
-    }
-  </tbody>
-</table>
+            {{ scholar.schoolName }}
+          </td>
+          <td class="table-cell">{{ scholar.grade }}</td>
+          <td class="table-cell">{{ scholar.birthDate }}</td>
+        </tr>
+      } @empty {
+        <tr class="table-row">
+          <td colspan="5" class="table-cell table-cell--empty">
+            @if (searchTerm()) {
+              No scholars match "{{ searchTerm() }}".
+            } @else {
+              No scholars yet.
+            }
+          </td>
+        </tr>
+      }
+    </tbody>
+  </table>
 }

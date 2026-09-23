@@ -70,9 +70,9 @@ export const routes: Routes = [
     title: 'Scholar attendance',
     canDeactivate: [unsavedChangesGuard],
     loadComponent: () =>
-      import(
-        './components/attendance-per-scholar/attendance-per-scholar.component'
-      ).then((m) => m.AttendancePerScholarComponent),
+      import('./components/attendance-per-scholar/attendance-per-scholar.component').then(
+        (m) => m.AttendancePerScholarComponent,
+      ),
   },
   {
     path: 'charts',

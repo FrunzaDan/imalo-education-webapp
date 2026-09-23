@@ -1,112 +1,137 @@
 @if (loading()) {
-<div class="loading-message">Loading dashboard...</div>
+  <div class="loading-message">Loading dashboard...</div>
 } @else if (loadError(); as error) {
-<h1 class="page-title">Dashboard</h1>
-<div class="app-alert" role="alert">{{ error }}</div>
+  <h1 class="page-title">Dashboard</h1>
+  <div class="app-alert" role="alert">{{ error }}</div>
 } @else {
-<div class="page-toolbar">
-  <h1 class="page-title dashboard-title">Dashboard</h1>
-  <span class="dashboard-today">{{ today | date: 'fullDate' }}</span>
-</div>
+  <div class="page-toolbar">
+    <h1 class="page-title dashboard-title">Dashboard</h1>
+    <span class="dashboard-today">{{ today | date: 'fullDate' }}</span>
+  </div>
 
-<div class="page-toolbar">
-  <a routerLink="/create-scholar" class="app-button">+ Add Scholar</a>
-  <a routerLink="/attendance" class="app-button app-button--ghost">Attendance</a>
-  <a routerLink="/charts" class="app-button app-button--ghost">Charts</a>
-</div>
+  <div class="page-toolbar">
+    <a routerLink="/create-scholar" class="app-button">+ Add Scholar</a>
+    <a routerLink="/attendance" class="app-button app-button--ghost"
+      >Attendance</a
+    >
+    <a routerLink="/charts" class="app-button app-button--ghost">Charts</a>
+  </div>
 
-<div class="dashboard-stats">
-  <div class="app-card stat-tile">
-    <span class="stat-tile__label">Scholars</span>
-    <span class="stat-tile__value">{{ totalScholars() }}</span>
+  <div class="dashboard-stats">
+    <div class="app-card stat-tile">
+      <span class="stat-tile__label">Scholars</span>
+      <span class="stat-tile__value">{{ totalScholars() }}</span>
+    </div>
+    <div class="app-card stat-tile">
+      <span class="stat-tile__label">Schools</span>
+      <span class="stat-tile__value">{{ totalSchools() }}</span>
+    </div>
+    <div class="app-card stat-tile">
+      <span class="stat-tile__label">This month's attendance</span>
+      <span class="stat-tile__value">{{ monthAttendanceRate() }}%</span>
+    </div>
+    <div class="app-card stat-tile">
+      <span class="stat-tile__label">This month's revenue</span>
+      <span class="stat-tile__value">{{ monthRevenue() | ron }}</span>
+    </div>
   </div>
-  <div class="app-card stat-tile">
-    <span class="stat-tile__label">Schools</span>
-    <span class="stat-tile__value">{{ totalSchools() }}</span>
-  </div>
-  <div class="app-card stat-tile">
-    <span class="stat-tile__label">This month's attendance</span>
-    <span class="stat-tile__value">{{ monthAttendanceRate() }}%</span>
-  </div>
-  <div class="app-card stat-tile">
-    <span class="stat-tile__label">This month's revenue</span>
-    <span class="stat-tile__value">{{ monthRevenue() | ron }}</span>
-  </div>
-</div>
 
-<div class="dashboard-grid">
-  <section class="app-card dashboard-panel">
-    <h2 class="dashboard-panel__title">Today's Pickups</h2>
-    @if (todaysPickups().length === 0) {
-    <p class="dashboard-panel__empty">
-      @if (isWeekend()) { It's the weekend — no pickups scheduled. } @else { No pickups
-      scheduled today. }
-    </p>
-    } @else {
-    <ul class="dashboard-list">
-      @for (pickup of todaysPickups(); track pickup.scholarId) {
-      <li class="dashboard-list__item">
-        <span
-          class="dashboard-list__swatch"
-          [style.background-color]="pickup.schoolColor"
-        ></span>
-        <a class="dashboard-list__name" [routerLink]="['/scholars', pickup.scholarId]">
-          {{ pickup.name }}
-        </a>
-        <span class="dashboard-list__meta">{{ pickup.schoolName }}</span>
-        <span class="dashboard-list__time">{{ pickup.time }}</span>
-      </li>
+  <div class="dashboard-grid">
+    <section class="app-card dashboard-panel">
+      <h2 class="dashboard-panel__title">Today's Pickups</h2>
+      @if (todaysPickups().length === 0) {
+        <p class="dashboard-panel__empty">
+          @if (isWeekend()) {
+            It's the weekend — no pickups scheduled.
+          } @else {
+            No pickups scheduled today.
+          }
+        </p>
+      } @else {
+        <ul class="dashboard-list">
+          @for (pickup of todaysPickups(); track pickup.scholarId) {
+            <li class="dashboard-list__item">
+              <span
+                class="dashboard-list__swatch"
+                [style.background-color]="pickup.schoolColor"
+              ></span>
+              <a
+                class="dashboard-list__name"
+                [routerLink]="['/scholars', pickup.scholarId]"
+              >
+                {{ pickup.name }}
+              </a>
+              <span class="dashboard-list__meta">{{ pickup.schoolName }}</span>
+              <span class="dashboard-list__time">{{ pickup.time }}</span>
+            </li>
+          }
+        </ul>
       }
-    </ul>
-    }
-  </section>
+    </section>
 
-  <section class="app-card dashboard-panel">
-    <h2 class="dashboard-panel__title">Upcoming Birthdays</h2>
-    @if (upcomingBirthdays().length === 0) {
-    <p class="dashboard-panel__empty">No birthdays in the next 30 days.</p>
-    } @else {
-    <ul class="dashboard-list">
-      @for (birthday of upcomingBirthdays(); track birthday.scholarId) {
-      <li class="dashboard-list__item">
-        <a class="dashboard-list__name" [routerLink]="['/scholars', birthday.scholarId]">
-          {{ birthday.name }}
-        </a>
-        <span class="dashboard-list__meta">turns {{ birthday.turningAge }}</span>
-        <span class="dashboard-list__time">
-          @if (birthday.daysUntil === 0) { Today } @else if (birthday.daysUntil === 1) {
-          Tomorrow } @else { in {{ birthday.daysUntil }} days }
-        </span>
-      </li>
+    <section class="app-card dashboard-panel">
+      <h2 class="dashboard-panel__title">Upcoming Birthdays</h2>
+      @if (upcomingBirthdays().length === 0) {
+        <p class="dashboard-panel__empty">No birthdays in the next 30 days.</p>
+      } @else {
+        <ul class="dashboard-list">
+          @for (birthday of upcomingBirthdays(); track birthday.scholarId) {
+            <li class="dashboard-list__item">
+              <a
+                class="dashboard-list__name"
+                [routerLink]="['/scholars', birthday.scholarId]"
+              >
+                {{ birthday.name }}
+              </a>
+              <span class="dashboard-list__meta"
+                >turns {{ birthday.turningAge }}</span
+              >
+              <span class="dashboard-list__time">
+                @if (birthday.daysUntil === 0) {
+                  Today
+                } @else if (birthday.daysUntil === 1) {
+                  Tomorrow
+                } @else {
+                  in {{ birthday.daysUntil }} days
+                }
+              </span>
+            </li>
+          }
+        </ul>
       }
-    </ul>
-    }
-  </section>
+    </section>
 
-  <section class="app-card dashboard-panel dashboard-panel--wide">
-    <h2 class="dashboard-panel__title">Recent Activity</h2>
-    @if (recentActivity().length === 0) {
-    <p class="dashboard-panel__empty">No recorded actions yet.</p>
-    } @else {
-    <ul class="dashboard-list">
-      @for (entry of recentActivity(); track entry.scholarAuditLogId) {
-      <li class="dashboard-list__item">
-        @if (hasScholarLink(entry)) {
-        <a class="dashboard-list__name" [routerLink]="['/scholars', entry.scholarId]">
-          {{ scholarLabel(entry) }}
-        </a>
-        } @else {
-        <span class="dashboard-list__name dashboard-list__name--muted">
-          {{ scholarLabel(entry) }}
-        </span>
-        }
-        <span class="dashboard-list__meta">{{ entry.actionType }}</span>
-        <span class="dashboard-list__time">{{ entry.occurredAt | date: 'short' }}</span>
-      </li>
+    <section class="app-card dashboard-panel dashboard-panel--wide">
+      <h2 class="dashboard-panel__title">Recent Activity</h2>
+      @if (recentActivity().length === 0) {
+        <p class="dashboard-panel__empty">No recorded actions yet.</p>
+      } @else {
+        <ul class="dashboard-list">
+          @for (entry of recentActivity(); track entry.scholarAuditLogId) {
+            <li class="dashboard-list__item">
+              @if (hasScholarLink(entry)) {
+                <a
+                  class="dashboard-list__name"
+                  [routerLink]="['/scholars', entry.scholarId]"
+                >
+                  {{ scholarLabel(entry) }}
+                </a>
+              } @else {
+                <span class="dashboard-list__name dashboard-list__name--muted">
+                  {{ scholarLabel(entry) }}
+                </span>
+              }
+              <span class="dashboard-list__meta">{{ entry.actionType }}</span>
+              <span class="dashboard-list__time">{{
+                entry.occurredAt | date: 'short'
+              }}</span>
+            </li>
+          }
+        </ul>
+        <a routerLink="/audit-log" class="dashboard-panel__link"
+          >View full audit log →</a
+        >
       }
-    </ul>
-    <a routerLink="/audit-log" class="dashboard-panel__link">View full audit log →</a>
-    }
-  </section>
-</div>
+    </section>
+  </div>
 }

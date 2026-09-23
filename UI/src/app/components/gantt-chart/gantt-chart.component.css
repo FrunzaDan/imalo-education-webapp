@@ -58,7 +58,8 @@
 
 /* Row separators run under the name column too, not just the time cells. */
 .gantt-row .name-cell {
-  border-bottom: var(--border-width) solid rgba(var(--cyan-main-color-for-alpha), 0.15);
+  border-bottom: var(--border-width) solid
+    rgba(var(--cyan-main-color-for-alpha), 0.15);
 }
 
 .time-slot {
@@ -78,8 +79,10 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  border-right: var(--border-width) solid rgba(var(--cyan-main-color-for-alpha), 0.15);
-  border-bottom: var(--border-width) solid rgba(var(--cyan-main-color-for-alpha), 0.15);
+  border-right: var(--border-width) solid
+    rgba(var(--cyan-main-color-for-alpha), 0.15);
+  border-bottom: var(--border-width) solid
+    rgba(var(--cyan-main-color-for-alpha), 0.15);
   white-space: pre-line;
   overflow-wrap: anywhere;
 }

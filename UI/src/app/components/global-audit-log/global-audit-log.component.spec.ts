@@ -109,9 +109,7 @@ describe('GlobalAuditLogComponent', () => {
         scholarLastName: null,
       });
 
-      expect(component.scholarLabel(entry)).toBe(
-        '(deleted scholar scholar-1)',
-      );
+      expect(component.scholarLabel(entry)).toBe('(deleted scholar scholar-1)');
     });
   });
 

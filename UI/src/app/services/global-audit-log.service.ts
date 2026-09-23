@@ -1,4 +1,8 @@
-import { HttpClient, HttpErrorResponse, HttpParams } from '@angular/common/http';
+import {
+  HttpClient,
+  HttpErrorResponse,
+  HttpParams,
+} from '@angular/common/http';
 import { computed, inject, Injectable, signal } from '@angular/core';
 import { catchError, map, Observable, of, Subject, switchMap, tap } from 'rxjs';
 import { environment } from '../../environments/environment';
@@ -12,7 +16,7 @@ export interface LoadAllAuditLogParams {
   pageSize: number;
 }
 
-const DEFAULT_PAGE_SIZE = 20;
+const DEFAULT_PAGE_SIZE = 50;
 
 @Injectable({ providedIn: 'root' })
 export class GlobalAuditLogService {
@@ -50,7 +54,9 @@ export class GlobalAuditLogService {
             .set('pageSize', params.pageSize);
 
           return this.http
-            .get<PagedResponse<GlobalAuditLogEntry>>(this.API_URL, { params: httpParams })
+            .get<PagedResponse<GlobalAuditLogEntry>>(this.API_URL, {
+              params: httpParams,
+            })
             .pipe(
               map((paged) => ({ paged, requestedParams: params })),
               catchError((error: HttpErrorResponse) => {

@@ -31,7 +31,8 @@ export class SchoolsService {
     const targetId = Number(schoolId);
     return this.getSchools().pipe(
       map((schools) => {
-        const school = schools.find((school) => school.schoolId === targetId) || null;
+        const school =
+          schools.find((school) => school.schoolId === targetId) || null;
         if (!school) {
           console.warn(`School with ID ${targetId} not found in schools.json`);
         }

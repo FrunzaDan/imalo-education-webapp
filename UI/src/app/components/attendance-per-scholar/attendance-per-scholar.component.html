@@ -9,12 +9,18 @@
 
     <div class="print-only invoice-header">
       <h1 class="invoice-header__title">Attendance Invoice</h1>
-      <p class="invoice-header__scholar">{{ scholar.firstName }} {{ scholar.lastName }}</p>
+      <p class="invoice-header__scholar">
+        {{ scholar.firstName }} {{ scholar.lastName }}
+      </p>
       @if (schoolName()) {
         <p class="invoice-header__school">{{ schoolName() }}</p>
       }
-      <p class="invoice-header__month">{{ monthLabel() | date: 'MMMM yyyy' }}</p>
-      <p class="invoice-header__generated">Generated {{ today | date: 'medium' }}</p>
+      <p class="invoice-header__month">
+        {{ monthLabel() | date: 'MMMM yyyy' }}
+      </p>
+      <p class="invoice-header__generated">
+        Generated {{ today | date: 'medium' }}
+      </p>
     </div>
 
     <div class="attendance-container__controls controls no-print">

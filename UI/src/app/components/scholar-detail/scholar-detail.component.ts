@@ -1,4 +1,12 @@
-import { Component, computed, effect, inject, input, signal, untracked } from '@angular/core';
+import {
+  Component,
+  computed,
+  effect,
+  inject,
+  input,
+  signal,
+  untracked,
+} from '@angular/core';
 import { rxResource } from '@angular/core/rxjs-interop';
 import { DatePipe, TitleCasePipe } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
@@ -32,20 +40,27 @@ export class ScholarDetailComponent {
   // scholar()/school() go through hasValue() and fall back to null.
   private readonly scholarResource = rxResource({
     params: () => this.scholarId(),
-    stream: ({ params: scholarId }) => this.scholarsService.getScholarById(scholarId),
+    stream: ({ params: scholarId }) =>
+      this.scholarsService.getScholarById(scholarId),
   });
   readonly scholar = computed(() =>
     this.scholarResource.hasValue() ? this.scholarResource.value() : null,
   );
   readonly loadError = computed(() => {
     const error = this.scholarResource.error();
-    return error ? extractErrorMessage(error as HttpErrorResponse, 'Failed to load scholar') : null;
+    return error
+      ? extractErrorMessage(
+          error as HttpErrorResponse,
+          'Failed to load scholar',
+        )
+      : null;
   });
 
   // Idle (no request) until the scholar has loaded and has a school.
   private readonly schoolResource = rxResource({
     params: () => this.scholar()?.schoolId || undefined,
-    stream: ({ params: schoolId }) => this.schoolsService.getSchoolById(schoolId),
+    stream: ({ params: schoolId }) =>
+      this.schoolsService.getSchoolById(schoolId),
   });
   readonly school = computed(() =>
     this.schoolResource.hasValue() ? this.schoolResource.value() : null,
@@ -64,7 +79,8 @@ export class ScholarDetailComponent {
   constructor() {
     effect(() => {
       const scholarId = this.scholarId();
-      if (scholarId) untracked(() => this.auditLogService.loadAuditLog(scholarId));
+      if (scholarId)
+        untracked(() => this.auditLogService.loadAuditLog(scholarId));
     });
   }
 
@@ -104,7 +120,9 @@ export class ScholarDetailComponent {
       next: () => this.router.navigate(['/scholars']),
       error: (error: HttpErrorResponse) => {
         this.deleting.set(false);
-        this.deleteError.set(extractErrorMessage(error, 'Failed to delete scholar'));
+        this.deleteError.set(
+          extractErrorMessage(error, 'Failed to delete scholar'),
+        );
       },
     });
   }

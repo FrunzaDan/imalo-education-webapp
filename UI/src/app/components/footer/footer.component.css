@@ -121,7 +121,8 @@
   gap: var(--space-2);
   margin-top: var(--space-5);
   padding-top: var(--space-3);
-  border-top: var(--border-width) solid rgba(var(--light-main-color-for-alpha), 0.15);
+  border-top: var(--border-width) solid
+    rgba(var(--light-main-color-for-alpha), 0.15);
   font-size: 0.8rem;
   color: rgba(var(--light-main-color-for-alpha), 0.6);
 }

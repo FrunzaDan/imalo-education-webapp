@@ -21,8 +21,12 @@ export const attendanceFormSchema = schema<AttendanceDay[]>((days) => {
     // Present gates Lunch/Transport: neither can be selected on a day the
     // scholar wasn't there. (Unchecking Present also *clears* them — that's a
     // reaction to the change, so it lives in the component's onPresentChange.)
-    disabled(day.lunchSelected, { when: ({ valueOf }) => !valueOf(day.present) });
-    disabled(day.transportSelected, { when: ({ valueOf }) => !valueOf(day.present) });
+    disabled(day.lunchSelected, {
+      when: ({ valueOf }) => !valueOf(day.present),
+    });
+    disabled(day.transportSelected, {
+      when: ({ valueOf }) => !valueOf(day.present),
+    });
   });
 });
 
@@ -48,20 +52,21 @@ export function toAttendanceRecords(days: AttendanceDay[]): AttendanceRecord[] {
 
 // Returns `days` plus a not-yet-persisted stub for each weekday of `month` that
 // has no entry yet (or `days` itself, unchanged, if none are missing).
-export function withWeekdayStubs(days: AttendanceDay[], month: string): AttendanceDay[] {
+export function withWeekdayStubs(
+  days: AttendanceDay[],
+  month: string,
+): AttendanceDay[] {
   const known = new Set(days.map((day) => day.date));
   const stubs = weekdaysOfMonth(month)
     .filter((date) => !known.has(date))
-    .map(
-      (date): AttendanceDay => ({
-        date,
-        lunchCost: 0,
-        transportCost: 0,
-        present: false,
-        lunchSelected: false,
-        transportSelected: false,
-        persisted: false,
-      }),
-    );
+    .map((date): AttendanceDay => ({
+      date,
+      lunchCost: 0,
+      transportCost: 0,
+      present: false,
+      lunchSelected: false,
+      transportSelected: false,
+      persisted: false,
+    }));
   return stubs.length === 0 ? days : [...days, ...stubs];
 }

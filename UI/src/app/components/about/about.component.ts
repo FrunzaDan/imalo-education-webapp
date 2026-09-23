@@ -149,8 +149,16 @@ function monthsInRange(
 // 'YYYY-MM-DD' — matches Scholar.birthDate (the API's DateOnly).
 function randomBirthdate(): string {
   const now = new Date();
-  const end = new Date(now.getFullYear() - 5, now.getMonth(), now.getDate()).getTime();
-  const start = new Date(now.getFullYear() - 12, now.getMonth(), now.getDate()).getTime();
+  const end = new Date(
+    now.getFullYear() - 5,
+    now.getMonth(),
+    now.getDate(),
+  ).getTime();
+  const start = new Date(
+    now.getFullYear() - 12,
+    now.getMonth(),
+    now.getDate(),
+  ).getTime();
   const date = new Date(start + Math.random() * (end - start));
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
 }
@@ -239,7 +247,9 @@ export class AboutComponent {
           concatMap((scholar) =>
             this.scholarsService.createScholarSilently(scholar).pipe(
               switchMap((created) => {
-                const school = schools.find((school) => school.schoolId === created.schoolId);
+                const school = schools.find(
+                  (school) => school.schoolId === created.schoolId,
+                );
                 const attendance = this.buildRandomAttendance(school);
                 return this.attendanceService
                   .saveAttendanceSilently(created.scholarId, attendance)

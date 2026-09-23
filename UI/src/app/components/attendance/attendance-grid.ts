@@ -42,7 +42,9 @@ export function buildScholarRows(
     .sort((a, b) => a.scholarName.localeCompare(b.scholarName));
 }
 
-function indexByDate(records: AttendanceRecord[]): Map<string, AttendanceRecord> {
+function indexByDate(
+  records: AttendanceRecord[],
+): Map<string, AttendanceRecord> {
   return new Map(records.map((record) => [record.date, record]));
 }
 
@@ -72,7 +74,10 @@ export interface DailyAttendanceCounts {
   transportSelected: number[];
 }
 
-export function countsByDay(rows: ScholarAttendanceRow[], dayCount: number): DailyAttendanceCounts {
+export function countsByDay(
+  rows: ScholarAttendanceRow[],
+  dayCount: number,
+): DailyAttendanceCounts {
   const present = new Array(dayCount).fill(0);
   const lunchSelected = new Array(dayCount).fill(0);
   const transportSelected = new Array(dayCount).fill(0);
@@ -89,4 +94,5 @@ export function countsByDay(rows: ScholarAttendanceRow[], dayCount: number): Dai
   return { present, lunchSelected, transportSelected };
 }
 
-export const sum = (counts: number[]): number => counts.reduce((a, b) => a + b, 0);
+export const sum = (counts: number[]): number =>
+  counts.reduce((a, b) => a + b, 0);

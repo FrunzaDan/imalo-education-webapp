@@ -48,7 +48,8 @@
 .attendance-grid__day-cell {
   text-align: center;
   /* Thin vertical rule between every day column. */
-  border-left: var(--border-width) solid rgba(var(--cyan-main-color-for-alpha), 0.15);
+  border-left: var(--border-width) solid
+    rgba(var(--cyan-main-color-for-alpha), 0.15);
 }
 
 .attendance-grid__day-header {
@@ -120,7 +121,8 @@
 }
 
 .attendance-grid__summary-row .table-cell {
-  border-top: var(--border-width) solid rgba(var(--cyan-main-color-for-alpha), 0.3);
+  border-top: var(--border-width) solid
+    rgba(var(--cyan-main-color-for-alpha), 0.3);
 }
 
 .attendance-grid .attendance-grid__summary-row {
@@ -137,7 +139,8 @@
 }
 
 .attendance-grid__summary-row--totals .table-cell {
-  border-top: var(--border-width-thick) solid rgba(var(--cyan-main-color-for-alpha), 0.3);
+  border-top: var(--border-width-thick) solid
+    rgba(var(--cyan-main-color-for-alpha), 0.3);
 }
 
 .attendance-grid__totals-cell {

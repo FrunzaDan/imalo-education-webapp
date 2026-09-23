@@ -9,7 +9,11 @@ import { AttendanceService } from '../../services/attendance.service';
 import { CsvExportService } from '../../services/csv-export.service';
 import { Scholar } from '../../interfaces/scholar';
 import { ScholarAttendance } from '../../interfaces/scholar-attendance';
-import { DEFAULT_MONTH, shiftMonth, weekdaysOfMonth } from '../../utils/weekday-dates';
+import {
+  DEFAULT_MONTH,
+  shiftMonth,
+  weekdaysOfMonth,
+} from '../../utils/weekday-dates';
 import {
   buildScholarRows,
   cellLabel,
@@ -42,15 +46,23 @@ export class AttendanceComponent implements OnInit {
 
   readonly weekdayDates = computed(() => weekdaysOfMonth(this.selectedMonth()));
   readonly rows = computed(() =>
-    buildScholarRows(this.scholars(), this.allAttendance(), this.selectedMonth()),
+    buildScholarRows(
+      this.scholars(),
+      this.allAttendance(),
+      this.selectedMonth(),
+    ),
   );
 
   // Footer summary: one Present/Lunch/Transport count per day, plus the
   // month's totals below that.
-  readonly dailyCounts = computed(() => countsByDay(this.rows(), this.weekdayDates().length));
+  readonly dailyCounts = computed(() =>
+    countsByDay(this.rows(), this.weekdayDates().length),
+  );
   readonly totalPresent = computed(() => sum(this.dailyCounts().present));
   readonly totalLunch = computed(() => sum(this.dailyCounts().lunchSelected));
-  readonly totalTransport = computed(() => sum(this.dailyCounts().transportSelected));
+  readonly totalTransport = computed(() =>
+    sum(this.dailyCounts().transportSelected),
+  );
 
   ngOnInit(): void {
     this.loadData();
@@ -67,7 +79,9 @@ export class AttendanceComponent implements OnInit {
         this.loading.set(false);
       },
       error: (error: HttpErrorResponse) => {
-        this.loadError.set(extractErrorMessage(error, 'Failed to load attendance'));
+        this.loadError.set(
+          extractErrorMessage(error, 'Failed to load attendance'),
+        );
         this.loading.set(false);
       },
     });
@@ -87,7 +101,10 @@ export class AttendanceComponent implements OnInit {
     this.csvExportService.export(
       `attendance_${this.selectedMonth()}`,
       [
-        { header: 'Scholar', value: (r: ScholarAttendanceRow) => r.scholarName },
+        {
+          header: 'Scholar',
+          value: (r: ScholarAttendanceRow) => r.scholarName,
+        },
         ...dates.map((date, index) => ({
           header: date,
           value: (r: ScholarAttendanceRow) => cellLabel(r.cells[index]),

@@ -22,18 +22,31 @@ export class AttendanceService {
   }
 
   getAttendanceByScholarId(scholarId: string): Observable<AttendanceRecord[]> {
-    return this.http.get<AttendanceRecord[]>(`${this.baseUrl}/${scholarId}/attendance`);
-  }
-
-  // Replaces the scholar's whole attendance list (the API answers 204).
-  saveAttendance(scholarId: string, attendance: AttendanceRecord[]): Observable<void> {
-    return this.saveAttendanceSilently(scholarId, attendance).pipe(
-      tap(() => this.notificationService.show('Attendance saved successfully.')),
+    return this.http.get<AttendanceRecord[]>(
+      `${this.baseUrl}/${scholarId}/attendance`,
     );
   }
 
-  saveAttendanceSilently(scholarId: string, attendance: AttendanceRecord[]): Observable<void> {
-    return this.http.post<void>(`${this.baseUrl}/${scholarId}/attendance`, attendance);
+  // Replaces the scholar's whole attendance list (the API answers 204).
+  saveAttendance(
+    scholarId: string,
+    attendance: AttendanceRecord[],
+  ): Observable<void> {
+    return this.saveAttendanceSilently(scholarId, attendance).pipe(
+      tap(() =>
+        this.notificationService.show('Attendance saved successfully.'),
+      ),
+    );
+  }
+
+  saveAttendanceSilently(
+    scholarId: string,
+    attendance: AttendanceRecord[],
+  ): Observable<void> {
+    return this.http.post<void>(
+      `${this.baseUrl}/${scholarId}/attendance`,
+      attendance,
+    );
   }
 
   deleteAttendance(scholarId: string): Observable<void> {

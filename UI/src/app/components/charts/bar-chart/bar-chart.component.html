@@ -1,132 +1,158 @@
 @if (!hasData()) {
-<p class="bar-chart__empty">{{ emptyMessage() }}</p>
+  <p class="bar-chart__empty">{{ emptyMessage() }}</p>
 } @else {
-<div class="bar-chart">
-  @if (hoveredBar(); as hovered) {
-  <div
-    class="bar-chart__tooltip"
-    role="status"
-    animate.enter="reveal-enter"
-    animate.leave="reveal-leave"
-  >
-    <p class="bar-chart__tooltip-title">{{ hovered.label }}</p>
-    @for (row of hovered.tooltipRows; track row.series) {
-    <p class="bar-chart__tooltip-row">
-      <span class="bar-chart__tooltip-key" [class.bar-chart__tooltip-key--b]="row.series === 'b'"></span>
-      <span class="bar-chart__tooltip-label">{{ row.label }}</span>
-      <span class="bar-chart__tooltip-value">{{ row.value }}</span>
-    </p>
+  <div class="bar-chart">
+    @if (hoveredBar(); as hovered) {
+      <div
+        class="bar-chart__tooltip"
+        role="status"
+        animate.enter="reveal-enter"
+        animate.leave="reveal-leave"
+      >
+        <p class="bar-chart__tooltip-title">{{ hovered.label }}</p>
+        @for (row of hovered.tooltipRows; track row.series) {
+          <p class="bar-chart__tooltip-row">
+            <span
+              class="bar-chart__tooltip-key"
+              [class.bar-chart__tooltip-key--b]="row.series === 'b'"
+            ></span>
+            <span class="bar-chart__tooltip-label">{{ row.label }}</span>
+            <span class="bar-chart__tooltip-value">{{ row.value }}</span>
+          </p>
+        }
+      </div>
+    }
+
+    <div class="bar-chart__scroll">
+      <svg
+        class="bar-chart__svg"
+        [attr.viewBox]="'0 0 ' + svgWidth() + ' ' + svgHeight()"
+        [attr.width]="svgWidth()"
+        [attr.height]="svgHeight()"
+        preserveAspectRatio="xMinYMid meet"
+      >
+        @for (line of gridLines(); track line.label + $index) {
+          <line
+            class="bar-chart__gridline"
+            [attr.x1]="0"
+            [attr.x2]="svgWidth()"
+            [attr.y1]="line.y"
+            [attr.y2]="line.y"
+          />
+          <text
+            class="bar-chart__tick-label"
+            [attr.x]="2"
+            [attr.y]="line.y - 3"
+          >
+            {{ line.label }}
+          </text>
+        }
+
+        @for (bar of bars(); track bar.key) {
+          <g
+            class="bar-chart__band"
+            [class.bar-chart__band--active]="hoveredKey() === bar.key"
+            tabindex="0"
+            role="img"
+            [attr.aria-label]="bar.label + ': ' + bar.labelText"
+            (pointerenter)="setHovered(bar.key)"
+            (pointerleave)="clearHovered(bar.key)"
+            (focus)="setHovered(bar.key)"
+            (blur)="clearHovered(bar.key)"
+          >
+            @for (segment of bar.segments; track segment.series) {
+              @if (segment.rounded) {
+                <rect
+                  class="bar-chart__segment"
+                  [class.bar-chart__segment--b]="segment.series === 'b'"
+                  [attr.x]="bar.x"
+                  [attr.y]="segment.y"
+                  [attr.width]="barWidth"
+                  [attr.height]="segment.height"
+                  rx="4"
+                  ry="4"
+                />
+                @if (segment.height > 4) {
+                  <rect
+                    class="bar-chart__segment"
+                    [class.bar-chart__segment--b]="segment.series === 'b'"
+                    [attr.x]="bar.x"
+                    [attr.y]="segment.y + 4"
+                    [attr.width]="barWidth"
+                    [attr.height]="segment.height - 4"
+                  />
+                }
+              } @else {
+                <rect
+                  class="bar-chart__segment"
+                  [class.bar-chart__segment--b]="segment.series === 'b'"
+                  [attr.x]="bar.x"
+                  [attr.y]="segment.y"
+                  [attr.width]="barWidth"
+                  [attr.height]="segment.height"
+                />
+              }
+            }
+
+            @if (bar.labelTop !== null) {
+              <text
+                class="bar-chart__value-label"
+                [attr.x]="bar.x + barWidth / 2"
+                [attr.y]="bar.labelTop - 6"
+              >
+                {{ bar.labelText }}
+              </text>
+            }
+
+            <rect
+              class="bar-chart__hit"
+              [attr.x]="bar.bandX"
+              [attr.y]="0"
+              [attr.width]="bandWidth"
+              [attr.height]="axisY"
+            />
+
+            @if (rotateLabels()) {
+              <text
+                class="bar-chart__axis-label bar-chart__axis-label--rotated"
+                [attr.x]="bar.bandX + bandWidth / 2"
+                [attr.y]="axisY + 10"
+                [attr.transform]="
+                  'rotate(-45 ' +
+                  (bar.bandX + bandWidth / 2) +
+                  ' ' +
+                  (axisY + 10) +
+                  ')'
+                "
+              >
+                {{ bar.label }}
+              </text>
+            } @else {
+              <text
+                class="bar-chart__axis-label"
+                [attr.x]="bar.bandX + bandWidth / 2"
+                [attr.y]="axisY + 16"
+              >
+                {{ bar.label }}
+              </text>
+            }
+          </g>
+        }
+      </svg>
+    </div>
+
+    @if (series2Label()) {
+      <div class="bar-chart__legend">
+        <span class="bar-chart__legend-item">
+          <span class="bar-chart__legend-swatch"></span>{{ series1Label() }}
+        </span>
+        <span class="bar-chart__legend-item">
+          <span
+            class="bar-chart__legend-swatch bar-chart__legend-swatch--b"
+          ></span
+          >{{ series2Label() }}
+        </span>
+      </div>
     }
   </div>
-  }
-
-  <div class="bar-chart__scroll">
-    <svg
-      class="bar-chart__svg"
-      [attr.viewBox]="'0 0 ' + svgWidth() + ' ' + svgHeight()"
-      [attr.width]="svgWidth()"
-      [attr.height]="svgHeight()"
-      preserveAspectRatio="xMinYMid meet"
-    >
-      @for (line of gridLines(); track line.label + $index) {
-      <line
-        class="bar-chart__gridline"
-        [attr.x1]="0"
-        [attr.x2]="svgWidth()"
-        [attr.y1]="line.y"
-        [attr.y2]="line.y"
-      />
-      <text class="bar-chart__tick-label" [attr.x]="2" [attr.y]="line.y - 3">{{ line.label }}</text>
-      }
-
-      @for (bar of bars(); track bar.key) {
-      <g
-        class="bar-chart__band"
-        [class.bar-chart__band--active]="hoveredKey() === bar.key"
-        tabindex="0"
-        role="img"
-        [attr.aria-label]="bar.label + ': ' + bar.labelText"
-        (pointerenter)="setHovered(bar.key)"
-        (pointerleave)="clearHovered(bar.key)"
-        (focus)="setHovered(bar.key)"
-        (blur)="clearHovered(bar.key)"
-      >
-        @for (segment of bar.segments; track segment.series) {
-          @if (segment.rounded) {
-          <rect
-            class="bar-chart__segment"
-            [class.bar-chart__segment--b]="segment.series === 'b'"
-            [attr.x]="bar.x"
-            [attr.y]="segment.y"
-            [attr.width]="barWidth"
-            [attr.height]="segment.height"
-            rx="4"
-            ry="4"
-          />
-          @if (segment.height > 4) {
-          <rect
-            class="bar-chart__segment"
-            [class.bar-chart__segment--b]="segment.series === 'b'"
-            [attr.x]="bar.x"
-            [attr.y]="segment.y + 4"
-            [attr.width]="barWidth"
-            [attr.height]="segment.height - 4"
-          />
-          }
-          } @else {
-          <rect
-            class="bar-chart__segment"
-            [class.bar-chart__segment--b]="segment.series === 'b'"
-            [attr.x]="bar.x"
-            [attr.y]="segment.y"
-            [attr.width]="barWidth"
-            [attr.height]="segment.height"
-          />
-          }
-        }
-
-        @if (bar.labelTop !== null) {
-        <text class="bar-chart__value-label" [attr.x]="bar.x + barWidth / 2" [attr.y]="bar.labelTop - 6">
-          {{ bar.labelText }}
-        </text>
-        }
-
-        <rect
-          class="bar-chart__hit"
-          [attr.x]="bar.bandX"
-          [attr.y]="0"
-          [attr.width]="bandWidth"
-          [attr.height]="axisY"
-        />
-
-        @if (rotateLabels()) {
-        <text
-          class="bar-chart__axis-label bar-chart__axis-label--rotated"
-          [attr.x]="bar.bandX + bandWidth / 2"
-          [attr.y]="axisY + 10"
-          [attr.transform]="'rotate(-45 ' + (bar.bandX + bandWidth / 2) + ' ' + (axisY + 10) + ')'"
-        >
-          {{ bar.label }}
-        </text>
-        } @else {
-        <text class="bar-chart__axis-label" [attr.x]="bar.bandX + bandWidth / 2" [attr.y]="axisY + 16">
-          {{ bar.label }}
-        </text>
-        }
-      </g>
-      }
-    </svg>
-  </div>
-
-  @if (series2Label()) {
-  <div class="bar-chart__legend">
-    <span class="bar-chart__legend-item">
-      <span class="bar-chart__legend-swatch"></span>{{ series1Label() }}
-    </span>
-    <span class="bar-chart__legend-item">
-      <span class="bar-chart__legend-swatch bar-chart__legend-swatch--b"></span>{{ series2Label() }}
-    </span>
-  </div>
-  }
-</div>
 }

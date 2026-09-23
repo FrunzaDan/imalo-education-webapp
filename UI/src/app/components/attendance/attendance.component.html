@@ -1,134 +1,163 @@
 @if (loading()) {
-<div class="loading-message">Loading attendance...</div>
+  <div class="loading-message">Loading attendance...</div>
 } @else if (loadError(); as error) {
-<h1 class="page-title">Attendance</h1>
-<div class="app-alert" role="alert">{{ error }}</div>
+  <h1 class="page-title">Attendance</h1>
+  <div class="app-alert" role="alert">{{ error }}</div>
 } @else {
-<h1 class="page-title">Attendance</h1>
+  <h1 class="page-title">Attendance</h1>
 
-<div class="page-toolbar">
-  <div class="month-nav">
+  <div class="page-toolbar">
+    <div class="month-nav">
+      <button
+        type="button"
+        class="app-button app-button--ghost month-nav__arrow"
+        (click)="previousMonth()"
+        aria-label="Previous month"
+      >
+        ‹
+      </button>
+      <input
+        id="monthPicker"
+        type="month"
+        [formField]="monthForm.month"
+        class="app-input month-nav__input"
+      />
+      <button
+        type="button"
+        class="app-button app-button--ghost month-nav__arrow"
+        (click)="nextMonth()"
+        aria-label="Next month"
+      >
+        ›
+      </button>
+    </div>
+
+    <div class="attendance-legend">
+      <span class="attendance-legend__item"
+        ><span class="badge badge--present badge--active"></span>Present</span
+      >
+      <span class="attendance-legend__item"
+        ><span class="badge badge--lunch badge--active">L</span>Lunch</span
+      >
+      <span class="attendance-legend__item"
+        ><span class="badge badge--transport badge--active">T</span
+        >Transport</span
+      >
+    </div>
+
     <button
       type="button"
-      class="app-button app-button--ghost month-nav__arrow"
-      (click)="previousMonth()"
-      aria-label="Previous month"
+      class="app-button app-button--ghost"
+      (click)="exportCsv()"
     >
-      ‹
-    </button>
-    <input
-      id="monthPicker"
-      type="month"
-      [formField]="monthForm.month"
-      class="app-input month-nav__input"
-    />
-    <button
-      type="button"
-      class="app-button app-button--ghost month-nav__arrow"
-      (click)="nextMonth()"
-      aria-label="Next month"
-    >
-      ›
+      Export CSV
     </button>
   </div>
 
-  <div class="attendance-legend">
-    <span class="attendance-legend__item"
-      ><span class="badge badge--present badge--active"></span>Present</span
-    >
-    <span class="attendance-legend__item"
-      ><span class="badge badge--lunch badge--active">L</span>Lunch</span
-    >
-    <span class="attendance-legend__item"
-      ><span class="badge badge--transport badge--active">T</span>Transport</span
-    >
-  </div>
-
-  <button type="button" class="app-button app-button--ghost" (click)="exportCsv()">
-    Export CSV
-  </button>
-</div>
-
-<div class="attendance-grid__scroll">
-  <table class="app-table attendance-grid">
-    <thead>
-      <tr>
-        <th class="table-header attendance-grid__name-header">Scholar</th>
-        @for (date of weekdayDates(); track date) {
-        <th class="table-header attendance-grid__day-header">
-          {{ date | date : 'EEE d' }}
-        </th>
-        }
-      </tr>
-    </thead>
-    <tbody>
-      @for (row of rows(); track row.scholarId) {
-      <tr class="table-row">
-        <td class="table-cell attendance-grid__name-cell">
-          <a class="attendance-grid__name-link" [routerLink]="['/attendance', row.scholarId]">
-            {{ row.scholarName }}
-          </a>
-        </td>
-        @for (cell of row.cells; track $index) {
-        <td class="table-cell attendance-grid__day-cell">
-          <span class="attendance-cell">
-            <span class="badge badge--present" [class.badge--active]="cell?.present"></span>
-            <span class="badge badge--lunch" [class.badge--active]="cell?.lunchSelected">L</span>
-            <span
-              class="badge badge--transport"
-              [class.badge--active]="cell?.transportSelected"
-              >T</span
+  <div class="attendance-grid__scroll">
+    <table class="app-table attendance-grid">
+      <thead>
+        <tr>
+          <th class="table-header attendance-grid__name-header">Scholar</th>
+          @for (date of weekdayDates(); track date) {
+            <th class="table-header attendance-grid__day-header">
+              {{ date | date: 'EEE d' }}
+            </th>
+          }
+        </tr>
+      </thead>
+      <tbody>
+        @for (row of rows(); track row.scholarId) {
+          <tr class="table-row">
+            <td class="table-cell attendance-grid__name-cell">
+              <a
+                class="attendance-grid__name-link"
+                [routerLink]="['/attendance', row.scholarId]"
+              >
+                {{ row.scholarName }}
+              </a>
+            </td>
+            @for (cell of row.cells; track $index) {
+              <td class="table-cell attendance-grid__day-cell">
+                <span class="attendance-cell">
+                  <span
+                    class="badge badge--present"
+                    [class.badge--active]="cell?.present"
+                  ></span>
+                  <span
+                    class="badge badge--lunch"
+                    [class.badge--active]="cell?.lunchSelected"
+                    >L</span
+                  >
+                  <span
+                    class="badge badge--transport"
+                    [class.badge--active]="cell?.transportSelected"
+                    >T</span
+                  >
+                </span>
+              </td>
+            }
+          </tr>
+        } @empty {
+          <tr class="table-row">
+            <td
+              [attr.colspan]="weekdayDates().length + 1"
+              class="table-cell table-cell--empty"
             >
-          </span>
-        </td>
+              No scholars found.
+            </td>
+          </tr>
         }
-      </tr>
-      } @empty {
-      <tr class="table-row">
-        <td
-          [attr.colspan]="weekdayDates().length + 1"
-          class="table-cell table-cell--empty"
+      </tbody>
+      <tfoot>
+        <tr class="table-row attendance-grid__summary-row">
+          <td
+            class="table-cell attendance-grid__name-cell attendance-grid__summary-label"
+          >
+            Present
+          </td>
+          @for (count of dailyCounts().present; track $index) {
+            <td class="table-cell attendance-grid__day-cell">{{ count }}</td>
+          }
+        </tr>
+        <tr class="table-row attendance-grid__summary-row">
+          <td
+            class="table-cell attendance-grid__name-cell attendance-grid__summary-label"
+          >
+            Lunch
+          </td>
+          @for (count of dailyCounts().lunchSelected; track $index) {
+            <td class="table-cell attendance-grid__day-cell">{{ count }}</td>
+          }
+        </tr>
+        <tr class="table-row attendance-grid__summary-row">
+          <td
+            class="table-cell attendance-grid__name-cell attendance-grid__summary-label"
+          >
+            Transport
+          </td>
+          @for (count of dailyCounts().transportSelected; track $index) {
+            <td class="table-cell attendance-grid__day-cell">{{ count }}</td>
+          }
+        </tr>
+        <tr
+          class="table-row attendance-grid__summary-row attendance-grid__summary-row--totals"
         >
-          No scholars found.
-        </td>
-      </tr>
-      }
-    </tbody>
-    <tfoot>
-      <tr class="table-row attendance-grid__summary-row">
-        <td class="table-cell attendance-grid__name-cell attendance-grid__summary-label">
-          Present
-        </td>
-        @for (count of dailyCounts().present; track $index) {
-        <td class="table-cell attendance-grid__day-cell">{{ count }}</td>
-        }
-      </tr>
-      <tr class="table-row attendance-grid__summary-row">
-        <td class="table-cell attendance-grid__name-cell attendance-grid__summary-label">
-          Lunch
-        </td>
-        @for (count of dailyCounts().lunchSelected; track $index) {
-        <td class="table-cell attendance-grid__day-cell">{{ count }}</td>
-        }
-      </tr>
-      <tr class="table-row attendance-grid__summary-row">
-        <td class="table-cell attendance-grid__name-cell attendance-grid__summary-label">
-          Transport
-        </td>
-        @for (count of dailyCounts().transportSelected; track $index) {
-        <td class="table-cell attendance-grid__day-cell">{{ count }}</td>
-        }
-      </tr>
-      <tr class="table-row attendance-grid__summary-row attendance-grid__summary-row--totals">
-        <td class="table-cell attendance-grid__name-cell attendance-grid__summary-label">
-          Totals
-        </td>
-        <td class="table-cell attendance-grid__totals-cell" [attr.colspan]="weekdayDates().length">
-          Present: {{ totalPresent() }} &nbsp;&middot;&nbsp; Lunch: {{ totalLunch() }}
-          &nbsp;&middot;&nbsp; Transport: {{ totalTransport() }}
-        </td>
-      </tr>
-    </tfoot>
-  </table>
-</div>
+          <td
+            class="table-cell attendance-grid__name-cell attendance-grid__summary-label"
+          >
+            Totals
+          </td>
+          <td
+            class="table-cell attendance-grid__totals-cell"
+            [attr.colspan]="weekdayDates().length"
+          >
+            Present: {{ totalPresent() }} &nbsp;&middot;&nbsp; Lunch:
+            {{ totalLunch() }} &nbsp;&middot;&nbsp; Transport:
+            {{ totalTransport() }}
+          </td>
+        </tr>
+      </tfoot>
+    </table>
+  </div>
 }

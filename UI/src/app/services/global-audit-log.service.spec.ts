@@ -85,7 +85,9 @@ describe('GlobalAuditLogService', () => {
       .error(new ProgressEvent('error'), { status: 0 });
 
     expect(service.loading()).toBe(false);
-    expect(service.error()).toBe('Could not reach the server. It may be offline.');
+    expect(service.error()).toBe(
+      'Could not reach the server. It may be offline.',
+    );
   });
 
   it('drops a stale response when a newer page is requested before it arrives', () => {
@@ -96,7 +98,12 @@ describe('GlobalAuditLogService', () => {
 
     const [stale, current] = httpMock.match((r) => r.url === API_URL);
     expect(stale.cancelled).toBe(true);
-    current.flush({ pageNumber: 2, pageSize: 20, totalItems: 21, items: [newer] });
+    current.flush({
+      pageNumber: 2,
+      pageSize: 20,
+      totalItems: 21,
+      items: [newer],
+    });
 
     expect(service.pageNumber()).toBe(2);
     expect(service.entries()).toEqual([newer]);
@@ -107,7 +114,12 @@ describe('GlobalAuditLogService', () => {
     service.loadAllAuditLog({ pageNumber: 2, pageSize: 20 });
     httpMock
       .expectOne((r) => r.url === API_URL)
-      .flush({ pageNumber: 2, pageSize: 20, totalItems: 21, items: [buildEntry()] });
+      .flush({
+        pageNumber: 2,
+        pageSize: 20,
+        totalItems: 21,
+        items: [buildEntry()],
+      });
 
     service.deleteAllAuditLog().subscribe();
     const req = httpMock.expectOne((r) => r.url === API_URL);

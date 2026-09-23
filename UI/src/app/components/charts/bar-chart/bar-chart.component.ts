@@ -56,7 +56,8 @@ function niceMax(raw: number): number {
   if (raw <= 0) return 1;
   const magnitude = Math.pow(10, Math.floor(Math.log10(raw)));
   const residual = raw / magnitude;
-  const niceResidual = residual <= 1 ? 1 : residual <= 2 ? 2 : residual <= 5 ? 5 : 10;
+  const niceResidual =
+    residual <= 1 ? 1 : residual <= 2 ? 2 : residual <= 5 ? 5 : 10;
   return niceResidual * magnitude;
 }
 
@@ -74,7 +75,9 @@ export class BarChartComponent {
   readonly points = input.required<BarChartPoint[]>();
   readonly series1Label = input.required<string>();
   readonly series2Label = input<string | null>(null);
-  readonly formatValue = input<(value: number) => string>((value) => String(value));
+  readonly formatValue = input<(value: number) => string>((value) =>
+    String(value),
+  );
   readonly emptyMessage = input('No data for this period.');
 
   readonly hoveredKey = signal<string | null>(null);
@@ -82,24 +85,34 @@ export class BarChartComponent {
   readonly plotHeight = PLOT_HEIGHT;
   readonly axisY = TOP_PADDING + PLOT_HEIGHT;
 
-  readonly hasData = computed(() => this.points().some((p) => p.value + (p.value2 ?? 0) > 0));
+  readonly hasData = computed(() =>
+    this.points().some((p) => p.value + (p.value2 ?? 0) > 0),
+  );
 
   readonly rotateLabels = computed(() =>
     this.points().some((p) => p.label.length > ROTATE_LABEL_THRESHOLD),
   );
 
   readonly svgHeight = computed(
-    () => PLOT_HEIGHT + TOP_PADDING + (this.rotateLabels() ? ROTATED_AXIS_HEIGHT : AXIS_HEIGHT),
+    () =>
+      PLOT_HEIGHT +
+      TOP_PADDING +
+      (this.rotateLabels() ? ROTATED_AXIS_HEIGHT : AXIS_HEIGHT),
   );
 
   private readonly leftPadding = computed(() => LEFT_PADDING);
 
   readonly svgWidth = computed(() =>
-    Math.max(this.points().length * BAND_WIDTH + this.leftPadding(), MIN_CHART_WIDTH),
+    Math.max(
+      this.points().length * BAND_WIDTH + this.leftPadding(),
+      MIN_CHART_WIDTH,
+    ),
   );
 
   private readonly niceMaxValue = computed(() =>
-    niceMax(Math.max(0, ...this.points().map((p) => p.value + (p.value2 ?? 0)))),
+    niceMax(
+      Math.max(0, ...this.points().map((p) => p.value + (p.value2 ?? 0))),
+    ),
   );
 
   readonly gridLines = computed(() => {
@@ -152,7 +165,11 @@ export class BarChartComponent {
           ? [{ label: series1, value: formatter(point.value), series: 'a' }]
           : [
               { label: series1, value: formatter(point.value), series: 'a' },
-              { label: series2 ?? '', value: formatter(point.value2), series: 'b' },
+              {
+                label: series2 ?? '',
+                value: formatter(point.value2),
+                series: 'b',
+              },
             ];
 
       const isMax = total === maxTotal && total > 0;

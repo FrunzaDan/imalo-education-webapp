@@ -6,7 +6,12 @@ import { of, throwError } from 'rxjs';
 import { ScholarFormComponent } from './scholar-form.component';
 import { ScholarsService } from '../../services/scholars.service';
 import { SchoolsService } from '../../services/schools.service';
-import { emptyScholarForm, isScholarFormDirty, toFormModel, toScholar } from './scholar-form';
+import {
+  emptyScholarForm,
+  isScholarFormDirty,
+  toFormModel,
+  toScholar,
+} from './scholar-form';
 import type { Scholar } from '../../interfaces/scholar';
 import type { School } from '../../interfaces/school';
 
@@ -17,8 +22,20 @@ import type { School } from '../../interfaces/school';
 // the [formField] bindings (text / select / number / date / time) still wire up.
 
 const SCHOOLS: School[] = [
-  { schoolId: 1, name: 'Test School', color: '#336699', lunchPrice: 15, transportPrice: 10 },
-  { schoolId: 2, name: 'Other School', color: '#993366', lunchPrice: 12, transportPrice: 8 },
+  {
+    schoolId: 1,
+    name: 'Test School',
+    color: '#336699',
+    lunchPrice: 15,
+    transportPrice: 10,
+  },
+  {
+    schoolId: 2,
+    name: 'Other School',
+    color: '#993366',
+    lunchPrice: 12,
+    transportPrice: 8,
+  },
 ];
 
 const EXISTING: Scholar = {
@@ -34,7 +51,13 @@ const EXISTING: Scholar = {
   fatherFirstName: null,
   fatherLastName: null,
   fatherPhoneNumber: null,
-  pickupSchedule: { monday: '12:00', tuesday: null, wednesday: null, thursday: null, friday: null },
+  pickupSchedule: {
+    monday: '12:00',
+    tuesday: null,
+    wednesday: null,
+    thursday: null,
+    friday: null,
+  },
 };
 
 interface SetupOptions {
@@ -51,7 +74,10 @@ async function setup(options: SetupOptions = {}) {
           () =>
             new HttpErrorResponse({
               status: 400,
-              error: { status: 400, errors: { MotherPhoneNumber: ['Invalid phone number.'] } },
+              error: {
+                status: 400,
+                errors: { MotherPhoneNumber: ['Invalid phone number.'] },
+              },
             }),
         )
       : of(saved),
@@ -63,7 +89,11 @@ async function setup(options: SetupOptions = {}) {
           () =>
             new HttpErrorResponse({
               status: 404,
-              error: { status: 404, title: 'Scholar not found.', detail: 'Scholar with ID scholar-1 not found.' },
+              error: {
+                status: 404,
+                title: 'Scholar not found.',
+                detail: 'Scholar with ID scholar-1 not found.',
+              },
             }),
         )
       : of(EXISTING),
@@ -75,17 +105,29 @@ async function setup(options: SetupOptions = {}) {
     providers: [
       provideZonelessChangeDetection(),
       { provide: Router, useValue: { navigate } },
-      { provide: ScholarsService, useValue: { createScholar, updateScholar, getScholarById } },
+      {
+        provide: ScholarsService,
+        useValue: { createScholar, updateScholar, getScholarById },
+      },
       { provide: SchoolsService, useValue: { getSchools: () => of(SCHOOLS) } },
     ],
   });
 
-  const fixture: ComponentFixture<ScholarFormComponent> = TestBed.createComponent(ScholarFormComponent);
+  const fixture: ComponentFixture<ScholarFormComponent> =
+    TestBed.createComponent(ScholarFormComponent);
   // The route's :scholarId reaches the component as an input (withComponentInputBinding()).
-  if (options.routeId) fixture.componentRef.setInput('scholarId', options.routeId);
+  if (options.routeId)
+    fixture.componentRef.setInput('scholarId', options.routeId);
   fixture.detectChanges();
   await fixture.whenStable(); // let the scholar rxResource load in edit mode
-  return { fixture, component: fixture.componentInstance, createScholar, updateScholar, getScholarById, navigate };
+  return {
+    fixture,
+    component: fixture.componentInstance,
+    createScholar,
+    updateScholar,
+    getScholarById,
+    navigate,
+  };
 }
 
 const VALID_MODEL = {
@@ -103,11 +145,21 @@ describe('ScholarFormComponent', () => {
       const { component } = await setup();
 
       expect(component.scholarForm().valid()).toBe(false);
-      expect(component.scholarForm.firstName().errors()[0].message).toBe('First Name is required.');
-      expect(component.scholarForm.lastName().errors()[0].message).toBe('Last Name is required.');
-      expect(component.scholarForm.schoolId().errors()[0].message).toBe('School is required.');
-      expect(component.scholarForm.grade().errors()[0].message).toBe('Grade is required.');
-      expect(component.scholarForm.birthDate().errors()[0].message).toBe('Birth Date is required.');
+      expect(component.scholarForm.firstName().errors()[0].message).toBe(
+        'First Name is required.',
+      );
+      expect(component.scholarForm.lastName().errors()[0].message).toBe(
+        'Last Name is required.',
+      );
+      expect(component.scholarForm.schoolId().errors()[0].message).toBe(
+        'School is required.',
+      );
+      expect(component.scholarForm.grade().errors()[0].message).toBe(
+        'Grade is required.',
+      );
+      expect(component.scholarForm.birthDate().errors()[0].message).toBe(
+        'Birth Date is required.',
+      );
       expect(component.scholarForm.motherPhoneNumber().valid()).toBe(true);
       expect(component.scholarForm.pickupSchedule.monday().valid()).toBe(true);
 
@@ -123,7 +175,9 @@ describe('ScholarFormComponent', () => {
 
       for (const grade of [-1, 13]) {
         component.model.set({ ...VALID_MODEL, grade });
-        expect(component.scholarForm.grade().errors()[0].message).toBe('Grade must be between 0 and 12.');
+        expect(component.scholarForm.grade().errors()[0].message).toBe(
+          'Grade must be between 0 and 12.',
+        );
       }
     });
 
@@ -151,7 +205,9 @@ describe('ScholarFormComponent', () => {
       expect(component.scholarForm.firstName().errors()[0].message).toBe(
         "First Name can't exceed 100 characters.",
       );
-      expect(component.scholarForm.fatherPhoneNumber().errors()[0].message).toBe('Not a valid phone number.');
+      expect(
+        component.scholarForm.fatherPhoneNumber().errors()[0].message,
+      ).toBe('Not a valid phone number.');
     });
   });
 
@@ -159,7 +215,9 @@ describe('ScholarFormComponent', () => {
     it('does not call the API and reports the error count when the form is invalid', async () => {
       const { fixture, component, createScholar } = await setup();
 
-      fixture.nativeElement.querySelector('form').dispatchEvent(new Event('submit'));
+      fixture.nativeElement
+        .querySelector('form')
+        .dispatchEvent(new Event('submit'));
       await fixture.whenStable();
 
       expect(createScholar).not.toHaveBeenCalled();
@@ -172,7 +230,9 @@ describe('ScholarFormComponent', () => {
       const { fixture, createScholar, updateScholar, navigate } = await setup();
       fixture.componentInstance.model.set(VALID_MODEL);
 
-      fixture.nativeElement.querySelector('form').dispatchEvent(new Event('submit'));
+      fixture.nativeElement
+        .querySelector('form')
+        .dispatchEvent(new Event('submit'));
       await fixture.whenStable();
 
       expect(updateScholar).not.toHaveBeenCalled();
@@ -188,16 +248,20 @@ describe('ScholarFormComponent', () => {
     });
 
     it('shows the API error inline and stays on the page when saving fails', async () => {
-      const { fixture, component, navigate } = await setup({ saveResult: 'error' });
+      const { fixture, component, navigate } = await setup({
+        saveResult: 'error',
+      });
       component.model.set(VALID_MODEL);
 
-      fixture.nativeElement.querySelector('form').dispatchEvent(new Event('submit'));
+      fixture.nativeElement
+        .querySelector('form')
+        .dispatchEvent(new Event('submit'));
       await fixture.whenStable();
 
       expect(component.saveError()).toBe('Invalid phone number.');
-      expect(fixture.nativeElement.querySelector('.app-alert')?.textContent).toContain(
-        'Invalid phone number.',
-      );
+      expect(
+        fixture.nativeElement.querySelector('.app-alert')?.textContent,
+      ).toContain('Invalid phone number.');
       expect(component.hasUnsavedChanges()).toBe(true);
       expect(navigate).not.toHaveBeenCalled();
     });
@@ -205,7 +269,9 @@ describe('ScholarFormComponent', () => {
 
   describe('edit mode', () => {
     it('loads the scholar into the form, mapping ids/dates to strings and nulls to blanks', async () => {
-      const { component, getScholarById } = await setup({ routeId: 'scholar-1' });
+      const { component, getScholarById } = await setup({
+        routeId: 'scholar-1',
+      });
 
       expect(getScholarById).toHaveBeenCalledWith('scholar-1');
       expect(component.isEditMode()).toBe(true);
@@ -229,15 +295,23 @@ describe('ScholarFormComponent', () => {
       fixture.detectChanges();
       const el: HTMLElement = fixture.nativeElement;
 
-      expect(component.loadError()).toBe('Scholar with ID scholar-1 not found.');
-      expect(el.querySelector('[role="alert"]')?.textContent).toContain('not found');
+      expect(component.loadError()).toBe(
+        'Scholar with ID scholar-1 not found.',
+      );
+      expect(el.querySelector('[role="alert"]')?.textContent).toContain(
+        'not found',
+      );
       expect(el.querySelector('form')).toBeNull();
     });
 
     it('updates (not creates) the scholar under its existing id', async () => {
-      const { fixture, createScholar, updateScholar } = await setup({ routeId: 'scholar-1' });
+      const { fixture, createScholar, updateScholar } = await setup({
+        routeId: 'scholar-1',
+      });
 
-      fixture.nativeElement.querySelector('form').dispatchEvent(new Event('submit'));
+      fixture.nativeElement
+        .querySelector('form')
+        .dispatchEvent(new Event('submit'));
       await fixture.whenStable();
 
       expect(createScholar).not.toHaveBeenCalled();
@@ -278,7 +352,9 @@ describe('ScholarFormComponent', () => {
       const { fixture, component } = await setup();
       component.model.set(VALID_MODEL);
 
-      fixture.nativeElement.querySelector('form').dispatchEvent(new Event('submit'));
+      fixture.nativeElement
+        .querySelector('form')
+        .dispatchEvent(new Event('submit'));
       await fixture.whenStable();
 
       expect(component.hasUnsavedChanges()).toBe(false);
@@ -286,12 +362,16 @@ describe('ScholarFormComponent', () => {
 
     it('asks the browser to confirm a reload or tab close only while there are unsaved changes', async () => {
       const { component } = await setup();
-      const clean = new Event('beforeunload', { cancelable: true }) as BeforeUnloadEvent;
+      const clean = new Event('beforeunload', {
+        cancelable: true,
+      }) as BeforeUnloadEvent;
       component.onBeforeUnload(clean);
       expect(clean.defaultPrevented).toBe(false);
 
       component.model.set(VALID_MODEL);
-      const dirty = new Event('beforeunload', { cancelable: true }) as BeforeUnloadEvent;
+      const dirty = new Event('beforeunload', {
+        cancelable: true,
+      }) as BeforeUnloadEvent;
       component.onBeforeUnload(dirty);
       expect(dirty.defaultPrevented).toBe(true);
     });
@@ -299,8 +379,12 @@ describe('ScholarFormComponent', () => {
     it('isScholarFormDirty treats a value typed and then put back as unchanged', () => {
       const baseline = toFormModel(EXISTING);
 
-      expect(isScholarFormDirty({ ...baseline, firstName: 'Ana' }, baseline)).toBe(false);
-      expect(isScholarFormDirty({ ...baseline, grade: 4 }, baseline)).toBe(true);
+      expect(
+        isScholarFormDirty({ ...baseline, firstName: 'Ana' }, baseline),
+      ).toBe(false);
+      expect(isScholarFormDirty({ ...baseline, grade: 4 }, baseline)).toBe(
+        true,
+      );
     });
   });
 
@@ -308,11 +392,15 @@ describe('ScholarFormComponent', () => {
     it('writes typed/selected DOM input through [formField] into the model', async () => {
       const { fixture, component } = await setup();
       const el: HTMLElement = fixture.nativeElement;
-      const input = (id: string) => el.querySelector<HTMLInputElement>(`#${id}`)!;
+      const input = (id: string) =>
+        el.querySelector<HTMLInputElement>(`#${id}`)!;
 
       // Signal Forms listens for `input` on every native control, <select> included
       // (browsers fire `input` on a select as well as `change`).
-      const set = (control: HTMLInputElement | HTMLSelectElement, value: string) => {
+      const set = (
+        control: HTMLInputElement | HTMLSelectElement,
+        value: string,
+      ) => {
         control.value = value;
         control.dispatchEvent(new Event('input'));
       };
@@ -337,7 +425,13 @@ describe('ScholarFormComponent', () => {
       const { fixture } = await setup();
       const el: HTMLElement = fixture.nativeElement;
 
-      for (const day of ['monday', 'tuesday', 'wednesday', 'thursday', 'friday']) {
+      for (const day of [
+        'monday',
+        'tuesday',
+        'wednesday',
+        'thursday',
+        'friday',
+      ]) {
         expect(el.querySelector(`input[type="time"]#${day}`)).not.toBeNull();
       }
       expect(el.querySelectorAll('input[type="tel"]').length).toBe(2);
