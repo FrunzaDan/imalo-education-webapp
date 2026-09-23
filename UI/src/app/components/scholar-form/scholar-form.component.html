@@ -64,8 +64,8 @@
         [attr.aria-describedby]="schoolError ? 'schoolId-error' : null"
       >
         <option value="" disabled>Select a school</option>
-        @for (school of schools(); track school.id) {
-          <option [value]="school.id">{{ school.name }}</option>
+        @for (school of schools(); track school.schoolId) {
+          <option [value]="school.schoolId">{{ school.name }}</option>
         }
       </select>
       @if (schoolError) {
@@ -97,23 +97,23 @@
       }
     </div>
 
-    <!-- Date of Birth -->
-    @let dateOfBirth = scholarForm.dateOfBirth();
-    @let dateOfBirthError = dateOfBirth.touched() && dateOfBirth.invalid();
+    <!-- Birth date -->
+    @let birthDate = scholarForm.birthDate();
+    @let birthDateError = birthDate.touched() && birthDate.invalid();
     <div class="scholar-form__field">
-      <label for="dateOfBirth" class="app-label">Birth Date</label>
+      <label for="birthDate" class="app-label">Birth Date</label>
       <input
         type="date"
-        id="dateOfBirth"
+        id="birthDate"
         class="app-input"
-        [formField]="scholarForm.dateOfBirth"
-        [class.error]="dateOfBirthError"
-        [attr.aria-invalid]="dateOfBirthError"
-        [attr.aria-describedby]="dateOfBirthError ? 'dateOfBirth-error' : null"
+        [formField]="scholarForm.birthDate"
+        [class.error]="birthDateError"
+        [attr.aria-invalid]="birthDateError"
+        [attr.aria-describedby]="birthDateError ? 'birthDate-error' : null"
       />
-      @if (dateOfBirthError) {
-        <div class="app-error-message" id="dateOfBirth-error">
-          {{ dateOfBirth.errors()[0].message }}
+      @if (birthDateError) {
+        <div class="app-error-message" id="birthDate-error">
+          {{ birthDate.errors()[0].message }}
         </div>
       }
     </div>
@@ -172,7 +172,7 @@
               type="time"
               class="app-input"
               [id]="day"
-              [formField]="scholarForm.pickUpSchedule[day]"
+              [formField]="scholarForm.pickupSchedule[day]"
             />
           </div>
         }

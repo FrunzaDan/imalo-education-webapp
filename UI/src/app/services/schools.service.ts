@@ -28,11 +28,11 @@ export class SchoolsService {
     return this.schoolsCache$;
   }
 
-  getSchoolById(id: number | string): Observable<School | null> {
-    const targetId = Number(id);
+  getSchoolById(schoolId: number | string): Observable<School | null> {
+    const targetId = Number(schoolId);
     return this.getSchools().pipe(
       map((schools) => {
-        const school = schools.find((s) => s.id === targetId) || null;
+        const school = schools.find((school) => school.schoolId === targetId) || null;
         if (!school) {
           console.warn(`School with ID ${targetId} not found in schools.json`);
         }

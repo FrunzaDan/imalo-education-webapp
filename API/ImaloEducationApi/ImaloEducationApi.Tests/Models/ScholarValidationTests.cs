@@ -6,7 +6,7 @@ namespace ImaloEducationApi.Tests.Models;
 public class ScholarValidationTests
 {
     private static ValidationResult? Validate(DateOnly date) =>
-        Scholar.ValidateDateOfBirth(date, new ValidationContext(new object()));
+        Scholar.ValidateBirthDate(date, new ValidationContext(new object()));
 
     [Fact]
     public void ValidateDateOfBirth_AcceptsPastDate()
@@ -20,7 +20,7 @@ public class ScholarValidationTests
         var result = Validate(DateOnly.FromDateTime(DateTime.UtcNow).AddDays(1));
 
         Assert.NotEqual(ValidationResult.Success, result);
-        Assert.Equal("Date of birth cannot be in the future.", result!.ErrorMessage);
+        Assert.Equal("Birth date cannot be in the future.", result!.ErrorMessage);
     }
 
     private static ValidationResult? ValidatePhone(string? phone) =>
@@ -37,17 +37,18 @@ public class ScholarValidationTests
 
     [Theory]
     [InlineData("0712345678")]
-    [InlineData("+1 (415) 555-0132")]
-    [InlineData("123456")] // minimum length (6)
+    [InlineData("123456789")] // minimum length (9)
+    [InlineData("123456789012")] // maximum length (12)
     public void ValidatePhoneNumber_AcceptsWellFormedNumbers(string phone)
     {
         Assert.Equal(ValidationResult.Success, ValidatePhone(phone));
     }
 
     [Theory]
-    [InlineData("12345")] // too short (< 6)
+    [InlineData("12345678")] // too short (< 9)
     [InlineData("abc-def-ghij")] // letters
-    [InlineData("123456789012345678901")] // too long (> 20)
+    [InlineData("+1 (415) 555-0132")] // formatting characters: digits only, same as the other apps
+    [InlineData("1234567890123")] // too long (> 12)
     public void ValidatePhoneNumber_RejectsMalformedNumbers(string phone)
     {
         var result = ValidatePhone(phone);

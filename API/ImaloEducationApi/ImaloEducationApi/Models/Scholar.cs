@@ -5,7 +5,7 @@ namespace ImaloEducationApi.Models;
 
 public partial class Scholar
 {
-    public Guid Id { get; set; }
+    public Guid ScholarId { get; set; }
 
     [Required]
     [StringLength(100, ErrorMessage = "First name can't exceed 100 characters.")]
@@ -23,12 +23,12 @@ public partial class Scholar
 
     [Required]
     [DataType(DataType.Date)]
-    [CustomValidation(typeof(Scholar), nameof(ValidateDateOfBirth))]
-    public DateOnly DateOfBirth { get; set; }
+    [CustomValidation(typeof(Scholar), nameof(ValidateBirthDate))]
+    public DateOnly BirthDate { get; set; }
 
-    // Shape (weekdays only, strict HH:mm) is enforced by PickUpSchedule's own
+    // Shape (weekdays only, strict HH:mm) is enforced by PickupSchedule's own
     // deserialization, not by a validator here.
-    public PickUpSchedule? PickUpSchedule { get; set; }
+    public PickupSchedule? PickupSchedule { get; set; }
 
     // Optional — a scholar may have a mother, a father, both, or neither, and each
     // of a parent's own fields (name, phone) is independently optional too. Stored
@@ -40,7 +40,7 @@ public partial class Scholar
     [StringLength(100)]
     public string? MotherLastName { get; set; }
 
-    [StringLength(20)]
+    [StringLength(15)]
     [CustomValidation(typeof(Scholar), nameof(ValidatePhoneNumber))]
     public string? MotherPhoneNumber { get; set; }
 
@@ -50,14 +50,14 @@ public partial class Scholar
     [StringLength(100)]
     public string? FatherLastName { get; set; }
 
-    [StringLength(20)]
+    [StringLength(15)]
     [CustomValidation(typeof(Scholar), nameof(ValidatePhoneNumber))]
     public string? FatherPhoneNumber { get; set; }
 
-    public static ValidationResult? ValidateDateOfBirth(DateOnly date, ValidationContext context)
+    public static ValidationResult? ValidateBirthDate(DateOnly date, ValidationContext context)
     {
         return date > DateOnly.FromDateTime(DateTime.UtcNow)
-            ? new ValidationResult("Date of birth cannot be in the future.")
+            ? new ValidationResult("Birth date cannot be in the future.")
             : ValidationResult.Success;
     }
 
@@ -70,7 +70,9 @@ public partial class Scholar
             : new ValidationResult($"Invalid phone number: '{phoneNumber}'.");
     }
 
-    // Source-generated: compiled once at build time instead of on first use.
-    [GeneratedRegex(@"^\+?[0-9 ()-]{6,20}$")]
+    // Digits only, 9–12 of them — the same phone-number rule as the customer and employee apps,
+    // and what fits ScholarParent.PhoneNumber (VARCHAR(15)). \z, not $: $ would also accept a
+    // trailing newline. Source-generated: compiled once at build time instead of on first use.
+    [GeneratedRegex(@"^[0-9]{9,12}\z")]
     private static partial Regex PhoneNumberRegex();
 }

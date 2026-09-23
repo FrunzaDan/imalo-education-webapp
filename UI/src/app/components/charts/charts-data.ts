@@ -130,7 +130,7 @@ export function countByGrade(scholars: Scholar[]): CategoryCount[] {
 // reads straight off the chart, with a trailing "Unassigned" bucket for a
 // null schoolId.
 export function countBySchool(scholars: Scholar[], schools: School[]): CategoryCount[] {
-  const nameById = new Map(schools.map((school) => [school.id, school.name]));
+  const nameById = new Map(schools.map((school) => [school.schoolId, school.name]));
   const counts = new Map<number | 'unassigned', number>();
 
   for (const scholar of scholars) {

@@ -90,13 +90,13 @@ export class DashboardComponent implements OnInit {
 
   // A deleted scholar has no name to link to — see GlobalAuditLogEntry.
   scholarLabel(entry: GlobalAuditLogEntry): string {
-    if (!entry.firstName && !entry.lastName) {
+    if (!entry.scholarFirstName && !entry.scholarLastName) {
       return `(deleted scholar ${entry.scholarId})`;
     }
-    return `${entry.firstName ?? ''} ${entry.lastName ?? ''}`.trim();
+    return `${entry.scholarFirstName ?? ''} ${entry.scholarLastName ?? ''}`.trim();
   }
 
   hasScholarLink(entry: GlobalAuditLogEntry): boolean {
-    return !!(entry.firstName || entry.lastName);
+    return !!(entry.scholarFirstName || entry.scholarLastName);
   }
 }

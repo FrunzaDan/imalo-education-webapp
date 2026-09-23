@@ -17,13 +17,13 @@
   <button
     type="button"
     class="app-button app-button--danger"
-    [disabled]="selectedIds().size === 0 || bulkDeleteInProgress()"
+    [disabled]="selectedScholarIds().size === 0 || bulkDeleteInProgress()"
     (click)="bulkDeleteSelected()"
   >
     {{
       bulkDeleteInProgress()
         ? 'Deleting...'
-        : 'Delete selected (' + selectedIds().size + ')'
+        : 'Delete selected (' + selectedScholarIds().size + ')'
     }}
   </button>
 </div>
@@ -92,17 +92,17 @@
     </tr>
   </thead>
   <tbody>
-    @for (scholar of displayedScholarData(); track scholar.id) {
+    @for (scholar of displayedScholarData(); track scholar.scholarId) {
     <tr
       class="table-row table-row--link"
-      [routerLink]="['/scholars', scholar.id]"
+      [routerLink]="['/scholars', scholar.scholarId]"
     >
       <td class="table-cell" (click)="$event.stopPropagation()">
         <input
           type="checkbox"
           [attr.aria-label]="'Select ' + scholar.name"
-          [checked]="isSelected(scholar.id)"
-          (change)="toggleSelection(scholar.id, $any($event.target).checked)"
+          [checked]="isSelected(scholar.scholarId)"
+          (change)="toggleSelection(scholar.scholarId, $any($event.target).checked)"
         />
       </td>
       <td class="table-cell">{{ scholar.name }}</td>

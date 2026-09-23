@@ -17,7 +17,7 @@
     </button>
     <button
       type="button"
-      [routerLink]="['/attendance', scholarValue.id]"
+      [routerLink]="['/attendance', scholarValue.scholarId]"
       class="app-button app-button--ghost"
     >
       View Attendance
@@ -31,7 +31,7 @@
         <dt>Grade</dt>
         <dd>{{ scholarValue.grade }}</dd>
         <dt>Birth Date</dt>
-        <dd>{{ scholarValue.dateOfBirth | date: 'longDate' }}</dd>
+        <dd>{{ scholarValue.birthDate | date: 'longDate' }}</dd>
         <dt>School</dt>
         <dd>{{ school()?.name || 'Unknown' }}</dd>
       </dl>
@@ -82,7 +82,7 @@
         </dl>
       </section>
     }
-    @if (scholarValue.pickUpSchedule) {
+    @if (scholarValue.pickupSchedule) {
       <section class="detail-section">
         <h3>Pick-Up Schedule</h3>
         <table class="pickup-schedule">
@@ -96,7 +96,7 @@
             @for (day of daysOfWeek; track day) {
               <tr>
                 <td>{{ day | titlecase }}</td>
-                <td>{{ scholarValue.pickUpSchedule[day] || '—' }}</td>
+                <td>{{ scholarValue.pickupSchedule[day] || '—' }}</td>
               </tr>
             }
           </tbody>
@@ -118,10 +118,10 @@
         <p class="detail-muted">No recorded actions yet.</p>
       } @else {
         <ul class="audit-trail-list">
-          @for (entry of auditLog(); track entry.auditId) {
+          @for (entry of auditLog(); track entry.scholarAuditLogId) {
             <li>
-              <strong>{{ entry.action }}</strong> on
-              {{ entry.actionDate | date: 'medium' }}
+              <strong>{{ entry.actionType }}</strong> on
+              {{ entry.occurredAt | date: 'medium' }}
               @if (entry.details) {
                 <div class="audit-trail-details">{{ entry.details }}</div>
               }

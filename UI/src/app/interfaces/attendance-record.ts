@@ -1,5 +1,7 @@
+import { IsoDate } from './iso-date';
+
 export interface AttendanceRecord {
-  date: string; // 'YYYY-MM-DD' — the API serializes DateOnly this way
+  date: IsoDate;
   lunchCost: number;
   transportCost: number;
   // Whether the scholar was present that day. Lunch/Transport can only be

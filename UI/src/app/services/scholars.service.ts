@@ -7,7 +7,7 @@ import { catchHttpError } from '../utils/http-error';
 
 @Injectable({ providedIn: 'root' })
 export class ScholarsService {
-  private baseUrl = environment.baseUrlScholars;
+  private baseUrl = `${environment.apiUrl}/api/scholars`;
   private jsonHeaders = new HttpHeaders({ 'Content-Type': 'application/json' });
 
   constructor(private http: HttpClient) {}
@@ -18,10 +18,10 @@ export class ScholarsService {
     return this.http.get<Scholar[]>(this.baseUrl).pipe(catchHttpError('getScholars'));
   }
 
-  getScholarById(id: string): Observable<Scholar> {
+  getScholarById(scholarId: string): Observable<Scholar> {
     return this.http
-      .get<Scholar>(this.urlWithId(id))
-      .pipe(catchHttpError(`getScholarById id=${id}`));
+      .get<Scholar>(this.urlWithId(scholarId))
+      .pipe(catchHttpError(`getScholarById scholarId=${scholarId}`));
   }
 
   createScholar(scholar: Scholar): Observable<Scholar> {
@@ -31,25 +31,25 @@ export class ScholarsService {
   }
 
   updateScholar(scholar: Scholar): Observable<Scholar> {
-    if (!scholar.id) {
+    if (!scholar.scholarId) {
       return throwError(() => new Error('Cannot update scholar without an ID'));
     }
     return this.http
-      .put<Scholar>(this.urlWithId(scholar.id), scholar, {
+      .put<Scholar>(this.urlWithId(scholar.scholarId), scholar, {
         headers: this.jsonHeaders,
       })
-      .pipe(catchHttpError(`updateScholar id=${scholar.id}`));
+      .pipe(catchHttpError(`updateScholar scholarId=${scholar.scholarId}`));
   }
 
-  deleteScholar(id: string): Observable<void> {
+  deleteScholar(scholarId: string): Observable<void> {
     return this.http
-      .delete<void>(this.urlWithId(id))
-      .pipe(catchHttpError(`deleteScholar id=${id}`));
+      .delete<void>(this.urlWithId(scholarId))
+      .pipe(catchHttpError(`deleteScholar scholarId=${scholarId}`));
   }
 
   // ---- HELPERS ----
 
-  private urlWithId(id: string) {
-    return `${this.baseUrl}/${id}`;
+  private urlWithId(scholarId: string) {
+    return `${this.baseUrl}/${scholarId}`;
   }
 }

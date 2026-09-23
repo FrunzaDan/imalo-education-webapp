@@ -28,14 +28,14 @@ export const routes: Routes = [
       ),
   },
   {
-    path: 'scholars/:id',
+    path: 'scholars/:scholarId',
     loadComponent: () =>
       import('./components/scholar-detail/scholar-detail.component').then(
         (m) => m.ScholarDetailComponent,
       ),
   },
   {
-    path: 'scholars/update/:id',
+    path: 'scholars/update/:scholarId',
     loadComponent: () =>
       import('./components/scholar-form/scholar-form.component').then(
         (m) => m.ScholarFormComponent,
@@ -56,7 +56,7 @@ export const routes: Routes = [
       ),
   },
   {
-    path: 'attendance/:id',
+    path: 'attendance/:scholarId',
     loadComponent: () =>
       import(
         './components/attendance-per-scholar/attendance-per-scholar.component'

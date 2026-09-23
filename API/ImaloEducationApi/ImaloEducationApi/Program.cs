@@ -1,9 +1,14 @@
 using ImaloEducationApi.Data;
 using ImaloEducationApi.Logging;
+using ImaloEducationApi.Routing;
+using Microsoft.AspNetCore.Mvc.ApplicationModels;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddControllers();
+// Routes are declared as "api/[controller]"; the transformer turns the PascalCase class name
+// into the lowercase, kebab-case URL segment (ScholarsController -> /api/scholars).
+builder.Services.AddControllers(options =>
+    options.Conventions.Add(new RouteTokenTransformerConvention(new KebabCaseParameterTransformer())));
 
 // Swagger for development & documentation
 builder.Services.AddEndpointsApiExplorer();

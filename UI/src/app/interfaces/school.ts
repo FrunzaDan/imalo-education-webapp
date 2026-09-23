@@ -1,5 +1,5 @@
 export interface School {
-  id: number;
+  schoolId: number;
   name: string;
   color: string;
   // Standard per-day lunch/transport cost applied when marking attendance

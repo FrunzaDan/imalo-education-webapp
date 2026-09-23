@@ -10,7 +10,7 @@ namespace ImaloEducationApi.Models;
 // must be a strict 24-hour "HH:mm" (HourMinuteTimeOnlyConverter). Either failure
 // surfaces as a 400 from model binding, before the controller ever runs.
 [JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
-public class PickUpSchedule
+public class PickupSchedule
 {
     [JsonConverter(typeof(HourMinuteTimeOnlyConverter))]
     public TimeOnly? Monday { get; set; }

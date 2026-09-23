@@ -45,11 +45,11 @@ export class GanttChartComponent implements OnInit {
     const columnsSpan = Math.ceil(this.SLOT_DURATION / 15);
 
     for (const scholar of this.scholars()) {
-      if (!scholar.pickUpSchedule) continue;
+      if (!scholar.pickupSchedule) continue;
       const school = this.schools.get(scholar.schoolId?.toString() ?? '');
 
       for (const day of this.weekDays) {
-        const pickupTime = scholar.pickUpSchedule[day];
+        const pickupTime = scholar.pickupSchedule[day];
         if (!pickupTime) continue;
 
         const slot = slotsByMinutes.get(this.timeToMinutes(pickupTime));
@@ -58,7 +58,7 @@ export class GanttChartComponent implements OnInit {
         const backgroundColor =
           school?.color || GanttChartComponent.UNKNOWN_SCHOOL_COLOR;
 
-        map.set(this.cellKey(scholar.id, day, slot.start), {
+        map.set(this.cellKey(scholar.scholarId, day, slot.start), {
           style: {
             backgroundColor,
             // Black on bright fills, white on dark ones — school colors run
@@ -97,7 +97,7 @@ export class GanttChartComponent implements OnInit {
         // Map the fetched schools into a Map for easy lookup by schoolId
         map(({ scholars, schools }) => {
           this.schools = new Map(
-            schools.map((school) => [school.id.toString(), school]),
+            schools.map((school) => [school.schoolId.toString(), school]),
           );
           return scholars; // Pass scholars to the next operator
         }),
@@ -153,7 +153,7 @@ export class GanttChartComponent implements OnInit {
     slot: TimeSlot,
     day: WeekDay,
   ): GanttCell | undefined {
-    return this.cellsByKey().get(this.cellKey(scholar.id, day, slot.start));
+    return this.cellsByKey().get(this.cellKey(scholar.scholarId, day, slot.start));
   }
 
   getSlotStyle(

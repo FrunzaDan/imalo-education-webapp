@@ -4,10 +4,12 @@
 CREATE TABLE [dbo].[ScholarParent]
 (
     [ScholarId] UNIQUEIDENTIFIER NOT NULL,
-    [Role] VARCHAR(6) NOT NULL, -- 'Mother' or 'Father' (ASCII, CHECK below)
+    [Role] VARCHAR(20) NOT NULL, -- 'Mother' or 'Father' (ASCII, CHECK below)
     [FirstName] NVARCHAR(100) NULL,
     [LastName] NVARCHAR(100) NULL,
-    [PhoneNumber] VARCHAR(20) NULL, -- ASCII only: the API accepts ^\+?[0-9 ()-]{6,20}$
+    -- Digits only (the API's PhoneNumber regex), same as Customer/Employee.PhoneNumber: E.164
+    -- caps a phone number at 15 digits, and digits never need Unicode.
+    [PhoneNumber] VARCHAR(15) NULL,
 
     -- Natural key, no surrogate ScholarParentId: every query addresses a parent by
     -- (ScholarId, Role), and the key doubles as "at most one Mother row and one

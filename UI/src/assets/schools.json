@@ -1,139 +1,139 @@
 [
   {
-    "id": 1,
+    "schoolId": 1,
     "name": "Sc. O. Ghibu",
     "color": "#4CAF50",
     "lunchPrice": 15,
     "transportPrice": 5
   },
   {
-    "id": 2,
+    "schoolId": 2,
     "name": "Sc. 18",
     "color": "#2196F3",
     "lunchPrice": 15,
     "transportPrice": 5
   },
   {
-    "id": 3,
+    "schoolId": 3,
     "name": "Sc. 2",
     "color": "#D2B55B",
     "lunchPrice": 15,
     "transportPrice": 5
   },
   {
-    "id": 4,
+    "schoolId": 4,
     "name": "Sc. O. Goga",
     "color": "#2196A0",
     "lunchPrice": 15,
     "transportPrice": 5
   },
   {
-    "id": 5,
+    "schoolId": 5,
     "name": "Sc. N. Iorga",
     "color": "#8E44AD",
     "lunchPrice": 15,
     "transportPrice": 5
   },
   {
-    "id": 6,
+    "schoolId": 6,
     "name": "Sc. Regina Maria",
     "color": "#E91E63",
     "lunchPrice": 15,
     "transportPrice": 5
   },
   {
-    "id": 7,
+    "schoolId": 7,
     "name": "Sc. I.L. Caragiale",
     "color": "#FF9800",
     "lunchPrice": 15,
     "transportPrice": 5
   },
   {
-    "id": 8,
+    "schoolId": 8,
     "name": "Sc. Ioan Slavici",
     "color": "#795548",
     "lunchPrice": 15,
     "transportPrice": 5
   },
   {
-    "id": 9,
+    "schoolId": 9,
     "name": "Sc. 12",
     "color": "#607D8B",
     "lunchPrice": 15,
     "transportPrice": 5
   },
   {
-    "id": 10,
+    "schoolId": 10,
     "name": "Sc. 4",
     "color": "#009688",
     "lunchPrice": 15,
     "transportPrice": 5
   },
   {
-    "id": 11,
+    "schoolId": 11,
     "name": "Sc. 1",
     "color": "#F44336",
     "lunchPrice": 15,
     "transportPrice": 5
   },
   {
-    "id": 12,
+    "schoolId": 12,
     "name": "Sc. 21",
     "color": "#3F51B5",
     "lunchPrice": 15,
     "transportPrice": 5
   },
   {
-    "id": 13,
+    "schoolId": 13,
     "name": "C.N. Samuel von Brukenthal",
     "color": "#673AB7",
     "lunchPrice": 15,
     "transportPrice": 5
   },
   {
-    "id": 14,
+    "schoolId": 14,
     "name": "Sc. Avram Iancu",
     "color": "#CDDC39",
     "lunchPrice": 15,
     "transportPrice": 5
   },
   {
-    "id": 15,
+    "schoolId": 15,
     "name": "L. Constantin Noica",
     "color": "#FF5722",
     "lunchPrice": 15,
     "transportPrice": 5
   },
   {
-    "id": 16,
+    "schoolId": 16,
     "name": "C.N. Gheorghe Lazăr",
     "color": "#00BCD4",
     "lunchPrice": 15,
     "transportPrice": 5
   },
   {
-    "id": 17,
+    "schoolId": 17,
     "name": "C.T. Cibinium",
     "color": "#9C27B0",
     "lunchPrice": 15,
     "transportPrice": 5
   },
   {
-    "id": 18,
+    "schoolId": 18,
     "name": "C.T. Energetic",
     "color": "#FFC107",
     "lunchPrice": 15,
     "transportPrice": 5
   },
   {
-    "id": 19,
+    "schoolId": 19,
     "name": "L.T. Carol I",
     "color": "#4E342E",
     "lunchPrice": 15,
     "transportPrice": 5
   },
   {
-    "id": 20,
+    "schoolId": 20,
     "name": "C. Agricol D.P. Barcianu",
     "color": "#1B5E20",
     "lunchPrice": 15,

@@ -6,7 +6,7 @@ CREATE TABLE [dbo].[ScholarPickupSchedule]
     -- The JSON representation of the pickup schedule
     [ScheduleJson] NVARCHAR(MAX) NOT NULL,
 
-    -- The DB can't check the schedule's shape (that's Scholar.PickUpSchedule's
+    -- The DB can't check the schedule's shape (that's Scholar.PickupSchedule's
     -- job in the API), but it can at least refuse anything that isn't JSON.
     CONSTRAINT [CK_ScholarPickupSchedule_ScheduleJson] CHECK (ISJSON([ScheduleJson]) = 1),
 

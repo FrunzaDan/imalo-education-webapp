@@ -25,8 +25,8 @@ import {
   toScholar,
 } from './scholar-form';
 
-// Handles both "create a scholar" (no :id in the route) and "edit a scholar"
-// (:id present) — the two forms were previously two near-identical
+// Handles both "create a scholar" (no :scholarId in the route) and "edit a scholar"
+// (:scholarId present) — the two forms were previously two near-identical
 // components; keeping them as one removes the duplication and gives both
 // flows the same School dropdown and error handling.
 @Component({
@@ -41,10 +41,10 @@ export class ScholarFormComponent {
   private readonly schoolsService = inject(SchoolsService);
   private readonly notificationService = inject(NotificationService);
 
-  // Bound from the `:id` route param by withComponentInputBinding() in
+  // Bound from the `:scholarId` route param by withComponentInputBinding() in
   // app.config.ts; absent on the create route.
-  readonly id = input<string>();
-  readonly isEditMode = computed(() => !!this.id());
+  readonly scholarId = input<string>();
+  readonly isEditMode = computed(() => !!this.scholarId());
 
   // SchoolsService swallows errors into [], so this never errors.
   readonly schools = toSignal(this.schoolsService.getSchools(), { initialValue: [] });
@@ -53,8 +53,8 @@ export class ScholarFormComponent {
   // Only loads in edit mode (params() is undefined on the create route, which
   // leaves the resource idle).
   private readonly scholarResource = rxResource({
-    params: () => this.id(),
-    stream: ({ params: id }) => this.scholarsService.getScholarById(id),
+    params: () => this.scholarId(),
+    stream: ({ params: scholarId }) => this.scholarsService.getScholarById(scholarId),
   });
 
   // The form model is a signal that re-derives from the loaded scholar and
@@ -90,7 +90,7 @@ export class ScholarFormComponent {
       firstName: this.scholarForm.motherFirstName,
       lastName: this.scholarForm.motherLastName,
       phoneNumber: this.scholarForm.motherPhoneNumber,
-      phonePlaceholder: 'Phone, e.g. 0722 111 222',
+      phonePlaceholder: 'Phone, e.g. 0722111222',
     },
     {
       key: 'father',
@@ -98,7 +98,7 @@ export class ScholarFormComponent {
       firstName: this.scholarForm.fatherFirstName,
       lastName: this.scholarForm.fatherLastName,
       phoneNumber: this.scholarForm.fatherPhoneNumber,
-      phonePlaceholder: 'Phone, e.g. 0733 444 555',
+      phonePlaceholder: 'Phone, e.g. 0733444555',
     },
   ] as const;
 
@@ -120,7 +120,7 @@ export class ScholarFormComponent {
   // submitting() state replaces the old hand-rolled isSubmitting signal.
   private async save(): Promise<void> {
     this.invalidSummary.set(null);
-    const scholar = toScholar(this.model(), this.id() ?? null);
+    const scholar = toScholar(this.model(), this.scholarId() ?? null);
     const isEditMode = this.isEditMode();
     const verb = isEditMode ? 'update' : 'create';
 
@@ -135,7 +135,7 @@ export class ScholarFormComponent {
           ? 'Scholar updated successfully!'
           : 'Scholar created successfully!',
       );
-      await this.router.navigate(['/scholars', savedScholar.id]);
+      await this.router.navigate(['/scholars', savedScholar.scholarId]);
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       console.error(

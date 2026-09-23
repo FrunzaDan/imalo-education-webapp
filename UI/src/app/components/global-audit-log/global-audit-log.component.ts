@@ -45,19 +45,19 @@ export class GlobalAuditLogComponent implements OnInit {
   // A deleted scholar has no name to link to (see GlobalAuditLogEntry) — only
   // navigate when there's still a scholar record behind the ID.
   navigateToScholar(entry: GlobalAuditLogEntry): void {
-    if (!entry.firstName && !entry.lastName) return;
+    if (!entry.scholarFirstName && !entry.scholarLastName) return;
     this.router.navigate(['/scholars', entry.scholarId]);
   }
 
   scholarLabel(entry: GlobalAuditLogEntry): string {
-    if (!entry.firstName && !entry.lastName) {
+    if (!entry.scholarFirstName && !entry.scholarLastName) {
       return `(deleted scholar ${entry.scholarId})`;
     }
-    return `${entry.firstName ?? ''} ${entry.lastName ?? ''}`.trim();
+    return `${entry.scholarFirstName ?? ''} ${entry.scholarLastName ?? ''}`.trim();
   }
 
-  trackByAuditId(_: number, entry: GlobalAuditLogEntry): number {
-    return entry.auditId;
+  trackByScholarAuditLogId(_: number, entry: GlobalAuditLogEntry): number {
+    return entry.scholarAuditLogId;
   }
 
   async clearAuditLog(): Promise<void> {

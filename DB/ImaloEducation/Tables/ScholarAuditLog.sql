@@ -6,12 +6,14 @@ CREATE TABLE [dbo].[ScholarAuditLog]
 (
     [ScholarAuditLogId] INT IDENTITY (1, 1) NOT NULL,
     [ScholarId] UNIQUEIDENTIFIER NOT NULL,
-    [ActionType] VARCHAR (10) NOT NULL, -- API: AuditAction enum, stored by name
+    -- A fixed set of values (the API's AuditAction enum), so a short VARCHAR with a CHECK
+    -- rather than free text.
+    [ActionType] VARCHAR (20) NOT NULL,
     [Details] NVARCHAR (500) NULL,
-    -- DATETIMEOFFSET, not DATETIME2: the value carries its own UTC offset, so it
-    -- reaches the browser as "...+00:00" and is displayed in local time. A bare
-    -- DATETIME2 went out with no offset and the browser read UTC as local time.
-    [OccurredAt] DATETIMEOFFSET (3) NOT NULL
+    -- UTC (SYSUTCDATETIME), in DATETIME2(3) like every timestamp in the three apps. It carries
+    -- no offset, so the API marks the value it reads as UTC — that's what makes it reach the
+    -- browser with a trailing "Z" and be shown in the viewer's local time.
+    [OccurredAt] DATETIME2 (3) NOT NULL
         CONSTRAINT [DF_ScholarAuditLog_OccurredAt] DEFAULT SYSUTCDATETIME(),
 
     CONSTRAINT [PK_ScholarAuditLog] PRIMARY KEY CLUSTERED ([ScholarAuditLogId] ASC),

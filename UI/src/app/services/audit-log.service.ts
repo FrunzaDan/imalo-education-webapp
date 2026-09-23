@@ -22,7 +22,7 @@ export class AuditLogService {
     this.state.update((state) => ({ ...state, loading: true, error: null }));
 
     this.http
-      .get<AuditLogEntry[]>(`${environment.baseUrlScholars}/${scholarId}/auditLog`)
+      .get<AuditLogEntry[]>(`${environment.apiUrl}/api/scholars/${scholarId}/audit-log`)
       .subscribe({
         next: (entries) =>
           this.state.update((state) => ({ ...state, entries, loading: false })),

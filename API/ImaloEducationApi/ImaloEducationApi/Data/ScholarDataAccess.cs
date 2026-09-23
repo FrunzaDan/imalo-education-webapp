@@ -30,6 +30,13 @@ public class ScholarDataAccess : IScholarDataAccess
         param.Value = value;
     }
 
+    // Every timestamp column is DATETIME2 written with SYSUTCDATETIME(), but DATETIME2 carries
+    // no offset, so the reader hands back DateTimeKind.Unspecified. Marking it Utc is what makes
+    // the JSON serializer append "Z" — without it a browser parses the value as its own local
+    // time and shows every timestamp off by the viewer's UTC offset.
+    private static DateTime GetUtcDateTime(SqlDataReader reader, string column) =>
+        DateTime.SpecifyKind(reader.GetDateTime(reader.GetOrdinal(column)), DateTimeKind.Utc);
+
     public async Task<Scholar> CreateScholarAsync(Scholar scholar, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(scholar);
@@ -61,7 +68,7 @@ public class ScholarDataAccess : IScholarDataAccess
             await using var insertScholarCmd = new SqlCommand(insertScholarSql, connection, transaction);
             AddParam(insertScholarCmd, "@FirstName", SqlDbType.NVarChar, scholar.FirstName, 100);
             AddParam(insertScholarCmd, "@LastName", SqlDbType.NVarChar, scholar.LastName ?? string.Empty, 100);
-            AddParam(insertScholarCmd, "@BirthDate", SqlDbType.Date, scholar.DateOfBirth);
+            AddParam(insertScholarCmd, "@BirthDate", SqlDbType.Date, scholar.BirthDate);
             AddParam(insertScholarCmd, "@Grade", SqlDbType.TinyInt, (object?)scholar.Grade ?? DBNull.Value);
             AddParam(insertScholarCmd, "@SchoolId", SqlDbType.Int, (object?)scholar.SchoolId ?? DBNull.Value);
 
@@ -73,16 +80,16 @@ public class ScholarDataAccess : IScholarDataAccess
                 throw new InvalidOperationException("Scholar was inserted, but no ID was returned.");
             }
 
-            scholar.Id = insertedId;
+            scholar.ScholarId = insertedId;
             _logger.LogInformation("Scholar created with ID: {ScholarId}", insertedId);
 
             // Insert pickup schedule if provided
-            if (scholar.PickUpSchedule != null)
+            if (scholar.PickupSchedule != null)
             {
                 await using var insertScheduleCmd = new SqlCommand(insertScheduleSql, connection, transaction);
                 AddParam(insertScheduleCmd, "@ScholarId", SqlDbType.UniqueIdentifier, insertedId);
                 AddParam(insertScheduleCmd, "@ScheduleJson", SqlDbType.NVarChar,
-                    JsonSerializer.Serialize(scholar.PickUpSchedule, JsonOptions), -1);
+                    JsonSerializer.Serialize(scholar.PickupSchedule, JsonOptions), -1);
 
                 await insertScheduleCmd.ExecuteNonQueryAsync(cancellationToken);
                 _logger.LogInformation("Pickup schedule inserted for scholar ID: {ScholarId}", insertedId);
@@ -102,10 +109,10 @@ public class ScholarDataAccess : IScholarDataAccess
 
                 await using var insertParentCmd = new SqlCommand(insertParentSql, connection, transaction);
                 AddParam(insertParentCmd, "@ScholarId", SqlDbType.UniqueIdentifier, insertedId);
-                AddParam(insertParentCmd, "@Role", SqlDbType.VarChar, role, 6);
+                AddParam(insertParentCmd, "@Role", SqlDbType.VarChar, role, 20);
                 AddParam(insertParentCmd, "@FirstName", SqlDbType.NVarChar, ToDbValue(firstName), 100);
                 AddParam(insertParentCmd, "@LastName", SqlDbType.NVarChar, ToDbValue(lastName), 100);
-                AddParam(insertParentCmd, "@PhoneNumber", SqlDbType.VarChar, ToDbValue(phoneNumber), 20);
+                AddParam(insertParentCmd, "@PhoneNumber", SqlDbType.VarChar, ToDbValue(phoneNumber), 15);
                 await insertParentCmd.ExecuteNonQueryAsync(cancellationToken);
             }
 
@@ -183,10 +190,10 @@ public class ScholarDataAccess : IScholarDataAccess
         }
     }
 
-    public async Task<Scholar?> GetScholarByIdAsync(Guid id, CancellationToken cancellationToken)
+    public async Task<Scholar?> GetScholarByIdAsync(Guid scholarId, CancellationToken cancellationToken)
     {
-        if (id == Guid.Empty)
-            throw new ArgumentException("Scholar ID must not be empty.", nameof(id));
+        if (scholarId == Guid.Empty)
+            throw new ArgumentException("Scholar ID must not be empty.", nameof(scholarId));
 
         const string sql = """
 
@@ -202,7 +209,7 @@ public class ScholarDataAccess : IScholarDataAccess
 
         await using var connection = new SqlConnection(_connectionString);
         await using var command = new SqlCommand(sql, connection);
-        AddParam(command, "@ScholarId", SqlDbType.UniqueIdentifier, id);
+        AddParam(command, "@ScholarId", SqlDbType.UniqueIdentifier, scholarId);
 
         try
         {
@@ -212,26 +219,26 @@ public class ScholarDataAccess : IScholarDataAccess
             if (await reader.ReadAsync(cancellationToken))
             {
                 var scholar = TryMapScholarFromReader(reader);
-                _logger.LogInformation("Retrieved scholar with ID: {ScholarId}", id);
+                _logger.LogInformation("Retrieved scholar with ID: {ScholarId}", scholarId);
                 return scholar;
             }
 
-            _logger.LogWarning("No scholar found with ID: {ScholarId}", id);
+            _logger.LogWarning("No scholar found with ID: {ScholarId}", scholarId);
             return null;
         }
         catch (JsonException ex)
         {
-            _logger.LogError(ex, "JSON error while fetching scholar ID {ScholarId}.", id);
+            _logger.LogError(ex, "JSON error while fetching scholar ID {ScholarId}.", scholarId);
             throw new Exception("Corrupted pickup schedule data.", ex);
         }
         catch (SqlException ex)
         {
-            _logger.LogError(ex, "SQL error while fetching scholar by ID {ScholarId}.", id);
+            _logger.LogError(ex, "SQL error while fetching scholar by ID {ScholarId}.", scholarId);
             throw;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Unexpected error retrieving scholar by ID: {ScholarId}", id);
+            _logger.LogError(ex, "Unexpected error retrieving scholar by ID: {ScholarId}", scholarId);
             throw;
         }
     }
@@ -239,7 +246,7 @@ public class ScholarDataAccess : IScholarDataAccess
     public async Task<Scholar?> UpdateScholarAsync(Scholar scholar, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(scholar);
-        if (scholar.Id == Guid.Empty)
+        if (scholar.ScholarId == Guid.Empty)
             throw new ArgumentException("Scholar ID must not be empty.", nameof(scholar));
 
         const string updateScholarSql = """
@@ -283,10 +290,10 @@ public class ScholarDataAccess : IScholarDataAccess
         try
         {
             await using var updateScholarCmd = new SqlCommand(updateScholarSql, connection, transaction);
-            AddParam(updateScholarCmd, "@ScholarId", SqlDbType.UniqueIdentifier, scholar.Id);
+            AddParam(updateScholarCmd, "@ScholarId", SqlDbType.UniqueIdentifier, scholar.ScholarId);
             AddParam(updateScholarCmd, "@FirstName", SqlDbType.NVarChar, scholar.FirstName ?? string.Empty, 100);
             AddParam(updateScholarCmd, "@LastName", SqlDbType.NVarChar, scholar.LastName ?? string.Empty, 100);
-            AddParam(updateScholarCmd, "@BirthDate", SqlDbType.Date, scholar.DateOfBirth);
+            AddParam(updateScholarCmd, "@BirthDate", SqlDbType.Date, scholar.BirthDate);
             AddParam(updateScholarCmd, "@Grade", SqlDbType.TinyInt, (object?)scholar.Grade ?? DBNull.Value);
             AddParam(updateScholarCmd, "@SchoolId", SqlDbType.Int, (object?)scholar.SchoolId ?? DBNull.Value);
 
@@ -294,19 +301,19 @@ public class ScholarDataAccess : IScholarDataAccess
             if (rowsAffected == 0)
             {
                 await transaction.RollbackAsync(cancellationToken);
-                _logger.LogWarning("No scholar found to update with ID: {ScholarId}", scholar.Id);
+                _logger.LogWarning("No scholar found to update with ID: {ScholarId}", scholar.ScholarId);
                 return null; // Scholar not found
             }
 
             // Update or insert pickup schedule if provided
-            if (scholar.PickUpSchedule != null)
+            if (scholar.PickupSchedule != null)
             {
                 await using var updateScheduleCmd = new SqlCommand(updateScheduleSql, connection, transaction);
-                AddParam(updateScheduleCmd, "@ScholarId", SqlDbType.UniqueIdentifier, scholar.Id);
+                AddParam(updateScheduleCmd, "@ScholarId", SqlDbType.UniqueIdentifier, scholar.ScholarId);
                 AddParam(updateScheduleCmd, "@ScheduleJson", SqlDbType.NVarChar,
-                    JsonSerializer.Serialize(scholar.PickUpSchedule, JsonOptions), -1);
+                    JsonSerializer.Serialize(scholar.PickupSchedule, JsonOptions), -1);
                 await updateScheduleCmd.ExecuteNonQueryAsync(cancellationToken);
-                _logger.LogInformation("Updated pickup schedule for scholar ID: {ScholarId}", scholar.Id);
+                _logger.LogInformation("Updated pickup schedule for scholar ID: {ScholarId}", scholar.ScholarId);
             }
 
             // Upsert whichever of Mother/Father has at least one field set, delete the row
@@ -323,33 +330,33 @@ public class ScholarDataAccess : IScholarDataAccess
                 if (isEmpty)
                 {
                     await using var deleteParentCmd = new SqlCommand(deleteParentSql, connection, transaction);
-                    AddParam(deleteParentCmd, "@ScholarId", SqlDbType.UniqueIdentifier, scholar.Id);
-                    AddParam(deleteParentCmd, "@Role", SqlDbType.VarChar, role, 6);
+                    AddParam(deleteParentCmd, "@ScholarId", SqlDbType.UniqueIdentifier, scholar.ScholarId);
+                    AddParam(deleteParentCmd, "@Role", SqlDbType.VarChar, role, 20);
                     await deleteParentCmd.ExecuteNonQueryAsync(cancellationToken);
                 }
                 else
                 {
                     await using var upsertParentCmd = new SqlCommand(upsertParentSql, connection, transaction);
-                    AddParam(upsertParentCmd, "@ScholarId", SqlDbType.UniqueIdentifier, scholar.Id);
-                    AddParam(upsertParentCmd, "@Role", SqlDbType.VarChar, role, 6);
+                    AddParam(upsertParentCmd, "@ScholarId", SqlDbType.UniqueIdentifier, scholar.ScholarId);
+                    AddParam(upsertParentCmd, "@Role", SqlDbType.VarChar, role, 20);
                     AddParam(upsertParentCmd, "@FirstName", SqlDbType.NVarChar, ToDbValue(firstName), 100);
                     AddParam(upsertParentCmd, "@LastName", SqlDbType.NVarChar, ToDbValue(lastName), 100);
-                    AddParam(upsertParentCmd, "@PhoneNumber", SqlDbType.VarChar, ToDbValue(phoneNumber), 20);
+                    AddParam(upsertParentCmd, "@PhoneNumber", SqlDbType.VarChar, ToDbValue(phoneNumber), 15);
                     await upsertParentCmd.ExecuteNonQueryAsync(cancellationToken);
                 }
             }
 
             await transaction.CommitAsync(cancellationToken);
 
-            await LogAuditAsync(scholar.Id, AuditAction.Edited, null, cancellationToken);
+            await LogAuditAsync(scholar.ScholarId, AuditAction.Edited, null, cancellationToken);
 
-            _logger.LogInformation("Updated scholar with ID: {ScholarId}", scholar.Id);
+            _logger.LogInformation("Updated scholar with ID: {ScholarId}", scholar.ScholarId);
             return scholar;
         }
         catch (SqlException ex)
         {
             await transaction.RollbackAsync(cancellationToken);
-            _logger.LogError(ex, "SQL error occurred while updating scholar with ID: {ScholarId}", scholar.Id);
+            _logger.LogError(ex, "SQL error occurred while updating scholar with ID: {ScholarId}", scholar.ScholarId);
             throw;
         }
         catch (Exception)
@@ -359,10 +366,10 @@ public class ScholarDataAccess : IScholarDataAccess
         }
     }
 
-    public async Task<bool> DeleteScholarAsync(Guid id, CancellationToken cancellationToken)
+    public async Task<bool> DeleteScholarAsync(Guid scholarId, CancellationToken cancellationToken)
     {
-        if (id == Guid.Empty)
-            throw new ArgumentException("Scholar ID must not be empty.", nameof(id));
+        if (scholarId == Guid.Empty)
+            throw new ArgumentException("Scholar ID must not be empty.", nameof(scholarId));
 
         // ScholarPickupSchedule, ScholarAttendance and ScholarParent all have ON DELETE CASCADE
         // back to Scholar (see their .sql table definitions), so deleting the Scholar row
@@ -371,7 +378,7 @@ public class ScholarDataAccess : IScholarDataAccess
 
         await using var connection = new SqlConnection(_connectionString);
         await using var command = new SqlCommand(deleteScholarSql, connection);
-        AddParam(command, "@ScholarId", SqlDbType.UniqueIdentifier, id);
+        AddParam(command, "@ScholarId", SqlDbType.UniqueIdentifier, scholarId);
 
         try
         {
@@ -381,23 +388,23 @@ public class ScholarDataAccess : IScholarDataAccess
 
             if (rowsAffected == 0)
             {
-                _logger.LogWarning("No scholar found to delete with ID: {ScholarId}", id);
+                _logger.LogWarning("No scholar found to delete with ID: {ScholarId}", scholarId);
                 return false; // Scholar not found
             }
 
-            await LogAuditAsync(id, AuditAction.Deleted, null, cancellationToken);
+            await LogAuditAsync(scholarId, AuditAction.Deleted, null, cancellationToken);
 
-            _logger.LogInformation("Deleted scholar with ID: {ScholarId}", id);
+            _logger.LogInformation("Deleted scholar with ID: {ScholarId}", scholarId);
             return true;
         }
         catch (SqlException ex)
         {
-            _logger.LogError(ex, "SQL error occurred while deleting scholar with ID: {ScholarId}", id);
+            _logger.LogError(ex, "SQL error occurred while deleting scholar with ID: {ScholarId}", scholarId);
             throw;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Unexpected error deleting scholar with ID: {ScholarId}", id);
+            _logger.LogError(ex, "Unexpected error deleting scholar with ID: {ScholarId}", scholarId);
             throw;
         }
     }
@@ -599,7 +606,7 @@ public class ScholarDataAccess : IScholarDataAccess
             await using var command = new SqlCommand(sql, connection);
 
             AddParam(command, "@ScholarId", SqlDbType.UniqueIdentifier, scholarId);
-            AddParam(command, "@ActionType", SqlDbType.VarChar, action.ToString(), 10);
+            AddParam(command, "@ActionType", SqlDbType.VarChar, action.ToString(), 20);
             AddParam(command, "@Details", SqlDbType.NVarChar, ToDbValue(details), 500);
 
             await connection.OpenAsync(cancellationToken);
@@ -639,13 +646,13 @@ public class ScholarDataAccess : IScholarDataAccess
             {
                 entries.Add(new AuditLogEntry
                 {
-                    AuditId = reader.GetInt32(reader.GetOrdinal("ScholarAuditLogId")),
+                    ScholarAuditLogId = reader.GetInt32(reader.GetOrdinal("ScholarAuditLogId")),
                     ScholarId = reader.GetGuid(reader.GetOrdinal("ScholarId")),
-                    Action = Enum.Parse<AuditAction>(reader.GetString(reader.GetOrdinal("ActionType"))),
+                    ActionType = Enum.Parse<AuditAction>(reader.GetString(reader.GetOrdinal("ActionType"))),
                     Details = reader.IsDBNull(reader.GetOrdinal("Details"))
                         ? null
                         : reader.GetString(reader.GetOrdinal("Details")),
-                    ActionDate = reader.GetDateTimeOffset(reader.GetOrdinal("OccurredAt")),
+                    OccurredAt = GetUtcDateTime(reader, "OccurredAt"),
                 });
             }
 
@@ -660,12 +667,12 @@ public class ScholarDataAccess : IScholarDataAccess
         }
     }
 
-    public async Task<PagedResult<GlobalAuditLogEntry>> GetAllAuditLogAsync(int pageNumber, int pageSize,
+    public async Task<PagedResponse<GlobalAuditLogEntry>> GetAllAuditLogAsync(int pageNumber, int pageSize,
         CancellationToken cancellationToken)
     {
         // LEFT JOIN, not INNER: ScholarAuditLog has no FK to Scholar (a deleted
         // scholar's history must survive the delete — see ScholarAuditLog.sql), so
-        // FirstName/LastName come back NULL for a scholar that no longer exists
+        // ScholarFirstName/ScholarLastName come back NULL for a scholar that no longer exists
         // rather than dropping that row.
         const string countSql = "SELECT COUNT(*) FROM dbo.ScholarAuditLog;";
 
@@ -679,7 +686,8 @@ public class ScholarDataAccess : IScholarDataAccess
                             FETCH NEXT @PageSize ROWS ONLY;
                             """;
 
-        var result = new PagedResult<GlobalAuditLogEntry> { PageNumber = pageNumber, PageSize = pageSize };
+        var items = new List<GlobalAuditLogEntry>();
+        int totalItems;
 
         await using var connection = new SqlConnection(_connectionString);
 
@@ -694,7 +702,7 @@ public class ScholarDataAccess : IScholarDataAccess
             // comes back.
             await using (var countCmd = new SqlCommand(countSql, connection))
             {
-                result.TotalItems = (int)(await countCmd.ExecuteScalarAsync(cancellationToken))!;
+                totalItems = (int)(await countCmd.ExecuteScalarAsync(cancellationToken))!;
             }
 
             await using var pageCmd = new SqlCommand(pageSql, connection);
@@ -705,27 +713,27 @@ public class ScholarDataAccess : IScholarDataAccess
 
             while (await reader.ReadAsync(cancellationToken))
             {
-                result.Items.Add(new GlobalAuditLogEntry
+                items.Add(new GlobalAuditLogEntry
                 {
-                    AuditId = reader.GetInt32(reader.GetOrdinal("ScholarAuditLogId")),
+                    ScholarAuditLogId = reader.GetInt32(reader.GetOrdinal("ScholarAuditLogId")),
                     ScholarId = reader.GetGuid(reader.GetOrdinal("ScholarId")),
-                    FirstName = reader.IsDBNull(reader.GetOrdinal("FirstName"))
+                    ScholarFirstName = reader.IsDBNull(reader.GetOrdinal("FirstName"))
                         ? null
                         : reader.GetString(reader.GetOrdinal("FirstName")),
-                    LastName = reader.IsDBNull(reader.GetOrdinal("LastName"))
+                    ScholarLastName = reader.IsDBNull(reader.GetOrdinal("LastName"))
                         ? null
                         : reader.GetString(reader.GetOrdinal("LastName")),
-                    Action = Enum.Parse<AuditAction>(reader.GetString(reader.GetOrdinal("ActionType"))),
+                    ActionType = Enum.Parse<AuditAction>(reader.GetString(reader.GetOrdinal("ActionType"))),
                     Details = reader.IsDBNull(reader.GetOrdinal("Details"))
                         ? null
                         : reader.GetString(reader.GetOrdinal("Details")),
-                    ActionDate = reader.GetDateTimeOffset(reader.GetOrdinal("OccurredAt")),
+                    OccurredAt = GetUtcDateTime(reader, "OccurredAt"),
                 });
             }
 
             _logger.LogInformation("Fetched page {PageNumber} ({Count} of {Total}) of the global audit log.",
-                pageNumber, result.Items.Count, result.TotalItems);
-            return result;
+                pageNumber, items.Count, totalItems);
+            return new PagedResponse<GlobalAuditLogEntry>(items, totalItems, pageNumber, pageSize);
         }
         catch (SqlException ex)
         {
@@ -761,10 +769,10 @@ public class ScholarDataAccess : IScholarDataAccess
         {
             var scholar = new Scholar
             {
-                Id = reader.GetGuid(reader.GetOrdinal("ScholarId")),
+                ScholarId = reader.GetGuid(reader.GetOrdinal("ScholarId")),
                 FirstName = reader.GetString(reader.GetOrdinal("FirstName")),
                 LastName = reader.GetString(reader.GetOrdinal("LastName")),
-                DateOfBirth = reader.GetFieldValue<DateOnly>(reader.GetOrdinal("BirthDate")),
+                BirthDate = reader.GetFieldValue<DateOnly>(reader.GetOrdinal("BirthDate")),
                 Grade =
                     reader.IsDBNull(reader.GetOrdinal("Grade")) ? null : reader.GetByte(reader.GetOrdinal("Grade")),
                 SchoolId = reader.IsDBNull(reader.GetOrdinal("SchoolId"))
@@ -793,7 +801,7 @@ public class ScholarDataAccess : IScholarDataAccess
             if (reader.IsDBNull(reader.GetOrdinal("ScheduleJson"))) return scholar;
 
             var json = reader.GetString(reader.GetOrdinal("ScheduleJson"));
-            scholar.PickUpSchedule = JsonSerializer.Deserialize<PickUpSchedule>(json, JsonOptions);
+            scholar.PickupSchedule = JsonSerializer.Deserialize<PickupSchedule>(json, JsonOptions);
 
             return scholar;
         }

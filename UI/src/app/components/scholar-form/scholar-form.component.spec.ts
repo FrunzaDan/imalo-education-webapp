@@ -17,24 +17,24 @@ import type { School } from '../../interfaces/school';
 // the [formField] bindings (text / select / number / date / time) still wire up.
 
 const SCHOOLS: School[] = [
-  { id: 1, name: 'Test School', color: '#336699', lunchPrice: 15, transportPrice: 10 },
-  { id: 2, name: 'Other School', color: '#993366', lunchPrice: 12, transportPrice: 8 },
+  { schoolId: 1, name: 'Test School', color: '#336699', lunchPrice: 15, transportPrice: 10 },
+  { schoolId: 2, name: 'Other School', color: '#993366', lunchPrice: 12, transportPrice: 8 },
 ];
 
 const EXISTING: Scholar = {
-  id: 'scholar-1',
+  scholarId: 'scholar-1',
   firstName: 'Ana',
   lastName: 'Popescu',
   schoolId: 2,
   grade: 0,
-  dateOfBirth: '2016-01-01',
+  birthDate: '2016-01-01',
   motherFirstName: 'Maria',
   motherLastName: null,
-  motherPhoneNumber: '0722 111 222',
+  motherPhoneNumber: '0722111222',
   fatherFirstName: null,
   fatherLastName: null,
   fatherPhoneNumber: null,
-  pickUpSchedule: { monday: '12:00', tuesday: null, wednesday: null, thursday: null, friday: null },
+  pickupSchedule: { monday: '12:00', tuesday: null, wednesday: null, thursday: null, friday: null },
 };
 
 interface SetupOptions {
@@ -44,7 +44,7 @@ interface SetupOptions {
 }
 
 async function setup(options: SetupOptions = {}) {
-  const saved: Scholar = { ...EXISTING, id: 'saved-id' };
+  const saved: Scholar = { ...EXISTING, scholarId: 'saved-id' };
   const createScholar = vi.fn(() =>
     options.saveResult === 'error'
       ? throwError(() => new Error('createScholar failed: Invalid phone number.'))
@@ -71,8 +71,8 @@ async function setup(options: SetupOptions = {}) {
   });
 
   const fixture: ComponentFixture<ScholarFormComponent> = TestBed.createComponent(ScholarFormComponent);
-  // The route's :id reaches the component as an input (withComponentInputBinding()).
-  if (options.routeId) fixture.componentRef.setInput('id', options.routeId);
+  // The route's :scholarId reaches the component as an input (withComponentInputBinding()).
+  if (options.routeId) fixture.componentRef.setInput('scholarId', options.routeId);
   fixture.detectChanges();
   await fixture.whenStable(); // let the scholar rxResource load in edit mode
   return { fixture, component: fixture.componentInstance, createScholar, updateScholar, getScholarById, notificationService, navigate };
@@ -84,7 +84,7 @@ const VALID_MODEL = {
   lastName: 'Popescu',
   schoolId: '1',
   grade: 3,
-  dateOfBirth: '2016-01-01',
+  birthDate: '2016-01-01',
 };
 
 describe('ScholarFormComponent', () => {
@@ -97,9 +97,9 @@ describe('ScholarFormComponent', () => {
       expect(component.scholarForm.lastName().errors()[0].message).toBe('Last Name is required.');
       expect(component.scholarForm.schoolId().errors()[0].message).toBe('School is required.');
       expect(component.scholarForm.grade().errors()[0].message).toBe('Grade is required.');
-      expect(component.scholarForm.dateOfBirth().errors()[0].message).toBe('Birth Date is required.');
+      expect(component.scholarForm.birthDate().errors()[0].message).toBe('Birth Date is required.');
       expect(component.scholarForm.motherPhoneNumber().valid()).toBe(true);
-      expect(component.scholarForm.pickUpSchedule.monday().valid()).toBe(true);
+      expect(component.scholarForm.pickupSchedule.monday().valid()).toBe(true);
 
       component.model.set(VALID_MODEL);
       expect(component.scholarForm().valid()).toBe(true);
@@ -120,13 +120,13 @@ describe('ScholarFormComponent', () => {
     it('rejects a future or unparseable birth date', async () => {
       const { component } = await setup();
 
-      component.model.set({ ...VALID_MODEL, dateOfBirth: '2999-01-01' });
-      expect(component.scholarForm.dateOfBirth().errors()[0].message).toBe(
+      component.model.set({ ...VALID_MODEL, birthDate: '2999-01-01' });
+      expect(component.scholarForm.birthDate().errors()[0].message).toBe(
         'Please enter a valid date (not in the future).',
       );
 
-      component.model.set({ ...VALID_MODEL, dateOfBirth: 'not-a-date' });
-      expect(component.scholarForm.dateOfBirth().invalid()).toBe(true);
+      component.model.set({ ...VALID_MODEL, birthDate: 'not-a-date' });
+      expect(component.scholarForm.birthDate().invalid()).toBe(true);
     });
 
     it('rejects names over 100 characters and malformed parent phone numbers', async () => {
@@ -169,7 +169,7 @@ describe('ScholarFormComponent', () => {
       expect(createScholar).toHaveBeenCalledTimes(1);
       const sent = (createScholar.mock.calls as unknown as Scholar[][])[0][0];
       expect(sent).toMatchObject({
-        id: '00000000-0000-0000-0000-000000000000',
+        scholarId: '00000000-0000-0000-0000-000000000000',
         schoolId: 1, // the <select>'s string, converted back to the API's number
         grade: 3,
         motherFirstName: null, // blank optional text becomes null
@@ -203,11 +203,11 @@ describe('ScholarFormComponent', () => {
         firstName: 'Ana',
         schoolId: '2',
         grade: 0,
-        dateOfBirth: '2016-01-01',
+        birthDate: '2016-01-01',
         motherFirstName: 'Maria',
         motherLastName: '',
         fatherPhoneNumber: '',
-        pickUpSchedule: { monday: '12:00', tuesday: '', friday: '' },
+        pickupSchedule: { monday: '12:00', tuesday: '', friday: '' },
       });
     });
 
@@ -232,9 +232,9 @@ describe('ScholarFormComponent', () => {
 
       expect(createScholar).not.toHaveBeenCalled();
       const sent = (updateScholar.mock.calls as unknown as Scholar[][])[0][0];
-      expect(sent.id).toBe('scholar-1');
+      expect(sent.scholarId).toBe('scholar-1');
       // Blank time inputs go out as null ("no pickup"), not ''.
-      expect(sent.pickUpSchedule).toEqual({
+      expect(sent.pickupSchedule).toEqual({
         monday: '12:00',
         tuesday: null,
         wednesday: null,
@@ -260,7 +260,7 @@ describe('ScholarFormComponent', () => {
 
       set(input('firstName'), 'Ana');
       set(input('grade'), '3');
-      set(input('dateOfBirth'), '2016-01-01');
+      set(input('birthDate'), '2016-01-01');
       set(input('monday'), '12:30');
       set(el.querySelector<HTMLSelectElement>('#schoolId')!, '2');
       await fixture.whenStable();
@@ -268,9 +268,9 @@ describe('ScholarFormComponent', () => {
       expect(component.model()).toMatchObject({
         firstName: 'Ana',
         grade: 3, // number input -> number, not "3"
-        dateOfBirth: '2016-01-01',
+        birthDate: '2016-01-01',
         schoolId: '2',
-        pickUpSchedule: { monday: '12:30' },
+        pickupSchedule: { monday: '12:30' },
       });
     });
 
@@ -287,16 +287,16 @@ describe('ScholarFormComponent', () => {
 
   describe('mapping', () => {
     it('round-trips a scholar through toFormModel/toScholar', async () => {
-      const roundTripped = toScholar(toFormModel(EXISTING), EXISTING.id);
+      const roundTripped = toScholar(toFormModel(EXISTING), EXISTING.scholarId);
 
       expect(roundTripped).toMatchObject({
-        id: 'scholar-1',
+        scholarId: 'scholar-1',
         schoolId: 2,
         grade: 0,
         motherFirstName: 'Maria',
         motherLastName: null,
       });
-      expect(roundTripped.dateOfBirth).toBe('2016-01-01');
+      expect(roundTripped.birthDate).toBe('2016-01-01');
     });
   });
 });

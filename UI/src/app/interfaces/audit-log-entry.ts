@@ -1,9 +1,12 @@
-import { AuditAction } from './audit-action';
+import { IsoDateTime } from './iso-date';
+
+// ScholarAuditLog.ActionType — serialized by the API by name.
+export type AuditAction = 'Created' | 'Edited' | 'Deleted';
 
 export interface AuditLogEntry {
-  auditId: number;
+  scholarAuditLogId: number;
   scholarId: string;
-  action: AuditAction;
+  actionType: AuditAction;
   details: string | null;
-  actionDate: string; // ISO 8601 with UTC offset, e.g. '2026-09-23T10:00:00+00:00'
+  occurredAt: IsoDateTime;
 }

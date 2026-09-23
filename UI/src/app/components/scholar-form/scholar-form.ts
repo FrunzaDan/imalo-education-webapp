@@ -1,3 +1,4 @@
+import { environment } from '../../../environments/environment';
 import {
   max,
   maxLength,
@@ -21,14 +22,14 @@ export interface ScholarFormModel {
   lastName: string;
   schoolId: string; // <select> emits strings; the API wants a number (see toScholar)
   grade: number | null;
-  dateOfBirth: string; // 'YYYY-MM-DD', the value format of <input type="date">
+  birthDate: string; // 'YYYY-MM-DD', the value format of <input type="date">
   motherFirstName: string;
   motherLastName: string;
   motherPhoneNumber: string;
   fatherFirstName: string;
   fatherLastName: string;
   fatherPhoneNumber: string;
-  pickUpSchedule: PickUpScheduleFormModel;
+  pickupSchedule: PickUpScheduleFormModel;
 }
 
 // '' for "no pickup" — a time input can't hold null (see toScholar).
@@ -39,21 +40,20 @@ export const emptyScholarForm = (): ScholarFormModel => ({
   lastName: '',
   schoolId: '',
   grade: null,
-  dateOfBirth: '',
+  birthDate: '',
   motherFirstName: '',
   motherLastName: '',
   motherPhoneNumber: '',
   fatherFirstName: '',
   fatherLastName: '',
   fatherPhoneNumber: '',
-  pickUpSchedule: { monday: '', tuesday: '', wednesday: '', thursday: '', friday: '' },
+  pickupSchedule: { monday: '', tuesday: '', wednesday: '', thursday: '', friday: '' },
 });
 
-// Matches the backend's ValidatePhoneNumber — loose on purpose (no
-// country-specific format assumed), just enough to catch obviously wrong
-// input (e.g. text typed into the field) before a round-trip to the API.
-// pattern() skips empty values, so the phone fields stay optional.
-export const PHONE_PATTERN = /^\+?[0-9 ()-]{6,20}$/;
+// Matches the backend's ValidatePhoneNumber: digits only, 9–12 of them — the same rule the
+// customer and employee apps use. pattern() skips empty values, so the phone fields stay
+// optional.
+export const PHONE_PATTERN = new RegExp(environment.phoneNumberRegex);
 
 const NAME_MAX_LENGTH = 100;
 
@@ -73,8 +73,8 @@ export const scholarFormSchema = schema<ScholarFormModel>((p) => {
   min(p.grade, 0, { message: 'Grade must be between 0 and 12.' });
   max(p.grade, 12, { message: 'Grade must be between 0 and 12.' });
 
-  required(p.dateOfBirth, { message: 'Birth Date is required.' });
-  validate(p.dateOfBirth, ({ value }) => {
+  required(p.birthDate, { message: 'Birth Date is required.' });
+  validate(p.birthDate, ({ value }) => {
     if (!value()) return undefined; // the required() rule above reports blanks
     // parseDateOnly, not new Date(value()): the latter reads 'YYYY-MM-DD' as UTC
     // midnight, so "today" could compare as the future (or past) by the UTC offset.
@@ -105,34 +105,34 @@ export function toFormModel(scholar: Scholar): ScholarFormModel {
     lastName: scholar.lastName,
     schoolId: scholar.schoolId?.toString() ?? '',
     grade: scholar.grade,
-    dateOfBirth: scholar.dateOfBirth ?? '',
+    birthDate: scholar.birthDate ?? '',
     motherFirstName: scholar.motherFirstName ?? '',
     motherLastName: scholar.motherLastName ?? '',
     motherPhoneNumber: scholar.motherPhoneNumber ?? '',
     fatherFirstName: scholar.fatherFirstName ?? '',
     fatherLastName: scholar.fatherLastName ?? '',
     fatherPhoneNumber: scholar.fatherPhoneNumber ?? '',
-    pickUpSchedule: mapWeekDays((day) => scholar.pickUpSchedule?.[day] ?? ''),
+    pickupSchedule: mapWeekDays((day) => scholar.pickupSchedule?.[day] ?? ''),
   };
 }
 
-// `id` is the existing scholar's id when editing; for a new one the server
-// assigns the real id and this all-zero guid is just a placeholder.
-export function toScholar(model: ScholarFormModel, id: string | null): Scholar {
+// `scholarId` is the existing scholar's scholarId when editing; for a new one the server
+// assigns the real scholarId and this all-zero guid is just a placeholder.
+export function toScholar(model: ScholarFormModel, scholarId: string | null): Scholar {
   return {
-    id: id ?? '00000000-0000-0000-0000-000000000000',
+    scholarId: scholarId ?? '00000000-0000-0000-0000-000000000000',
     firstName: model.firstName,
     lastName: model.lastName,
     schoolId: Number(model.schoolId),
     grade: model.grade,
-    dateOfBirth: model.dateOfBirth,
+    birthDate: model.birthDate,
     motherFirstName: model.motherFirstName || null,
     motherLastName: model.motherLastName || null,
     motherPhoneNumber: model.motherPhoneNumber || null,
     fatherFirstName: model.fatherFirstName || null,
     fatherLastName: model.fatherLastName || null,
     fatherPhoneNumber: model.fatherPhoneNumber || null,
-    pickUpSchedule: mapWeekDays((day) => model.pickUpSchedule[day] || null),
+    pickupSchedule: mapWeekDays((day) => model.pickupSchedule[day] || null),
   };
 }
 

@@ -41,8 +41,8 @@ public class ScholarsController : ControllerBase
         try
         {
             var createdScholar = await _scholarDataAccess.CreateScholarAsync(scholar, cancellationToken);
-            _logger.LogInformation("Scholar created with ID: {ScholarId}", createdScholar.Id);
-            return CreatedAtAction(nameof(GetScholarById), new { id = createdScholar.Id }, createdScholar);
+            _logger.LogInformation("Scholar created with ID: {ScholarId}", createdScholar.ScholarId);
+            return CreatedAtAction(nameof(GetScholarById), new { scholarId = createdScholar.ScholarId }, createdScholar);
         }
         catch (InvalidOperationException ex)
         {
@@ -85,25 +85,25 @@ public class ScholarsController : ControllerBase
         }
     }
 
-    [HttpGet("{id:guid}")]
-    public async Task<ActionResult<Scholar>> GetScholarById(Guid id, CancellationToken cancellationToken)
+    [HttpGet("{scholarId:guid}")]
+    public async Task<ActionResult<Scholar>> GetScholarById(Guid scholarId, CancellationToken cancellationToken)
     {
         try
         {
-            var scholar = await _scholarDataAccess.GetScholarByIdAsync(id, cancellationToken);
+            var scholar = await _scholarDataAccess.GetScholarByIdAsync(scholarId, cancellationToken);
 
             if (scholar is null)
             {
-                _logger.LogWarning("Scholar with ID {ScholarId} not found.", id);
-                return NotFound(new { message = $"Scholar with ID {id} not found." });
+                _logger.LogWarning("Scholar with ID {ScholarId} not found.", scholarId);
+                return NotFound(new { message = $"Scholar with ID {scholarId} not found." });
             }
 
-            _logger.LogInformation("Retrieved scholar with ID: {ScholarId}", id);
+            _logger.LogInformation("Retrieved scholar with ID: {ScholarId}", scholarId);
             return Ok(scholar);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Unexpected error retrieving scholar by ID: {ScholarId}", id);
+            _logger.LogError(ex, "Unexpected error retrieving scholar by ID: {ScholarId}", scholarId);
             return StatusCode(500, new
             {
                 message = "An unexpected error occurred.",
@@ -112,10 +112,10 @@ public class ScholarsController : ControllerBase
         }
     }
 
-    [HttpPut("{id:guid}")]
-    public async Task<IActionResult> UpdateScholar(Guid id, [FromBody] Scholar scholar, CancellationToken cancellationToken)
+    [HttpPut("{scholarId:guid}")]
+    public async Task<IActionResult> UpdateScholar(Guid scholarId, [FromBody] Scholar scholar, CancellationToken cancellationToken)
     {
-        if (id != scholar.Id) return BadRequest(new { message = "ID in URL does not match ID in request body." });
+        if (scholarId != scholar.ScholarId) return BadRequest(new { message = "ID in URL does not match ID in request body." });
 
         if (!ModelState.IsValid)
         {
@@ -138,13 +138,13 @@ public class ScholarsController : ControllerBase
         try
         {
             var updatedScholar = await _scholarDataAccess.UpdateScholarAsync(scholar, cancellationToken);
-            if (updatedScholar == null) return NotFound(new { message = $"Scholar with ID {id} not found." });
+            if (updatedScholar == null) return NotFound(new { message = $"Scholar with ID {scholarId} not found." });
 
             return Ok(updatedScholar);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Unexpected error updating scholar with ID: {ScholarId}", id);
+            _logger.LogError(ex, "Unexpected error updating scholar with ID: {ScholarId}", scholarId);
             return StatusCode(500, new
             {
                 message = "An unexpected error occurred while updating the scholar.",
@@ -153,19 +153,19 @@ public class ScholarsController : ControllerBase
         }
     }
 
-    [HttpDelete("{id:guid}")]
-    public async Task<IActionResult> DeleteScholar(Guid id, CancellationToken cancellationToken)
+    [HttpDelete("{scholarId:guid}")]
+    public async Task<IActionResult> DeleteScholar(Guid scholarId, CancellationToken cancellationToken)
     {
         try
         {
-            var deleted = await _scholarDataAccess.DeleteScholarAsync(id, cancellationToken);
-            if (!deleted) return NotFound(new { message = $"Scholar with ID {id} not found." });
+            var deleted = await _scholarDataAccess.DeleteScholarAsync(scholarId, cancellationToken);
+            if (!deleted) return NotFound(new { message = $"Scholar with ID {scholarId} not found." });
 
             return NoContent(); // 204 No Content is standard for successful DELETE
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Unexpected error deleting scholar with ID: {ScholarId}", id);
+            _logger.LogError(ex, "Unexpected error deleting scholar with ID: {ScholarId}", scholarId);
             return StatusCode(500, new
             {
                 message = "An unexpected error occurred while deleting the scholar.",
@@ -178,17 +178,17 @@ public class ScholarsController : ControllerBase
     // Audit log endpoints
     // ---------------------------------------
 
-    [HttpGet("{id:guid}/auditLog")]
-    public async Task<ActionResult<IEnumerable<AuditLogEntry>>> GetScholarAuditLog(Guid id, CancellationToken cancellationToken)
+    [HttpGet("{scholarId:guid}/audit-log")]
+    public async Task<ActionResult<IEnumerable<AuditLogEntry>>> GetScholarAuditLog(Guid scholarId, CancellationToken cancellationToken)
     {
         try
         {
-            var entries = await _scholarDataAccess.GetAuditLogByScholarIdAsync(id, cancellationToken);
+            var entries = await _scholarDataAccess.GetAuditLogByScholarIdAsync(scholarId, cancellationToken);
             return Ok(entries);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Unexpected error retrieving audit log for scholar ID: {ScholarId}", id);
+            _logger.LogError(ex, "Unexpected error retrieving audit log for scholar ID: {ScholarId}", scholarId);
             return StatusCode(500, new
             {
                 message = "An unexpected error occurred while retrieving the audit log.",
@@ -197,8 +197,8 @@ public class ScholarsController : ControllerBase
         }
     }
 
-    [HttpGet("auditLog/all")]
-    public async Task<ActionResult<PagedResult<GlobalAuditLogEntry>>> GetAllAuditLog(
+    [HttpGet("audit-log/all")]
+    public async Task<ActionResult<PagedResponse<GlobalAuditLogEntry>>> GetAllAuditLog(
         [FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 20, CancellationToken cancellationToken = default)
     {
         if (pageNumber < 1)
@@ -223,7 +223,7 @@ public class ScholarsController : ControllerBase
         }
     }
 
-    [HttpDelete("auditLog/all")]
+    [HttpDelete("audit-log/all")]
     public async Task<IActionResult> DeleteAllAuditLog(CancellationToken cancellationToken)
     {
         try
@@ -246,10 +246,10 @@ public class ScholarsController : ControllerBase
     // Attendance endpoints for each Scholar
     // ---------------------------------------
 
-    [HttpPost("{id:guid}/attendance")]
-    public async Task<IActionResult> CreateOrUpdateAttendance(Guid id, [FromBody] List<AttendanceRecord> attendance, CancellationToken cancellationToken)
+    [HttpPost("{scholarId:guid}/attendance")]
+    public async Task<IActionResult> CreateOrUpdateAttendance(Guid scholarId, [FromBody] List<AttendanceRecord> attendance, CancellationToken cancellationToken)
     {
-        if (id == Guid.Empty)
+        if (scholarId == Guid.Empty)
             return BadRequest(new { message = "Invalid scholar ID." });
 
         if (attendance == null)
@@ -286,10 +286,10 @@ public class ScholarsController : ControllerBase
 
         try
         {
-            var result = await _scholarDataAccess.CreateOrUpdateAttendanceAsync(id, attendance, cancellationToken);
+            var result = await _scholarDataAccess.CreateOrUpdateAttendanceAsync(scholarId, attendance, cancellationToken);
             if (result)
             {
-                _logger.LogInformation("Attendance created/updated for scholar {ScholarId}", id);
+                _logger.LogInformation("Attendance created/updated for scholar {ScholarId}", scholarId);
                 return Ok(new { message = "Attendance record saved successfully." });
             }
 
@@ -297,7 +297,7 @@ public class ScholarsController : ControllerBase
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Unexpected error saving attendance for scholar ID: {ScholarId}", id);
+            _logger.LogError(ex, "Unexpected error saving attendance for scholar ID: {ScholarId}", scholarId);
             return StatusCode(500, new
             {
                 message = "An unexpected error occurred while saving attendance.",
@@ -306,24 +306,24 @@ public class ScholarsController : ControllerBase
         }
     }
 
-    [HttpGet("{id:guid}/attendance")]
-    public async Task<ActionResult<IEnumerable<AttendanceRecord>>> GetAttendance(Guid id, CancellationToken cancellationToken)
+    [HttpGet("{scholarId:guid}/attendance")]
+    public async Task<ActionResult<IEnumerable<AttendanceRecord>>> GetAttendance(Guid scholarId, CancellationToken cancellationToken)
     {
-        if (id == Guid.Empty)
+        if (scholarId == Guid.Empty)
             return BadRequest(new { message = "Invalid scholar ID." });
 
         try
         {
             // No records yet is a normal state for a scholar (e.g. a brand-new one),
             // not an error — return 200 with an empty list rather than 404.
-            var attendance = await _scholarDataAccess.GetAttendanceByScholarIdAsync(id, cancellationToken);
+            var attendance = await _scholarDataAccess.GetAttendanceByScholarIdAsync(scholarId, cancellationToken);
 
-            _logger.LogInformation("Fetched attendance for scholar {ScholarId} ({Count} records)", id, attendance.Count);
+            _logger.LogInformation("Fetched attendance for scholar {ScholarId} ({Count} records)", scholarId, attendance.Count);
             return Ok(attendance);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Unexpected error fetching attendance for scholar ID: {ScholarId}", id);
+            _logger.LogError(ex, "Unexpected error fetching attendance for scholar ID: {ScholarId}", scholarId);
             return StatusCode(500, new
             {
                 message = "An unexpected error occurred while retrieving attendance.",
@@ -332,27 +332,27 @@ public class ScholarsController : ControllerBase
         }
     }
 
-    [HttpDelete("{id:guid}/attendance")]
-    public async Task<IActionResult> DeleteAttendance(Guid id, CancellationToken cancellationToken)
+    [HttpDelete("{scholarId:guid}/attendance")]
+    public async Task<IActionResult> DeleteAttendance(Guid scholarId, CancellationToken cancellationToken)
     {
-        if (id == Guid.Empty)
+        if (scholarId == Guid.Empty)
             return BadRequest(new { message = "Invalid scholar ID." });
 
         try
         {
-            var deleted = await _scholarDataAccess.DeleteAttendanceAsync(id, cancellationToken);
+            var deleted = await _scholarDataAccess.DeleteAttendanceAsync(scholarId, cancellationToken);
             if (!deleted)
             {
-                _logger.LogWarning("No attendance record found to delete for scholar {ScholarId}", id);
-                return NotFound(new { message = $"No attendance record found for scholar {id}." });
+                _logger.LogWarning("No attendance record found to delete for scholar {ScholarId}", scholarId);
+                return NotFound(new { message = $"No attendance record found for scholar {scholarId}." });
             }
 
-            _logger.LogInformation("Deleted attendance for scholar {ScholarId}", id);
+            _logger.LogInformation("Deleted attendance for scholar {ScholarId}", scholarId);
             return NoContent();
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Unexpected error deleting attendance for scholar ID: {ScholarId}", id);
+            _logger.LogError(ex, "Unexpected error deleting attendance for scholar ID: {ScholarId}", scholarId);
             return StatusCode(500, new
             {
                 message = "An unexpected error occurred while deleting attendance.",

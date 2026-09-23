@@ -16,7 +16,7 @@ import { contrastTextColor } from '../../utils/contrast-color';
 import { parseDateOnly } from '../../utils/weekday-dates';
 
 interface TransformedScholarData {
-  id: string;
+  scholarId: string;
   name: string;
   schoolName: string;
   grade: number | null;
@@ -50,7 +50,7 @@ export class ScholarTableComponent implements OnInit {
   readonly searchForm = form(signal({ term: '' }));
   readonly searchTerm = computed(() => this.searchForm.term().value());
 
-  selectedIds = signal<Set<string>>(new Set());
+  selectedScholarIds = signal<Set<string>>(new Set());
   bulkDeleteInProgress = signal(false);
 
   ngOnInit(): void {
@@ -65,7 +65,7 @@ export class ScholarTableComponent implements OnInit {
       .pipe(
         map(({ scholars, schools }) => {
           const schoolsMap = new Map(
-            schools.map((school) => [school.id.toString(), school]),
+            schools.map((school) => [school.schoolId.toString(), school]),
           );
 
           return scholars.map((scholar) => {
@@ -75,12 +75,12 @@ export class ScholarTableComponent implements OnInit {
             const textColor = contrastTextColor(schoolColor);
 
             return {
-              id: scholar.id,
+              scholarId: scholar.scholarId,
               name: `${scholar.firstName} ${scholar.lastName}`,
               schoolName,
               grade: scholar.grade,
               schoolColor,
-              birthDate: parseDateOnly(scholar.dateOfBirth).toLocaleDateString('en-GB', {
+              birthDate: parseDateOnly(scholar.birthDate).toLocaleDateString('en-GB', {
                 day: '2-digit',
                 month: 'short',
                 year: 'numeric',
@@ -94,7 +94,7 @@ export class ScholarTableComponent implements OnInit {
         this.scholarData.set(transformedData);
         // Stale selections (from before a reload) would otherwise reference
         // rows that may no longer exist or may have shifted.
-        this.selectedIds.set(new Set());
+        this.selectedScholarIds.set(new Set());
       });
   }
 
@@ -130,41 +130,41 @@ export class ScholarTableComponent implements OnInit {
   readonly allSelected = computed(
     () =>
       this.displayedScholarData().length > 0 &&
-      this.displayedScholarData().every((s) => this.selectedIds().has(s.id)),
+      this.displayedScholarData().every((s) => this.selectedScholarIds().has(s.scholarId)),
   );
 
-  isSelected(id: string): boolean {
-    return this.selectedIds().has(id);
+  isSelected(scholarId: string): boolean {
+    return this.selectedScholarIds().has(scholarId);
   }
 
-  toggleSelection(id: string, checked: boolean): void {
-    const next = new Set(this.selectedIds());
+  toggleSelection(scholarId: string, checked: boolean): void {
+    const next = new Set(this.selectedScholarIds());
     if (checked) {
-      next.add(id);
+      next.add(scholarId);
     } else {
-      next.delete(id);
+      next.delete(scholarId);
     }
-    this.selectedIds.set(next);
+    this.selectedScholarIds.set(next);
   }
 
   // Scoped to whatever's currently visible (matching the search filter), so
   // selections made under a different search term aren't silently touched.
   toggleSelectAll(checked: boolean): void {
-    const next = new Set(this.selectedIds());
+    const next = new Set(this.selectedScholarIds());
     for (const s of this.displayedScholarData()) {
       if (checked) {
-        next.add(s.id);
+        next.add(s.scholarId);
       } else {
-        next.delete(s.id);
+        next.delete(s.scholarId);
       }
     }
-    this.selectedIds.set(next);
+    this.selectedScholarIds.set(next);
   }
 
   async bulkDeleteSelected(): Promise<void> {
-    if (this.selectedIds().size === 0 || this.bulkDeleteInProgress()) return;
+    if (this.selectedScholarIds().size === 0 || this.bulkDeleteInProgress()) return;
 
-    const ids = Array.from(this.selectedIds());
+    const ids = Array.from(this.selectedScholarIds());
     const confirmed = await this.confirmModalService.confirm(
       `Are you sure you want to delete ${ids.length} scholar${ids.length === 1 ? '' : 's'}? ` +
         `This also deletes their pickup schedule and attendance records. This cannot be undone.`,
@@ -176,11 +176,11 @@ export class ScholarTableComponent implements OnInit {
 
     from(ids)
       .pipe(
-        concatMap((id) =>
-          this.scholarsService.deleteScholar(id).pipe(
+        concatMap((scholarId) =>
+          this.scholarsService.deleteScholar(scholarId).pipe(
             map(() => true),
             catchError((err) => {
-              console.error(`Failed to delete scholar ${id}:`, err);
+              console.error(`Failed to delete scholar ${scholarId}:`, err);
               return of(false);
             }),
           ),

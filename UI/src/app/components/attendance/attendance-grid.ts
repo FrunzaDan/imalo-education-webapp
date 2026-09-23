@@ -32,9 +32,9 @@ export function buildScholarRows(
 
   return scholars
     .map((scholar) => {
-      const recordsByDate = recordsByScholarId.get(scholar.id);
+      const recordsByDate = recordsByScholarId.get(scholar.scholarId);
       return {
-        scholarId: scholar.id,
+        scholarId: scholar.scholarId,
         scholarName: `${scholar.firstName} ${scholar.lastName}`,
         cells: dates.map((date) => toCell(recordsByDate?.get(date))),
       };

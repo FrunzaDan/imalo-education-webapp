@@ -23,15 +23,15 @@ export class ScholarDetailComponent {
   private readonly confirmModalService = inject(ConfirmModalService);
   private readonly auditLogService = inject(AuditLogService);
 
-  // Bound from the `:id` route param by withComponentInputBinding() in
+  // Bound from the `:scholarId` route param by withComponentInputBinding() in
   // app.config.ts — and, unlike route.snapshot, follows the param if it changes.
-  readonly id = input<string>();
+  readonly scholarId = input<string>();
 
   // reading a resource's value() while it is in the error state throws, so
   // scholar()/school() go through hasValue() and fall back to null.
   private readonly scholarResource = rxResource({
-    params: () => this.id(),
-    stream: ({ params: id }) => this.scholarsService.getScholarById(id),
+    params: () => this.scholarId(),
+    stream: ({ params: scholarId }) => this.scholarsService.getScholarById(scholarId),
   });
   readonly scholar = computed(() =>
     this.scholarResource.hasValue() ? this.scholarResource.value() : null,
@@ -55,8 +55,8 @@ export class ScholarDetailComponent {
 
   constructor() {
     effect(() => {
-      const id = this.id();
-      if (id) untracked(() => this.auditLogService.loadAuditLog(id));
+      const scholarId = this.scholarId();
+      if (scholarId) untracked(() => this.auditLogService.loadAuditLog(scholarId));
     });
   }
 
@@ -74,14 +74,14 @@ export class ScholarDetailComponent {
 
   navigateToUpdateScholar(): void {
     const scholar = this.scholar();
-    if (!scholar?.id) return;
+    if (!scholar?.scholarId) return;
 
-    this.router.navigate(['/scholars/update', scholar.id]);
+    this.router.navigate(['/scholars/update', scholar.scholarId]);
   }
 
   async deleteScholar(): Promise<void> {
     const scholar = this.scholar();
-    if (!scholar?.id) return;
+    if (!scholar?.scholarId) return;
 
     const confirmed = await this.confirmModalService.confirm(
       `Are you sure you want to delete ${scholar.firstName} ${scholar.lastName}?`,
@@ -89,7 +89,7 @@ export class ScholarDetailComponent {
     );
     if (!confirmed) return;
 
-    this.scholarsService.deleteScholar(scholar.id).subscribe({
+    this.scholarsService.deleteScholar(scholar.scholarId).subscribe({
       next: () => {
         this.notificationService.show(
           `Scholar ${scholar.firstName} ${scholar.lastName} deleted successfully.`,

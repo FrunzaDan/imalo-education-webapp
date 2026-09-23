@@ -12,10 +12,10 @@ public class ScholarModelValidationTests
     {
         FirstName = "Ana",
         LastName = "Popescu",
-        DateOfBirth = DateOnly.FromDateTime(DateTime.UtcNow).AddYears(-8),
+        BirthDate = DateOnly.FromDateTime(DateTime.UtcNow).AddYears(-8),
         SchoolId = 1,
         Grade = 3,
-        PickUpSchedule = new PickUpSchedule { Monday = new TimeOnly(13, 0) },
+        PickupSchedule = new PickupSchedule { Monday = new TimeOnly(13, 0) },
     };
 
     private static bool TryValidate(Scholar scholar, out List<ValidationResult> results)
@@ -39,7 +39,7 @@ public class ScholarModelValidationTests
         {
             FirstName = "Ana",
             LastName = "Popescu",
-            DateOfBirth = DateOnly.FromDateTime(DateTime.UtcNow).AddYears(-8),
+            BirthDate = DateOnly.FromDateTime(DateTime.UtcNow).AddYears(-8),
         };
 
         Assert.True(TryValidate(scholar, out var results));
@@ -80,12 +80,12 @@ public class ScholarModelValidationTests
     public void FutureDateOfBirth_FailsValidation()
     {
         var scholar = ValidScholar();
-        scholar.DateOfBirth = DateOnly.FromDateTime(DateTime.UtcNow).AddDays(5);
+        scholar.BirthDate = DateOnly.FromDateTime(DateTime.UtcNow).AddDays(5);
 
         // CustomValidationAttribute results don't carry MemberNames the way built-in
         // attributes (Required/Range/...) do, so this asserts on message content instead.
         Assert.False(TryValidate(scholar, out var results));
-        Assert.Contains(results, r => r.ErrorMessage == "Date of birth cannot be in the future.");
+        Assert.Contains(results, r => r.ErrorMessage == "Birth date cannot be in the future.");
     }
 
     [Fact]

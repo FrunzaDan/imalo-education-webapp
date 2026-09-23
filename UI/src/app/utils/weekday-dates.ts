@@ -1,5 +1,5 @@
 // Every Monday-Friday date in the given year/month, formatted 'YYYY-MM-DD'.
-// Weekday-only to match PickUpSchedule (no Saturday/Sunday) — attendance and
+// Weekday-only to match PickupSchedule (no Saturday/Sunday) — attendance and
 // pickup scheduling are school-day concepts throughout this app.
 export function getWeekdayDatesInMonth(year: number, month: number): string[] {
   const daysInMonth = new Date(year, month, 0).getDate();
@@ -26,7 +26,7 @@ export const DEFAULT_YEAR = Number(DEFAULT_MONTH.substring(0, 4));
 export const toMonthString = (date: Date): string =>
   `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
 
-// The weekdays ('YYYY-MM-DD') of a 'YYYY-MM' month — matches PickUpSchedule's
+// The weekdays ('YYYY-MM-DD') of a 'YYYY-MM' month — matches PickupSchedule's
 // Mon-Fri convention. Empty for an empty/invalid month.
 export function weekdaysOfMonth(month: string): string[] {
   if (!month) return [];

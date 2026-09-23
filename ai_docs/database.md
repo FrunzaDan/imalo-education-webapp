@@ -17,13 +17,13 @@ SQL Server schema for the `ImaloEducation` database, defined as an SSDT database
 **`Scholar`** (`Scholar.sql`) — the root entity.
 - `ScholarId UNIQUEIDENTIFIER` clustered PK, default `NEWSEQUENTIALID()` (`DF_Scholar_ScholarId`) — sequential rather than `NEWID()` so inserts append to the clustered index instead of splitting pages at random
 - `FirstName`, `LastName NVARCHAR(100)` NOT NULL (NVARCHAR: Romanian diacritics)
-- `BirthDate DATE` NOT NULL (API: `Scholar.DateOfBirth`, a `DateOnly`)
+- `BirthDate DATE` NOT NULL (API: `Scholar.BirthDate`, a `DateOnly`)
 - `Grade TINYINT` NULL (0–12, enforced app-side; API: `byte?`)
-- `SchoolId INT` NULL — **not a foreign key**, no `Schools` table exists in the DB. Schools are static frontend config (`UI/src/assets/schools.json`: id, name, color, lunchPrice, transportPrice) served by `SchoolsService`, not persisted server-side. `SchoolId` here is just an integer the frontend resolves against that static list.
+- `SchoolId INT` NULL — **not a foreign key**, no `Schools` table exists in the DB. Schools are static frontend config (`UI/src/assets/schools.json`: schoolId, name, color, lunchPrice, transportPrice) served by `SchoolsService`, not persisted server-side. `SchoolId` here is just an integer the frontend resolves against that static list.
 
 **`ScholarPickupSchedule`** (`ScholarPickupSchedule.sql`) — one row per scholar, JSON blob, not normalized.
 - `ScholarId UNIQUEIDENTIFIER` PK **and** FK → `Scholar.ScholarId`, `ON DELETE CASCADE`
-- `ScheduleJson NVARCHAR(MAX)` NOT NULL, `CHECK (ISJSON(ScheduleJson) = 1)` — the API's typed `PickUpSchedule` class serialized as JSON: `Monday`…`Friday`, each a `"HH:mm"` string or null. Rows written before the typed class have lowercase keys (`monday`…) and may hold `""` for "no pickup"; both still read back (case-insensitive names, blank → null). Shape is enforced by the API's deserialization — see [[api]].
+- `ScheduleJson NVARCHAR(MAX)` NOT NULL, `CHECK (ISJSON(ScheduleJson) = 1)` — the API's typed `PickupSchedule` class serialized as JSON: `Monday`…`Friday`, each a `"HH:mm"` string or null. Rows written before the typed class have lowercase keys (`monday`…) and may hold `""` for "no pickup"; both still read back (case-insensitive names, blank → null). Shape is enforced by the API's deserialization — see [[api]].
 
 **`ScholarAttendance`** (`ScholarAttendance.sql`) — one row per scholar, JSON blob.
 - `ScholarId UNIQUEIDENTIFIER` PK and FK → `Scholar.ScholarId`, `ON DELETE CASCADE`
@@ -33,7 +33,7 @@ SQL Server schema for the `ImaloEducation` database, defined as an SSDT database
 - `(ScholarId, Role)` clustered PK — natural key, no surrogate `ScholarParentId` (every query addresses a parent by scholar + role). Also *is* the "at most one Mother and one Father per scholar" rule, and covers the FK.
 - `ScholarId UNIQUEIDENTIFIER` NOT NULL, FK → `Scholar.ScholarId`, `ON DELETE CASCADE`
 - `Role VARCHAR(6)` NOT NULL, `CHECK (Role IN ('Mother','Father'))`
-- `FirstName`, `LastName NVARCHAR(100)` NULL, `PhoneNumber VARCHAR(20)` NULL (ASCII-only per the API's phone regex) — each independently optional
+- `FirstName`, `LastName NVARCHAR(100)` NULL, `PhoneNumber VARCHAR(15)` NULL (digits only, per the API's phone regex — same type as the sibling apps' phone numbers) — each independently optional
 - `CHECK (FirstName IS NOT NULL OR LastName IS NOT NULL OR PhoneNumber IS NOT NULL)` — a row can't exist with every field empty; the API deletes the row instead once all three go blank on an edit.
 
 **`ScholarAuditLog`** (`ScholarAuditLog.sql`) — lifecycle history (Created/Edited/Deleted) for scholars.
@@ -41,7 +41,7 @@ SQL Server schema for the `ImaloEducation` database, defined as an SSDT database
 - `ScholarId UNIQUEIDENTIFIER` NOT NULL — **no FK to `Scholar`**, deliberately: a deleted scholar's audit history must survive the hard delete.
 - `ActionType VARCHAR(10)` NOT NULL, `CHECK (ActionType IN ('Created','Edited','Deleted'))` — the API's `AuditAction` enum, stored by name
 - `Details NVARCHAR(500)` NULL
-- `OccurredAt DATETIMEOFFSET(3)` NOT NULL, default `SYSUTCDATETIME()` — carries its UTC offset so it serializes as `…+00:00`. (As a bare `DATETIME2` it went out with no offset and browsers displayed UTC as local time.)
+- `OccurredAt DATETIME2(3)` NOT NULL, default `SYSUTCDATETIME()` — UTC, like every timestamp in the three apps. `DATETIME2` carries no offset, so `ScholarDataAccess` marks the value `DateTimeKind.Utc` when it reads it; that's what makes it serialize with a trailing `Z` and display in the viewer's local time.
 - Two non-clustered indexes: `IX_ScholarAuditLog_ScholarId` (per-scholar lookups) and `IX_ScholarAuditLog_OccurredAt_ScholarAuditLogId` on `(OccurredAt DESC, ScholarAuditLogId DESC)` (supports the global, unfiltered newest-first paged view — the ScholarId index doesn't help there since no ScholarId filter is applied).
 
 ## How it works
@@ -63,7 +63,34 @@ Applied on 2026-09-23 to all three sibling projects (customer-management-system,
 - **Constraints and indexes are always named**: `PK_<Table>`, `FK_<Child>_<Parent>`, `UQ_<Table>_<Column>`, `CK_<Table>_<Column>`, `DF_<Table>_<Column>`, `IX_<Table>_<KeyColumn1>_<KeyColumn2>…`.
 - **SQL in `ScholarDataAccess`**: tables are schema-qualified (`dbo.Scholar`), and every parameter is named exactly like the column it feeds or compares with (`@ScholarId`, `@BirthDate`, `@ActionType`). If stored procedures are ever introduced, name them `<Entity>_<Verb>` (`Scholar_Create`, `Scholar_Get`, `Scholar_List`, …) like the sibling projects.
 - **Files**: one object per file, named after the object (`Tables/ScholarParent.sql`); deployment scripts are `Scripts/PreDeployment/PreDeployment.sql` and `Scripts/PostDeployment/PostDeployment.sql`. The database (and `.sqlproj`) is `ImaloEducation`, no `DB` suffix.
-- **The API's names did not change with the DB names**: the C# model and JSON still say `id`, `dateOfBirth`, `pickUpSchedule`, `auditId`, `action`, `actionDate`; `ScholarDataAccess` is the one place the two vocabularies meet.
+- **API and UI use the same names**: JSON/TypeScript properties are the camelCase column names — see "Data types" below.
+
+## Data types
+
+Aligned on 2026-09-23 across all three sibling projects (customer-management-system, employee-management-system, imalo-education-webapp), so the same kind of value has the same type everywhere — DB column, proc parameter, C# model, JSON and TypeScript:
+
+| Kind of value | SQL Server | C# | JSON / TypeScript |
+|---|---|---|---|
+| Entity key (a row addressed by a URL) | `UNIQUEIDENTIFIER` `DEFAULT NEWSEQUENTIALID()` — generated by the DB, handed back by the create proc/`OUTPUT` | `Guid` | string |
+| Key of an append-only history/log row | `INT IDENTITY(1, 1)` | `int` | number |
+| Person name | `NVARCHAR(100)` | `string` | string |
+| Email | `NVARCHAR(254)` (RFC 5321's path limit) | `string` | string |
+| Phone number | `VARCHAR(15)`, digits only (E.164's maximum; validated `^[0-9]{9,12}$`) | `string` | string |
+| Address | `Country`/`County`/`City`/`Street` `NVARCHAR(100)`, `StreetNumber` `NVARCHAR(50)`, `PostalCode` `VARCHAR(20)` (ASCII letters/digits/spaces/hyphens) | `string` | string |
+| Other names | `NVARCHAR(100)`; free text `NVARCHAR(500)` | `string` | string |
+| Money | `DECIMAL(12, 2)` (max 9,999,999,999.99), never `FLOAT` | `decimal` | number |
+| Calendar date (`…Date`) | `DATE` | `DateOnly` | `IsoDate`, `"1990-01-02"` |
+| UTC moment (`…At`) | `DATETIME2(3)` `DEFAULT SYSUTCDATETIME()` | `DateTime` with `Kind = Utc` (marked when read) | `IsoDateTime`, ends in `Z` |
+| Numeric code | `TINYINT`/`SMALLINT` + `CHECK` — `Gender` 0/1/2 (ISO/IEC 5218, `NOT NULL DEFAULT 0`), `StatusCode` 1901/1903/1904, `RoleCode` 1801 | enum (`: byte`/`: short`), serialized as its number | numeric `enum` |
+| Named code | `VARCHAR(20)` + `CHECK` (`ActionType`, `Role`) | enum, serialized by name | string-literal union |
+| Password | `BINARY(32)` hash + `BINARY(16)` salt | `byte[]` | never sent |
+| JSON payload (`…Json`) | `NVARCHAR(MAX)` + `CHECK (ISJSON(...) = 1)` | typed class | typed object |
+
+Rules that go with it:
+
+- **One name per value, at every layer.** JSON and TypeScript names are the camelCase column names (`customerId`, `phoneNumber`, `postalCode`, `createdAt`, `grossSalary`). A code column drops its `…Code` suffix once it's an enum (`StatusCode` → `status`), and the login fields are `username`/`password`. URLs are lowercase kebab-case (`/api/customer/audit-log`, `/api/cost-center`, `/customer-details`); query parameters are camelCase (`?customerId=`).
+- **A parameter has exactly its column's type**, in the proc and in the C# `SqlParameter` that feeds it. A `VARCHAR` column compared with an `NVARCHAR` parameter gets converted, which turns index seeks into scans.
+- **Required means `NOT NULL`.** A value the UI and API require is `NOT NULL` in the DB too. `NULL` means "unknown/not applicable", never a second spelling of an existing code.
 
 ## Gotchas / conventions
 
@@ -73,4 +100,5 @@ Applied on 2026-09-23 to all three sibling projects (customer-management-system,
 
 ## History
 
-- **Naming pass (2026-09-23).** Renamed to the "Naming conventions" above — was `Scholars`/`Parents`/`PickUpSchedule`/`Attendance`, `Scholars.Id`, `DateOfBirth`, `ScholarAuditLog.AuditId`/`Action`/`ActionDate`, the `ImaloEducationDB` database, and a flat `DB/` folder with `Script.PreDeployment.sql`/`Script.PostDeployment.sql`. Deployed as a fresh database (the old one is left untouched on the container), not migrated in place.
+- **Cross-project consistency pass (2026-09-23).** Aligned with the "Data types" table and the two sibling apps: `ScholarAuditLog.OccurredAt` `DATETIMEOFFSET(3)` → `DATETIME2(3)` (the API now marks it UTC when read, so it still reaches the browser with a `Z`), `ActionType` `VARCHAR(10)` → `VARCHAR(20)`, `ScholarParent.Role` `VARCHAR(6)` → `VARCHAR(20)`, `ScholarParent.PhoneNumber` `VARCHAR(20)` (formatting characters allowed) → `VARCHAR(15)` digits only, and `CK_Scholar_Grade`/`CK_Scholar_SchoolId` added. API/UI renames: `id` → `scholarId` (and a school's `id` → `schoolId`), `dateOfBirth` → `birthDate`, `pickUpSchedule` → `pickupSchedule`, `auditId` → `scholarAuditLogId`, `action` → `actionType`, `actionDate` → `occurredAt`, the global log's `firstName`/`lastName` → `scholarFirstName`/`scholarLastName`, `PagedResult` → `PagedResponse`; `/api/Scholars/…/auditLog` → `/api/scholars/…/audit-log`.
+- **Naming pass (2026-09-23).** Renamed to the "Naming conventions" above — was `Scholars`/`Parents`/`PickupSchedule`/`Attendance`, `Scholars.Id`, `BirthDate`, `ScholarAuditLog.AuditId`/`Action`/`ActionDate`, the `ImaloEducationDB` database, and a flat `DB/` folder with `Script.PreDeployment.sql`/`Script.PostDeployment.sql`. Deployed as a fresh database (the old one is left untouched on the container), not migrated in place.

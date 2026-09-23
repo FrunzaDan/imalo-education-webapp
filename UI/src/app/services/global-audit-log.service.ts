@@ -13,7 +13,7 @@ export interface LoadAllAuditLogParams {
 
 @Injectable({ providedIn: 'root' })
 export class GlobalAuditLogService {
-  private readonly API_URL = `${environment.baseUrlScholars}/auditLog/all`;
+  private readonly API_URL = `${environment.apiUrl}/api/scholars/audit-log/all`;
 
   private readonly state = signal({
     entries: [] as GlobalAuditLogEntry[],

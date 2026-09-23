@@ -17,7 +17,7 @@ import { apiLoggerInterceptor } from './services/api-logger.interceptor';
 export const appConfig: ApplicationConfig = {
   providers: [
     provideZonelessChangeDetection(),
-    // Binds route params (:id) straight onto components' input()s.
+    // Binds route params (:scholarId) straight onto components' input()s.
     provideRouter(routes, withComponentInputBinding()),
     provideClientHydration(withEventReplay(), withNoIncrementalHydration()),
     provideHttpClient(withFetch(), withInterceptors([apiLoggerInterceptor])),

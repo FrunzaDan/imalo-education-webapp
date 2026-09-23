@@ -10,12 +10,12 @@ public class WireFormatTests
 {
     private static readonly JsonSerializerOptions Web = JsonSerializerOptions.Web;
 
-    // ---- PickUpSchedule ----
+    // ---- PickupSchedule ----
 
     [Fact]
     public void PickUpSchedule_ReadsHourMinuteTimesAndNulls()
     {
-        var schedule = JsonSerializer.Deserialize<PickUpSchedule>(
+        var schedule = JsonSerializer.Deserialize<PickupSchedule>(
             """{"monday":"08:00","tuesday":null,"wednesday":"13:30","friday":"17:45"}""", Web)!;
 
         Assert.Equal(new TimeOnly(8, 0), schedule.Monday);
@@ -28,7 +28,7 @@ public class WireFormatTests
     [Fact]
     public void PickUpSchedule_WritesHourMinuteNotTimeOnlyDefault()
     {
-        var json = JsonSerializer.Serialize(new PickUpSchedule { Monday = new TimeOnly(13, 30) }, Web);
+        var json = JsonSerializer.Serialize(new PickupSchedule { Monday = new TimeOnly(13, 30) }, Web);
 
         Assert.Equal(
             """{"monday":"13:30","tuesday":null,"wednesday":null,"thursday":null,"friday":null}""", json);
@@ -42,16 +42,16 @@ public class WireFormatTests
         var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
 
         Assert.Equal(new TimeOnly(8, 0),
-            JsonSerializer.Deserialize<PickUpSchedule>("""{"monday":"08:00"}""", options)!.Monday);
+            JsonSerializer.Deserialize<PickupSchedule>("""{"monday":"08:00"}""", options)!.Monday);
         Assert.Equal(new TimeOnly(8, 0),
-            JsonSerializer.Deserialize<PickUpSchedule>("""{"Monday":"08:00"}""", options)!.Monday);
+            JsonSerializer.Deserialize<PickupSchedule>("""{"Monday":"08:00"}""", options)!.Monday);
     }
 
     [Fact]
     public void PickUpSchedule_RejectsUnknownDay()
     {
         Assert.Throws<JsonException>(() =>
-            JsonSerializer.Deserialize<PickUpSchedule>("""{"saturday":"08:00"}""", Web));
+            JsonSerializer.Deserialize<PickupSchedule>("""{"saturday":"08:00"}""", Web));
     }
 
     [Theory]
@@ -64,7 +64,7 @@ public class WireFormatTests
     public void PickUpSchedule_RejectsNonStrictTimeFormats(string invalidTime)
     {
         var ex = Assert.Throws<JsonException>(() =>
-            JsonSerializer.Deserialize<PickUpSchedule>($$"""{"monday":"{{invalidTime}}"}""", Web));
+            JsonSerializer.Deserialize<PickupSchedule>($$"""{"monday":"{{invalidTime}}"}""", Web));
 
         Assert.Contains("Use 24-hour HH:mm", ex.Message);
     }
@@ -72,7 +72,7 @@ public class WireFormatTests
     [Fact]
     public void PickUpSchedule_ReadsEmptyOrWhitespaceAsNoPickup()
     {
-        var schedule = JsonSerializer.Deserialize<PickUpSchedule>("""{"monday":"","tuesday":"   "}""", Web)!;
+        var schedule = JsonSerializer.Deserialize<PickupSchedule>("""{"monday":"","tuesday":"   "}""", Web)!;
 
         Assert.Null(schedule.Monday);
         Assert.Null(schedule.Tuesday);
@@ -103,17 +103,20 @@ public class WireFormatTests
     // ---- Audit log ----
 
     [Fact]
-    public void AuditLogEntry_ActionByNameAndDateWithUtcOffset()
+    public void AuditLogEntry_ActionTypeByNameAndOccurredAtAsUtc()
     {
         var entry = new AuditLogEntry
         {
-            Action = AuditAction.Edited,
-            ActionDate = new DateTimeOffset(2026, 9, 23, 10, 0, 0, TimeSpan.Zero),
+            ScholarAuditLogId = 1,
+            ScholarId = Guid.Empty,
+            ActionType = AuditAction.Edited,
+            OccurredAt = new DateTime(2026, 9, 23, 10, 0, 0, DateTimeKind.Utc),
         };
 
         var json = JsonSerializer.Serialize(entry, Web);
 
-        Assert.Contains("\"action\":\"Edited\"", json);
-        Assert.Contains("\"actionDate\":\"2026-09-23T10:00:00+00:00\"", json);
+        Assert.Contains("\"actionType\":\"Edited\"", json);
+        // The trailing "Z" is what makes the browser convert it to local time.
+        Assert.Contains("\"occurredAt\":\"2026-09-23T10:00:00Z\"", json);
     }
 }

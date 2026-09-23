@@ -14,7 +14,7 @@ How to compile and run the three layers (DB, API, Angular UI) locally, via `buil
 - `DB/ImaloEducation/global.json` — pins the DB project's build to the .NET 8 SDK.
 - `UI/angular.json` — `outputMode: "server"`, `ssr.entry: src/server.ts`.
 - `UI/src/server.ts` — standalone Node/Express SSR server.
-- `UI/src/environments/environment.ts` — `baseUrlScholars: http://localhost:5244/api/Scholars`, `healthUrl: http://localhost:5244/health`.
+- `UI/src/environments/environment.ts` — `apiUrl: http://localhost:5244` (the services append `/api/scholars` and `/health`), `phoneNumberRegex`.
 
 ## `build.sh`
 

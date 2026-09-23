@@ -7,7 +7,7 @@ import { SchoolsService } from '../../services/schools.service';
 import { Scholar } from '../../interfaces/scholar';
 import { School } from '../../interfaces/school';
 import { AttendanceRecord } from '../../interfaces/attendance-record';
-import { PickUpSchedule } from '../../interfaces/pick-up-schedule';
+import { PickupSchedule } from '../../interfaces/pickup-schedule';
 import { WEEK_DAYS } from '../../constants/week-days';
 import { getWeekdayDatesInMonth } from '../../utils/weekday-dates';
 
@@ -145,7 +145,7 @@ function monthsInRange(
   return months;
 }
 
-// 'YYYY-MM-DD' — matches Scholar.dateOfBirth (the API's DateOnly).
+// 'YYYY-MM-DD' — matches Scholar.birthDate (the API's DateOnly).
 function randomBirthdate(): string {
   const now = new Date();
   const end = new Date(now.getFullYear() - 5, now.getMonth(), now.getDate()).getTime();
@@ -154,11 +154,11 @@ function randomBirthdate(): string {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
 }
 
-function randomPickUpSchedule(): PickUpSchedule {
+function randomPickupSchedule(): PickupSchedule {
   // Every test scholar has a pickup time every weekday.
   return Object.fromEntries(
     WEEK_DAYS.map((day) => [day, pick(PICKUP_TIME_SLOTS)]),
-  ) as PickUpSchedule;
+  ) as PickupSchedule;
 }
 
 // A plausible-looking Romanian mobile number.
@@ -235,14 +235,14 @@ export class AboutComponent {
           concatMap((scholar) =>
             this.scholarsService.createScholar(scholar).pipe(
               switchMap((created) => {
-                const school = schools.find((s) => s.id === created.schoolId);
+                const school = schools.find((school) => school.schoolId === created.schoolId);
                 const attendance = this.buildRandomAttendance(school);
                 return this.attendanceService
-                  .saveAttendance(created.id, attendance)
+                  .saveAttendance(created.scholarId, attendance)
                   .pipe(
                     catchError((err) => {
                       console.warn(
-                        `Created scholar ${created.id} but failed to save its test attendance:`,
+                        `Created scholar ${created.scholarId} but failed to save its test attendance:`,
                         err,
                       );
                       return of(null);
@@ -277,13 +277,13 @@ export class AboutComponent {
     const mother = randomParent(1);
     const father = randomParent(0.5);
     return {
-      id: '00000000-0000-0000-0000-000000000000',
+      scholarId: '00000000-0000-0000-0000-000000000000',
       firstName: pick(FIRST_NAMES),
       lastName: pick(LAST_NAMES),
-      schoolId: pick(schools).id,
+      schoolId: pick(schools).schoolId,
       grade: randomInt(1, 4),
-      dateOfBirth: randomBirthdate(),
-      pickUpSchedule: randomPickUpSchedule(),
+      birthDate: randomBirthdate(),
+      pickupSchedule: randomPickupSchedule(),
       motherFirstName: mother.firstName,
       motherLastName: mother.lastName,
       motherPhoneNumber: mother.phoneNumber,

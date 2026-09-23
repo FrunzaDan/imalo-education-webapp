@@ -46,11 +46,10 @@ export class AttendancePerScholarComponent implements OnInit, OnDestroy {
   private scholarSubscription: Subscription | undefined;
   private attendanceSubscription: Subscription | undefined;
 
-  // Bound from the `:id` route param by withComponentInputBinding() in app.config.ts.
-  readonly id = input<string>();
+  // Bound from the `:scholarId` route param by withComponentInputBinding() in app.config.ts.
+  readonly scholarId = input<string>();
 
   scholar = signal<Scholar | null>(null);
-  scholarId: string = '';
   readonly today = new Date();
 
   // Standard per-day prices for this scholar's school, applied when a day is
@@ -137,16 +136,15 @@ export class AttendancePerScholarComponent implements OnInit, OnDestroy {
 
 
   ngOnInit(): void {
-    const scholarId = this.id();
+    const scholarId = this.scholarId();
     if (!scholarId) {
       console.error('Scholar ID not found in route parameters.');
       return;
     }
-    this.scholarId = scholarId;
 
     this.scholarSubscription = this.scholarsService.getScholars().subscribe({
       next: (scholars) => {
-        const scholar = scholars.find((s) => s.id === scholarId) || null;
+        const scholar = scholars.find((s) => s.scholarId === scholarId) || null;
         this.scholar.set(scholar);
 
         if (!scholar) {
@@ -296,11 +294,12 @@ export class AttendancePerScholarComponent implements OnInit, OnDestroy {
   }
 
   save(): void {
-    if (!this.scholarId || this.isSaving()) return;
+    const scholarId = this.scholarId();
+    if (!scholarId || this.isSaving()) return;
 
     this.isSaving.set(true);
     this.attendanceService
-      .saveAttendance(this.scholarId, this.recordsToSave())
+      .saveAttendance(scholarId, this.recordsToSave())
       .subscribe({
         next: () => {
           this.isSaving.set(false);
@@ -320,7 +319,7 @@ export class AttendancePerScholarComponent implements OnInit, OnDestroy {
 
   exportCsv(): void {
     const scholar = this.scholar();
-    const scholarName = scholar ? `${scholar.firstName}_${scholar.lastName}` : this.scholarId;
+    const scholarName = scholar ? `${scholar.firstName}_${scholar.lastName}` : this.scholarId();
 
     this.csvExportService.export(
       `attendance_${scholarName}_${this.selectedMonth()}`,

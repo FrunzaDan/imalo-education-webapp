@@ -15,15 +15,15 @@ import type { School } from '../../interfaces/school';
 // audit-log load, and the failure / no-school paths.
 
 const SCHOLAR: Scholar = {
-  id: 'scholar-1',
+  scholarId: 'scholar-1',
   firstName: 'Ana',
   lastName: 'Popescu',
-  pickUpSchedule: null,
+  pickupSchedule: null,
   schoolId: 1,
   grade: 3,
-  dateOfBirth: '2016-01-01',
+  birthDate: '2016-01-01',
 };
-const SCHOOL: School = { id: 1, name: 'Test School', color: '#336699', lunchPrice: 15, transportPrice: 10 };
+const SCHOOL: School = { schoolId: 1, name: 'Test School', color: '#336699', lunchPrice: 15, transportPrice: 10 };
 
 async function setup(options: { scholar?: Scholar; loadError?: boolean } = {}) {
   const getScholarById = vi.fn(() =>
@@ -51,7 +51,7 @@ async function setup(options: { scholar?: Scholar; loadError?: boolean } = {}) {
   });
 
   const fixture = TestBed.createComponent(ScholarDetailComponent);
-  fixture.componentRef.setInput('id', 'scholar-1');
+  fixture.componentRef.setInput('scholarId', 'scholar-1');
   fixture.detectChanges();
   await fixture.whenStable();
   fixture.detectChanges();

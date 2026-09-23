@@ -1,25 +1,35 @@
 namespace ImaloEducationApi.Models;
 
-public class AuditLogEntry
+public sealed record AuditLogEntry
 {
-    public int AuditId { get; set; }
+    public required int ScholarAuditLogId { get; init; }
 
-    public Guid ScholarId { get; set; }
+    public required Guid ScholarId { get; init; }
 
-    public AuditAction Action { get; set; }
+    public required AuditAction ActionType { get; init; }
 
-    public string? Details { get; set; }
+    public string? Details { get; init; }
 
-    // UTC, with its offset — serializes as "...+00:00", so the browser converts
-    // it to local time instead of mistaking UTC for local.
-    public DateTimeOffset ActionDate { get; set; }
+    // UTC — serialized as ISO 8601 with a trailing "Z", so the browser shows it in local time.
+    public required DateTime OccurredAt { get; init; }
 }
 
-public class GlobalAuditLogEntry : AuditLogEntry
+public sealed record GlobalAuditLogEntry
 {
+    public required int ScholarAuditLogId { get; init; }
+
+    public required Guid ScholarId { get; init; }
+
     // Null when the scholar no longer exists (GetAllAuditLogAsync LEFT JOINs
     // Scholar, since audit history outlives a deleted scholar).
-    public string? FirstName { get; set; }
+    public string? ScholarFirstName { get; init; }
 
-    public string? LastName { get; set; }
+    public string? ScholarLastName { get; init; }
+
+    public required AuditAction ActionType { get; init; }
+
+    public string? Details { get; init; }
+
+    // UTC.
+    public required DateTime OccurredAt { get; init; }
 }

@@ -11,7 +11,7 @@ import { catchHttpError } from '../utils/http-error';
 })
 export class AttendanceService {
   // Base API endpoint
-  private baseUrl = environment.baseUrlScholars;
+  private baseUrl = `${environment.apiUrl}/api/scholars`;
 
   constructor(private http: HttpClient) {}
 
@@ -33,7 +33,7 @@ export class AttendanceService {
   getAttendanceByScholarId(scholarId: string): Observable<AttendanceRecord[]> {
     return this.http
       .get<AttendanceRecord[]>(`${this.baseUrl}/${scholarId}/attendance`)
-      .pipe(catchHttpError(`getAttendanceByScholarId id=${scholarId}`));
+      .pipe(catchHttpError(`getAttendanceByScholarId scholarId=${scholarId}`));
   }
 
   // ----------------------------
@@ -45,7 +45,7 @@ export class AttendanceService {
   ): Observable<any> {
     return this.http
       .post(`${this.baseUrl}/${scholarId}/attendance`, attendance)
-      .pipe(catchHttpError(`saveAttendance id=${scholarId}`));
+      .pipe(catchHttpError(`saveAttendance scholarId=${scholarId}`));
   }
 
   // ----------------------------
@@ -54,6 +54,6 @@ export class AttendanceService {
   deleteAttendance(scholarId: string): Observable<any> {
     return this.http
       .delete(`${this.baseUrl}/${scholarId}/attendance`)
-      .pipe(catchHttpError(`deleteAttendance id=${scholarId}`));
+      .pipe(catchHttpError(`deleteAttendance scholarId=${scholarId}`));
   }
 }

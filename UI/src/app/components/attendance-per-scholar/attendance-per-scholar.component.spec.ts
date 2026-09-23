@@ -19,17 +19,17 @@ import type { AttendanceRecord } from '../../interfaces/attendance-record';
 // under test too, not just the handlers.
 
 const SCHOLAR: Scholar = {
-  id: 'scholar-1',
+  scholarId: 'scholar-1',
   firstName: 'Ana',
   lastName: 'Popescu',
-  pickUpSchedule: null,
+  pickupSchedule: null,
   schoolId: 1,
   grade: 3,
-  dateOfBirth: '2016-01-01',
+  birthDate: '2016-01-01',
 };
 
 const SCHOOL: School = {
-  id: 1,
+  schoolId: 1,
   name: 'Test School',
   color: '#336699',
   lunchPrice: 15,
@@ -93,9 +93,9 @@ function setup(options: SetupOptions = {}) {
   const fixture: ComponentFixture<AttendancePerScholarComponent> = TestBed.createComponent(
     AttendancePerScholarComponent,
   );
-  // The route's :id reaches the component as an input (withComponentInputBinding()).
-  const routeId = options.routeScholarId === undefined ? SCHOLAR.id : options.routeScholarId;
-  if (routeId !== null) fixture.componentRef.setInput('id', routeId);
+  // The route's :scholarId reaches the component as an input (withComponentInputBinding()).
+  const routeId = options.routeScholarId === undefined ? SCHOLAR.scholarId : options.routeScholarId;
+  if (routeId !== null) fixture.componentRef.setInput('scholarId', routeId);
   fixture.detectChanges(); // runs ngOnInit; every service call above is a synchronous `of`/`throwError`
 
   return {
@@ -444,7 +444,7 @@ describe('AttendancePerScholarComponent', () => {
 
       component.save();
 
-      expect(attendanceService.saveAttendance).toHaveBeenCalledWith(SCHOLAR.id, [
+      expect(attendanceService.saveAttendance).toHaveBeenCalledWith(SCHOLAR.scholarId, [
         makeExistingRecord(),
       ]);
       expect(component.recordsToSave()[0]).not.toHaveProperty('persisted');

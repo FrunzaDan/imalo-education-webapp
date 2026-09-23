@@ -86,7 +86,7 @@
     <p class="dashboard-panel__empty">No recorded actions yet.</p>
     } @else {
     <ul class="dashboard-list">
-      @for (entry of recentActivity(); track entry.auditId) {
+      @for (entry of recentActivity(); track entry.scholarAuditLogId) {
       <li class="dashboard-list__item">
         @if (hasScholarLink(entry)) {
         <a class="dashboard-list__name" [routerLink]="['/scholars', entry.scholarId]">
@@ -97,8 +97,8 @@
           {{ scholarLabel(entry) }}
         </span>
         }
-        <span class="dashboard-list__meta">{{ entry.action }}</span>
-        <span class="dashboard-list__time">{{ entry.actionDate | date: 'short' }}</span>
+        <span class="dashboard-list__meta">{{ entry.actionType }}</span>
+        <span class="dashboard-list__time">{{ entry.occurredAt | date: 'short' }}</span>
       </li>
       }
     </ul>
