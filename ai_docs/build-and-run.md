@@ -8,7 +8,6 @@ How to compile and run the three layers (DB, API, Angular UI) locally, via `buil
 
 - `build.sh` — repo root, compiles everything and runs both test suites; no live services started.
 - `API/ImaloEducationApi/ImaloEducationApi.Tests/` — xUnit project for the API, see [[api]] Gotchas.
-- `UI/vitest-base.config.ts` — Vitest config for the Angular app, see [[angular-frontend]] Gotchas.
 - `run.sh` — repo root, full dev environment orchestration.
 - `.run/` — gitignored logs written by `run.sh` (`api.log`, `sqlpackage.log`).
 - `global.json` (repo root) — .NET 10 SDK, and `dotnet test` on Microsoft Testing Platform.

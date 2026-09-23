@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Starts the local dev environment: makes sure the Azure SQL Edge Docker container
-# is up, deploys the DB schema, then starts the API (in the background) and the
-# Angular dev server (in the foreground).
+# is up, waits for it to accept connections, deploys the DB schema, then starts
+# the API (in the background) and the Angular dev server (in the foreground).
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
