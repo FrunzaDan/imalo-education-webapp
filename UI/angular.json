@@ -3,7 +3,7 @@
   "version": 1,
   "newProjectRoot": "projects",
   "projects": {
-    "ImaloEducationWebapp": {
+    "imalo-education-webapp": {
       "projectType": "application",
       "schematics": {},
       "root": "",
@@ -21,8 +21,7 @@
               {
                 "glob": "**/*",
                 "input": "public"
-              },
-              "src/assets"
+              }
             ],
             "styles": ["src/styles.css"],
             "scripts": [],
@@ -37,8 +36,8 @@
               "budgets": [
                 {
                   "type": "initial",
-                  "maximumWarning": "500kB",
-                  "maximumError": "1MB"
+                  "maximumWarning": "1MB",
+                  "maximumError": "2MB"
                 },
                 {
                   "type": "anyComponentStyle",
@@ -46,7 +45,8 @@
                   "maximumError": "8kB"
                 }
               ],
-              "outputHashing": "all"
+              "outputHashing": "all",
+              "subresourceIntegrity": true
             },
             "development": {
               "optimization": false,
@@ -63,10 +63,10 @@
           },
           "configurations": {
             "production": {
-              "buildTarget": "ImaloEducationWebapp:build:production"
+              "buildTarget": "imalo-education-webapp:build:production"
             },
             "development": {
-              "buildTarget": "ImaloEducationWebapp:build:development"
+              "buildTarget": "imalo-education-webapp:build:development"
             }
           },
           "defaultConfiguration": "development"
@@ -81,7 +81,7 @@
     }
   },
   "cli": {
-    "analytics": "9a909f0d-ea48-4557-a316-898396cdac93"
+    "analytics": false
   },
   "schematics": {
     "@schematics/angular:component": {

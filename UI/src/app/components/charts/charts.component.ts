@@ -2,9 +2,9 @@ import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
 import { FormField, form } from '@angular/forms/signals';
 import { forkJoin } from 'rxjs';
-import { ScholarsService } from '../../services/scholars.service';
+import { ScholarService } from '../../services/scholar.service';
 import { AttendanceService } from '../../services/attendance.service';
-import { SchoolsService } from '../../services/schools.service';
+import { SchoolService } from '../../services/school.service';
 import { Scholar } from '../../interfaces/scholar';
 import { ScholarAttendance } from '../../interfaces/scholar-attendance';
 import { School } from '../../interfaces/school';
@@ -38,9 +38,9 @@ import { extractErrorMessage } from '../../utils/extract-error-message';
   styleUrl: './charts.component.css',
 })
 export class ChartsComponent implements OnInit {
-  private readonly scholarsService = inject(ScholarsService);
+  private readonly scholarService = inject(ScholarService);
   private readonly attendanceService = inject(AttendanceService);
-  private readonly schoolsService = inject(SchoolsService);
+  private readonly schoolService = inject(SchoolService);
 
   private readonly scholars = signal<Scholar[]>([]);
   private readonly allAttendance = signal<ScholarAttendance[]>([]);
@@ -145,9 +145,9 @@ export class ChartsComponent implements OnInit {
 
   ngOnInit(): void {
     forkJoin({
-      scholars: this.scholarsService.getScholars(),
+      scholars: this.scholarService.getScholars(),
       allAttendance: this.attendanceService.getAllScholarAttendance(),
-      schools: this.schoolsService.getSchools(),
+      schools: this.schoolService.getSchools(),
     }).subscribe({
       next: ({ scholars, allAttendance, schools }) => {
         this.scholars.set(scholars);

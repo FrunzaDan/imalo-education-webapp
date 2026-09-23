@@ -23,10 +23,18 @@
 /API/ImaloEducationApi/ImaloEducationApi/publish/
 /API/ImaloEducationApi/ImaloEducationApi.Tests/bin/
 /API/ImaloEducationApi/ImaloEducationApi.Tests/obj/
-*.pdb # Debugging symbols
-*.suo # Visual Studio Solution User Options
-*.user # Visual Studio user settings
-*.bak # Backup files
+
+# dotnet test results (in the API folder and at the repo root)
+[Tt]est[Rr]esult*/
+
+# Debugging symbols
+*.pdb
+# Visual Studio Solution User Options
+*.suo
+# Visual Studio user settings
+*.user
+# Backup files
+*.bak
 
 # --- Dependencies ---
 # Node.js modules for Angular
@@ -54,7 +62,8 @@ packages/
 *.sublime-workspace
 *.vspscc
 *.vssscc
-.vs/ # Visual Studio hidden folder for solution-specific files
+# Visual Studio hidden folder for solution-specific files
+.vs/
 
 # Visual Studio Code
 .vscode/*
@@ -70,8 +79,10 @@ packages/
 /libpeerconnection.log
 testem.log
 /typings
-*.log # General log files
-*.sqlite # If using local SQLite databases
+# General log files
+*.log
+# If using local SQLite databases
+*.sqlite
 
 # --- System Files ---
 .DS_Store

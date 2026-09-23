@@ -7,7 +7,7 @@ import { School } from '../interfaces/school';
 @Injectable({
   providedIn: 'root',
 })
-export class SchoolsService {
+export class SchoolService {
   private readonly http = inject(HttpClient);
   private schoolsUrl = '../../assets/schools.json';
 
@@ -27,7 +27,7 @@ export class SchoolsService {
     return this.schoolsCache$;
   }
 
-  getSchoolById(schoolId: number | string): Observable<School | null> {
+  getSchool(schoolId: number | string): Observable<School | null> {
     const targetId = Number(schoolId);
     return this.getSchools().pipe(
       map((schools) => {

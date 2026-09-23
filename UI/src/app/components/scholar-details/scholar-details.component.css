@@ -1,11 +1,11 @@
 /* Actions and card share one centred column, so the buttons sit on the same
    left edge as the card instead of hugging the viewport. */
-.scholar-detail-page {
+.scholar-details-page {
   max-width: 600px;
   margin: 0 auto;
 }
 
-.scholar-detail-container {
+.scholar-details-container {
   padding: var(--space-5);
   /* One gap between every section — no per-section margin to forget. */
   display: flex;
@@ -13,7 +13,7 @@
   gap: var(--space-5);
 }
 
-.scholar-detail-container .page-title {
+.scholar-details-container .page-title {
   margin: 0;
 }
 

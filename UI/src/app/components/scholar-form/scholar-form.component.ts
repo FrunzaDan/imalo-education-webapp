@@ -13,8 +13,8 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { Router, RouterModule } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { WEEK_DAYS } from '../../constants/week-days';
-import { ScholarsService } from '../../services/scholars.service';
-import { SchoolsService } from '../../services/schools.service';
+import { ScholarService } from '../../services/scholar.service';
+import { SchoolService } from '../../services/school.service';
 import { extractErrorMessage } from '../../utils/extract-error-message';
 import {
   ScholarFormModel,
@@ -39,16 +39,16 @@ import {
 })
 export class ScholarFormComponent {
   private readonly router = inject(Router);
-  private readonly scholarsService = inject(ScholarsService);
-  private readonly schoolsService = inject(SchoolsService);
+  private readonly scholarService = inject(ScholarService);
+  private readonly schoolService = inject(SchoolService);
 
   // Bound from the `:scholarId` route param by withComponentInputBinding() in
   // app.config.ts; absent on the create route.
   readonly scholarId = input<string>();
   readonly isEditMode = computed(() => !!this.scholarId());
 
-  // SchoolsService swallows errors into [], so this never errors.
-  readonly schools = toSignal(this.schoolsService.getSchools(), {
+  // SchoolService swallows errors into [], so this never errors.
+  readonly schools = toSignal(this.schoolService.getSchools(), {
     initialValue: [],
   });
   readonly weekDays = WEEK_DAYS;
@@ -58,7 +58,7 @@ export class ScholarFormComponent {
   private readonly scholarResource = rxResource({
     params: () => this.scholarId(),
     stream: ({ params: scholarId }) =>
-      this.scholarsService.getScholarById(scholarId),
+      this.scholarService.getScholar(scholarId),
   });
 
   // Load failures are shown inline, in place of the form (an edit form with
@@ -140,8 +140,8 @@ export class ScholarFormComponent {
     try {
       const savedScholar = await firstValueFrom(
         isEditMode
-          ? this.scholarsService.updateScholar(scholar)
-          : this.scholarsService.createScholar(scholar),
+          ? this.scholarService.updateScholar(scholar)
+          : this.scholarService.createScholar(scholar),
       );
       // Saved — leaving now must not trigger the unsaved-changes prompt.
       this.saved.set(true);

@@ -1,6 +1,6 @@
 <div class="scholar-form-page app-card">
   <h1 class="page-title">
-    {{ isEditMode() ? 'Update Scholar' : 'Create New Scholar' }}
+    {{ isEditMode() ? 'Update scholar' : 'Create new scholar' }}
   </h1>
 
   @if (loadError(); as error) {
@@ -14,11 +14,11 @@
         <div class="app-error-message" role="alert">{{ summary }}</div>
       }
 
-      <!-- First Name -->
+      <!-- First name -->
       @let firstName = scholarForm.firstName();
       @let firstNameError = firstName.touched() && firstName.invalid();
       <div class="scholar-form__field">
-        <label for="firstName" class="app-label">First Name</label>
+        <label for="firstName" class="app-label">First name</label>
         <input
           type="text"
           id="firstName"
@@ -36,11 +36,11 @@
         }
       </div>
 
-      <!-- Last Name -->
+      <!-- Last name -->
       @let lastName = scholarForm.lastName();
       @let lastNameError = lastName.touched() && lastName.invalid();
       <div class="scholar-form__field">
-        <label for="lastName" class="app-label">Last Name</label>
+        <label for="lastName" class="app-label">Last name</label>
         <input
           type="text"
           id="lastName"
@@ -109,7 +109,7 @@
       @let birthDate = scholarForm.birthDate();
       @let birthDateError = birthDate.touched() && birthDate.invalid();
       <div class="scholar-form__field">
-        <label for="birthDate" class="app-label">Birth Date</label>
+        <label for="birthDate" class="app-label">Birth date</label>
         <input
           type="date"
           id="birthDate"
@@ -190,7 +190,7 @@
       <!-- Pick Up Schedule -->
       <fieldset class="scholar-form__group">
         <legend class="app-label scholar-form__legend">
-          Pick Up Schedule (Optional)
+          Pickup schedule (optional)
         </legend>
         <div class="scholar-form__days">
           @for (day of weekDays; track day) {
@@ -220,8 +220,8 @@
             scholarForm().submitting()
               ? 'Saving...'
               : isEditMode()
-                ? 'Update Scholar'
-                : 'Create Scholar'
+                ? 'Update scholar'
+                : 'Create scholar'
           }}
         </button>
       </div>

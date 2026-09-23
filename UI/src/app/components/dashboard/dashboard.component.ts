@@ -3,8 +3,8 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { forkJoin } from 'rxjs';
 import { RouterModule } from '@angular/router';
 import { DatePipe } from '@angular/common';
-import { ScholarsService } from '../../services/scholars.service';
-import { SchoolsService } from '../../services/schools.service';
+import { ScholarService } from '../../services/scholar.service';
+import { SchoolService } from '../../services/school.service';
 import { AttendanceService } from '../../services/attendance.service';
 import { GlobalAuditLogService } from '../../services/global-audit-log.service';
 import { Scholar } from '../../interfaces/scholar';
@@ -28,8 +28,8 @@ import { extractErrorMessage } from '../../utils/extract-error-message';
   styleUrl: './dashboard.component.css',
 })
 export class DashboardComponent implements OnInit {
-  private readonly scholarsService = inject(ScholarsService);
-  private readonly schoolsService = inject(SchoolsService);
+  private readonly scholarService = inject(ScholarService);
+  private readonly schoolService = inject(SchoolService);
   private readonly attendanceService = inject(AttendanceService);
   private readonly globalAuditLogService = inject(GlobalAuditLogService);
 
@@ -74,8 +74,8 @@ export class DashboardComponent implements OnInit {
 
   ngOnInit(): void {
     forkJoin({
-      scholars: this.scholarsService.getScholars(),
-      schools: this.schoolsService.getSchools(),
+      scholars: this.scholarService.getScholars(),
+      schools: this.schoolService.getSchools(),
       allAttendance: this.attendanceService.getAllScholarAttendance(),
     }).subscribe({
       next: ({ scholars, schools, allAttendance }) => {

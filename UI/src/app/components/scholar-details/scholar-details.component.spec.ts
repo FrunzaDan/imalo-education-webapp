@@ -3,9 +3,9 @@ import { TestBed } from '@angular/core/testing';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Router, provideRouter } from '@angular/router';
 import { of, throwError } from 'rxjs';
-import { ScholarDetailComponent } from './scholar-detail.component';
-import { ScholarsService } from '../../services/scholars.service';
-import { SchoolsService } from '../../services/schools.service';
+import { ScholarDetailsComponent } from './scholar-details.component';
+import { ScholarService } from '../../services/scholar.service';
+import { SchoolService } from '../../services/school.service';
 import { AuditLogService } from '../../services/audit-log.service';
 import { ConfirmDialogService } from '../../services/confirm-dialog.service';
 import type { Scholar } from '../../interfaces/scholar';
@@ -45,7 +45,7 @@ async function setup(
     confirmed?: boolean;
   } = {},
 ) {
-  const getScholarById = vi.fn(() =>
+  const getScholar = vi.fn(() =>
     options.loadError
       ? throwError(
           () =>
@@ -60,7 +60,7 @@ async function setup(
         )
       : of(options.scholar ?? SCHOLAR),
   );
-  const getSchoolById = vi.fn(() => of(SCHOOL));
+  const getSchool = vi.fn(() => of(SCHOOL));
   const loadAuditLog = vi.fn();
   const deleteScholar = vi.fn(() =>
     options.deleteError
@@ -70,12 +70,12 @@ async function setup(
   const confirm = vi.fn().mockResolvedValue(options.confirmed ?? true);
 
   TestBed.configureTestingModule({
-    imports: [ScholarDetailComponent],
+    imports: [ScholarDetailsComponent],
     providers: [
       provideZonelessChangeDetection(),
       provideRouter([]),
-      { provide: ScholarsService, useValue: { getScholarById, deleteScholar } },
-      { provide: SchoolsService, useValue: { getSchoolById } },
+      { provide: ScholarService, useValue: { getScholar, deleteScholar } },
+      { provide: SchoolService, useValue: { getSchool } },
       {
         provide: AuditLogService,
         useValue: {
@@ -89,7 +89,7 @@ async function setup(
     ],
   });
 
-  const fixture = TestBed.createComponent(ScholarDetailComponent);
+  const fixture = TestBed.createComponent(ScholarDetailsComponent);
   fixture.componentRef.setInput('scholarId', 'scholar-1');
   fixture.detectChanges();
   await fixture.whenStable();
@@ -97,21 +97,21 @@ async function setup(
   return {
     fixture,
     component: fixture.componentInstance,
-    getScholarById,
-    getSchoolById,
+    getScholar,
+    getSchool,
     loadAuditLog,
     deleteScholar,
     confirm,
   };
 }
 
-describe('ScholarDetailComponent', () => {
+describe('ScholarDetailsComponent', () => {
   it('loads the scholar by the bound id, then its school, and the audit log', async () => {
-    const { component, getScholarById, getSchoolById, loadAuditLog, fixture } =
+    const { component, getScholar, getSchool, loadAuditLog, fixture } =
       await setup();
 
-    expect(getScholarById).toHaveBeenCalledWith('scholar-1');
-    expect(getSchoolById).toHaveBeenCalledWith(1);
+    expect(getScholar).toHaveBeenCalledWith('scholar-1');
+    expect(getSchool).toHaveBeenCalledWith(1);
     expect(loadAuditLog).toHaveBeenCalledWith('scholar-1');
     expect(component.scholar()).toEqual(SCHOLAR);
     expect(component.school()).toEqual(SCHOOL);
@@ -119,17 +119,17 @@ describe('ScholarDetailComponent', () => {
   });
 
   it('does not look up a school when the scholar has none', async () => {
-    const { component, getSchoolById } = await setup({
+    const { component, getSchool } = await setup({
       scholar: { ...SCHOLAR, schoolId: null },
     });
 
     expect(component.scholar()).not.toBeNull();
-    expect(getSchoolById).not.toHaveBeenCalled();
+    expect(getSchool).not.toHaveBeenCalled();
     expect(component.school()).toBeNull();
   });
 
   it('shows the load error instead of "Loading…" forever when the scholar fails to load', async () => {
-    const { component, fixture, getSchoolById } = await setup({
+    const { component, fixture, getSchool } = await setup({
       loadError: true,
     });
 
@@ -141,7 +141,7 @@ describe('ScholarDetailComponent', () => {
     expect(fixture.nativeElement.textContent).not.toContain(
       'Loading scholar details',
     );
-    expect(getSchoolById).not.toHaveBeenCalled();
+    expect(getSchool).not.toHaveBeenCalled();
   });
 
   it('sends the user to the update page for this scholar', async () => {

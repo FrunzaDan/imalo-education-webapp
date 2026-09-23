@@ -10,7 +10,7 @@
   </div>
 
   <div class="page-toolbar">
-    <a routerLink="/create-scholar" class="app-button">+ Add Scholar</a>
+    <a routerLink="/create-scholar" class="app-button">+ Add scholar</a>
     <a routerLink="/attendance" class="app-button app-button--ghost"
       >Attendance</a
     >
@@ -70,7 +70,7 @@
     </section>
 
     <section class="app-card dashboard-panel">
-      <h2 class="dashboard-panel__title">Upcoming Birthdays</h2>
+      <h2 class="dashboard-panel__title">Upcoming birthdays</h2>
       @if (upcomingBirthdays().length === 0) {
         <p class="dashboard-panel__empty">No birthdays in the next 30 days.</p>
       } @else {
@@ -102,7 +102,7 @@
     </section>
 
     <section class="app-card dashboard-panel dashboard-panel--wide">
-      <h2 class="dashboard-panel__title">Recent Activity</h2>
+      <h2 class="dashboard-panel__title">Recent activity</h2>
       @if (recentActivity().length === 0) {
         <p class="dashboard-panel__empty">No recorded actions yet.</p>
       } @else {

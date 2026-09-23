@@ -4,8 +4,8 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { of, throwError } from 'rxjs';
 import { ScholarFormComponent } from './scholar-form.component';
-import { ScholarsService } from '../../services/scholars.service';
-import { SchoolsService } from '../../services/schools.service';
+import { ScholarService } from '../../services/scholar.service';
+import { SchoolService } from '../../services/school.service';
 import {
   emptyScholarForm,
   isScholarFormDirty,
@@ -83,7 +83,7 @@ async function setup(options: SetupOptions = {}) {
       : of(saved),
   );
   const updateScholar = vi.fn(() => of(saved));
-  const getScholarById = vi.fn(() =>
+  const getScholar = vi.fn(() =>
     options.loadResult === 'error'
       ? throwError(
           () =>
@@ -106,10 +106,10 @@ async function setup(options: SetupOptions = {}) {
       provideZonelessChangeDetection(),
       { provide: Router, useValue: { navigate } },
       {
-        provide: ScholarsService,
-        useValue: { createScholar, updateScholar, getScholarById },
+        provide: ScholarService,
+        useValue: { createScholar, updateScholar, getScholar },
       },
-      { provide: SchoolsService, useValue: { getSchools: () => of(SCHOOLS) } },
+      { provide: SchoolService, useValue: { getSchools: () => of(SCHOOLS) } },
     ],
   });
 
@@ -125,7 +125,7 @@ async function setup(options: SetupOptions = {}) {
     component: fixture.componentInstance,
     createScholar,
     updateScholar,
-    getScholarById,
+    getScholar,
     navigate,
   };
 }
@@ -146,10 +146,10 @@ describe('ScholarFormComponent', () => {
 
       expect(component.scholarForm().valid()).toBe(false);
       expect(component.scholarForm.firstName().errors()[0].message).toBe(
-        'First Name is required.',
+        'First name is required.',
       );
       expect(component.scholarForm.lastName().errors()[0].message).toBe(
-        'Last Name is required.',
+        'Last name is required.',
       );
       expect(component.scholarForm.schoolId().errors()[0].message).toBe(
         'School is required.',
@@ -158,7 +158,7 @@ describe('ScholarFormComponent', () => {
         'Grade is required.',
       );
       expect(component.scholarForm.birthDate().errors()[0].message).toBe(
-        'Birth Date is required.',
+        'Birth date is required.',
       );
       expect(component.scholarForm.motherPhoneNumber().valid()).toBe(true);
       expect(component.scholarForm.pickupSchedule.monday().valid()).toBe(true);
@@ -203,7 +203,7 @@ describe('ScholarFormComponent', () => {
       });
 
       expect(component.scholarForm.firstName().errors()[0].message).toBe(
-        "First Name can't exceed 100 characters.",
+        "First name can't exceed 100 characters.",
       );
       expect(
         component.scholarForm.fatherPhoneNumber().errors()[0].message,
@@ -269,11 +269,11 @@ describe('ScholarFormComponent', () => {
 
   describe('edit mode', () => {
     it('loads the scholar into the form, mapping ids/dates to strings and nulls to blanks', async () => {
-      const { component, getScholarById } = await setup({
+      const { component, getScholar } = await setup({
         routeId: 'scholar-1',
       });
 
-      expect(getScholarById).toHaveBeenCalledWith('scholar-1');
+      expect(getScholar).toHaveBeenCalledWith('scholar-1');
       expect(component.isEditMode()).toBe(true);
       expect(component.model()).toMatchObject({
         firstName: 'Ana',

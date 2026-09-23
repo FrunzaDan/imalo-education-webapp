@@ -8,7 +8,7 @@
     </h1>
 
     <div class="print-only invoice-header">
-      <h1 class="invoice-header__title">Attendance Invoice</h1>
+      <h1 class="invoice-header__title">Attendance invoice</h1>
       <p class="invoice-header__scholar">
         {{ scholar.firstName }} {{ scholar.lastName }}
       </p>
@@ -61,7 +61,7 @@
         class="app-button app-button--ghost"
         (click)="printInvoice()"
       >
-        Print Invoice
+        Print invoice
       </button>
     </div>
 
@@ -73,9 +73,9 @@
           <th class="table-header attendance-table__header-cell">Lunch</th>
           <th class="table-header attendance-table__header-cell">Transport</th>
           <th class="table-header attendance-table__header-cell">Both</th>
-          <th class="table-header attendance-table__header-cell">Lunch Cost</th>
+          <th class="table-header attendance-table__header-cell">Lunch cost</th>
           <th class="table-header attendance-table__header-cell">
-            Transport Cost
+            Transport cost
           </th>
         </tr>
       </thead>
@@ -199,7 +199,7 @@
         [disabled]="isSaving()"
         (click)="save()"
       >
-        {{ isSaving() ? 'Saving...' : 'Save Changes' }}
+        {{ isSaving() ? 'Saving...' : 'Save changes' }}
       </button>
       @if (hasUnsavedChanges() && !isSaving()) {
         <span

@@ -19,8 +19,8 @@ export const routes: Routes = [
     path: 'scholars',
     title: 'Scholars',
     loadComponent: () =>
-      import('./components/scholar-table/scholar-table.component').then(
-        (m) => m.ScholarTableComponent,
+      import('./components/scholar-list/scholar-list.component').then(
+        (m) => m.ScholarListComponent,
       ),
   },
   {
@@ -36,8 +36,8 @@ export const routes: Routes = [
     path: 'scholars/:scholarId',
     title: 'Scholar details',
     loadComponent: () =>
-      import('./components/scholar-detail/scholar-detail.component').then(
-        (m) => m.ScholarDetailComponent,
+      import('./components/scholar-details/scholar-details.component').then(
+        (m) => m.ScholarDetailsComponent,
       ),
   },
   {

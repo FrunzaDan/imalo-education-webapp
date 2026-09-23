@@ -2,9 +2,9 @@ import { Component, inject, signal } from '@angular/core';
 import { catchError, concatMap, from, map, of, switchMap, toArray } from 'rxjs';
 import { ApiLoggerService } from '../../services/api-logger.service';
 import { NotificationService } from '../../services/notification.service';
-import { ScholarsService } from '../../services/scholars.service';
+import { ScholarService } from '../../services/scholar.service';
 import { AttendanceService } from '../../services/attendance.service';
-import { SchoolsService } from '../../services/schools.service';
+import { SchoolService } from '../../services/school.service';
 import { Scholar } from '../../interfaces/scholar';
 import { School } from '../../interfaces/school';
 import { AttendanceRecord } from '../../interfaces/attendance-record';
@@ -208,9 +208,9 @@ function randomParent(chance: number): RandomParent {
 export class AboutComponent {
   private readonly apiLoggerService = inject(ApiLoggerService);
   private readonly notificationService = inject(NotificationService);
-  private readonly scholarsService = inject(ScholarsService);
+  private readonly scholarService = inject(ScholarService);
   private readonly attendanceService = inject(AttendanceService);
-  private readonly schoolsService = inject(SchoolsService);
+  private readonly schoolService = inject(SchoolService);
 
   readonly apiLoggingEnabled = this.apiLoggerService.enabled;
   readonly addingTestScholars = signal(false);
@@ -228,7 +228,7 @@ export class AboutComponent {
     }
     this.addingTestScholars.set(true);
 
-    this.schoolsService.getSchools().subscribe((schools) => {
+    this.schoolService.getSchools().subscribe((schools) => {
       if (schools.length === 0) {
         this.addingTestScholars.set(false);
         this.notificationService.show(
@@ -245,7 +245,7 @@ export class AboutComponent {
       from(scholars)
         .pipe(
           concatMap((scholar) =>
-            this.scholarsService.createScholarSilently(scholar).pipe(
+            this.scholarService.createScholarSilently(scholar).pipe(
               switchMap((created) => {
                 const school = schools.find(
                   (school) => school.schoolId === created.schoolId,

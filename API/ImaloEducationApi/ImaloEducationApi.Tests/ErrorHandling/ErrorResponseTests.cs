@@ -74,7 +74,7 @@ public class ErrorResponseTests
         var problem = await ReadProblemAsync(response, HttpStatusCode.BadRequest);
         Assert.True(problem.GetProperty("errors").TryGetProperty(invalidParameter, out _));
         dataAccess.Verify(
-            d => d.GetAllAuditLogAsync(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<CancellationToken>()),
+            d => d.GetAllScholarAuditLogAsync(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<CancellationToken>()),
             Times.Never);
     }
 
@@ -113,7 +113,7 @@ public class ErrorResponseTests
     {
         var dataAccess = new Mock<IScholarDataAccess>();
         var id = Guid.NewGuid();
-        dataAccess.Setup(d => d.GetScholarByIdAsync(id, It.IsAny<CancellationToken>())).ReturnsAsync((Scholar?)null);
+        dataAccess.Setup(d => d.GetScholarAsync(id, It.IsAny<CancellationToken>())).ReturnsAsync((Scholar?)null);
         await using var factory = CreateFactory(dataAccess);
 
         var response = await factory.CreateClient().GetAsync($"/api/scholars/{id}",

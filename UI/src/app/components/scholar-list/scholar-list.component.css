@@ -2,7 +2,7 @@
    and the toolbar row (.page-toolbar) live in the global src/styles.css so they
    can be shared with the attendance dashboard and audit log. */
 
-.scholar-table-toolbar__search {
+.scholar-list-toolbar__search {
   /* .app-input is width:100% by default, which would otherwise consume the
      whole flex row instead of sitting alongside the buttons. */
   width: auto;

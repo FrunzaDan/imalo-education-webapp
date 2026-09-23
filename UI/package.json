@@ -9,7 +9,7 @@
     "test": "ng test",
     "format": "prettier --write src",
     "format:check": "prettier --check src",
-    "serve:ssr:ImaloEducationWebapp": "NG_ALLOWED_HOSTS=localhost,127.0.0.1 node dist/imalo-education-webapp/server/server.mjs"
+    "serve:ssr:imalo-education-webapp": "NG_ALLOWED_HOSTS=localhost,127.0.0.1 node dist/imalo-education-webapp/server/server.mjs"
   },
   "private": true,
   "dependencies": {

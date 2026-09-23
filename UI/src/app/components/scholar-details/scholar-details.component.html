@@ -1,12 +1,12 @@
 @if (scholar(); as scholarValue) {
-  <div class="scholar-detail-page">
+  <div class="scholar-details-page">
     <div class="page-toolbar">
       <button
         type="button"
         class="app-button"
         (click)="navigateToUpdateScholar()"
       >
-        Edit Scholar
+        Edit scholar
       </button>
       <button
         type="button"
@@ -14,14 +14,14 @@
         [disabled]="deleting()"
         (click)="deleteScholar()"
       >
-        {{ deleting() ? 'Deleting...' : 'Delete Scholar' }}
+        {{ deleting() ? 'Deleting...' : 'Delete scholar' }}
       </button>
       <button
         type="button"
         [routerLink]="['/attendance', scholarValue.scholarId]"
         class="app-button app-button--ghost"
       >
-        View Attendance
+        View attendance
       </button>
     </div>
 
@@ -29,7 +29,7 @@
       <div class="app-alert" role="alert">{{ error }}</div>
     }
 
-    <div class="scholar-detail-container app-card">
+    <div class="scholar-details-container app-card">
       <h1 class="page-title">
         {{ scholarValue.firstName }} {{ scholarValue.lastName }}
       </h1>
@@ -37,7 +37,7 @@
         <dl class="detail-list">
           <dt>Grade</dt>
           <dd>{{ scholarValue.grade }}</dd>
-          <dt>Birth Date</dt>
+          <dt>Birth date</dt>
           <dd>{{ scholarValue.birthDate | date: 'longDate' }}</dd>
           <dt>School</dt>
           <dd>{{ school()?.name || 'Unknown' }}</dd>
@@ -91,7 +91,7 @@
       }
       @if (scholarValue.pickupSchedule) {
         <section class="detail-section">
-          <h2>Pick-Up Schedule</h2>
+          <h2>Pickup schedule</h2>
           <table class="pickup-schedule">
             <thead>
               <tr>
@@ -111,8 +111,8 @@
         </section>
       } @else {
         <section class="detail-section">
-          <h2>Pick-Up Schedule</h2>
-          <p class="detail-muted">Pick-Up Schedule not available.</p>
+          <h2>Pickup schedule</h2>
+          <p class="detail-muted">Pickup schedule not available.</p>
         </section>
       }
       <section class="detail-section">

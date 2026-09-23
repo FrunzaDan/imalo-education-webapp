@@ -4,8 +4,8 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { TimeSlot } from '../../interfaces/time-slot';
 import { Scholar } from '../../interfaces/scholar';
 import { School } from '../../interfaces/school';
-import { ScholarsService } from '../../services/scholars.service';
-import { SchoolsService } from '../../services/schools.service';
+import { ScholarService } from '../../services/scholar.service';
+import { SchoolService } from '../../services/school.service';
 import { WEEK_DAYS, WeekDay } from '../../constants/week-days';
 import { forkJoin } from 'rxjs';
 import { map } from 'rxjs/operators';
@@ -24,8 +24,8 @@ interface GanttCell {
   styleUrl: './gantt-chart.component.css',
 })
 export class GanttChartComponent implements OnInit {
-  private readonly scholarsService = inject(ScholarsService);
-  private readonly schoolsService = inject(SchoolsService);
+  private readonly scholarService = inject(ScholarService);
+  private readonly schoolService = inject(SchoolService);
 
   scholars = signal<Scholar[]>([]);
   readonly loading = signal(true);
@@ -72,7 +72,7 @@ export class GanttChartComponent implements OnInit {
             gridColumn: `span ${columnsSpan}`,
           },
           label: `${pickupTime} - ${this.calculateEndTime(pickupTime)}\n${
-            school?.name || 'Unknown School'
+            school?.name || 'Unknown school'
           }`,
         });
       }
@@ -94,8 +94,8 @@ export class GanttChartComponent implements OnInit {
   private loadData(): void {
     // Use forkJoin to fetch scholars and schools in parallel
     forkJoin({
-      scholars: this.scholarsService.getScholars(),
-      schools: this.schoolsService.getSchools(),
+      scholars: this.scholarService.getScholars(),
+      schools: this.schoolService.getSchools(),
     })
       .pipe(
         // Map the fetched schools into a Map for easy lookup by schoolId

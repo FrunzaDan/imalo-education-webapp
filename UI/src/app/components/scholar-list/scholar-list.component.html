@@ -3,7 +3,7 @@
 <div class="page-toolbar">
   <input
     type="search"
-    class="app-input scholar-table-toolbar__search"
+    class="app-input scholar-list-toolbar__search"
     placeholder="Search by name..."
     [formField]="searchForm.term"
     aria-label="Search scholars by name"
@@ -12,7 +12,7 @@
     [routerLink]="['/create-scholar']"
     class="app-button app-button--accent"
   >
-    Create Scholar
+    Create scholar
   </button>
   <button
     type="button"
@@ -51,7 +51,7 @@
           />
         </th>
         <th class="table-header sortable" (click)="sortData('name', 'string')">
-          Student Name
+          Student name
           <span class="sort-icon">
             <span [class.active]="currentSortColumn === 'name' && isAscending"
               >↑</span
@@ -94,7 +94,7 @@
           class="table-header sortable"
           (click)="sortData('birthDate', 'date')"
         >
-          Birth Date
+          Birth date
           <span class="sort-icon">
             <span
               [class.active]="currentSortColumn === 'birthDate' && isAscending"

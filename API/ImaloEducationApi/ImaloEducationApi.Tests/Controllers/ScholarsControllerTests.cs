@@ -71,7 +71,7 @@ public class ScholarsControllerTests
         var result = await controller.CreateScholar(SampleScholar(), TestContext.Current.CancellationToken);
 
         var createdAt = Assert.IsType<CreatedAtActionResult>(result.Result);
-        Assert.Equal(nameof(ScholarsController.GetScholarById), createdAt.ActionName);
+        Assert.Equal(nameof(ScholarsController.GetScholar), createdAt.ActionName);
         Assert.Equal(created.ScholarId, ((Scholar)createdAt.Value!).ScholarId);
     }
 
@@ -88,7 +88,7 @@ public class ScholarsControllerTests
     }
 
     // ---------------------------------------
-    // GetScholars / GetScholarById
+    // GetScholars / GetScholar
     // ---------------------------------------
 
     [Fact]
@@ -110,10 +110,10 @@ public class ScholarsControllerTests
     {
         var (controller, dataAccess) = MakeController();
         var scholar = SampleScholar();
-        dataAccess.Setup(d => d.GetScholarByIdAsync(scholar.ScholarId, It.IsAny<CancellationToken>()))
+        dataAccess.Setup(d => d.GetScholarAsync(scholar.ScholarId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(scholar);
 
-        var result = await controller.GetScholarById(scholar.ScholarId, TestContext.Current.CancellationToken);
+        var result = await controller.GetScholar(scholar.ScholarId, TestContext.Current.CancellationToken);
 
         var ok = Assert.IsType<OkObjectResult>(result.Result);
         Assert.Equal(scholar.ScholarId, ((Scholar)ok.Value!).ScholarId);
@@ -124,9 +124,9 @@ public class ScholarsControllerTests
     {
         var (controller, dataAccess) = MakeController();
         var id = Guid.NewGuid();
-        dataAccess.Setup(d => d.GetScholarByIdAsync(id, It.IsAny<CancellationToken>())).ReturnsAsync((Scholar?)null);
+        dataAccess.Setup(d => d.GetScholarAsync(id, It.IsAny<CancellationToken>())).ReturnsAsync((Scholar?)null);
 
-        var result = await controller.GetScholarById(id, TestContext.Current.CancellationToken);
+        var result = await controller.GetScholar(id, TestContext.Current.CancellationToken);
 
         var problem = AssertNotFoundProblem(result.Result);
         Assert.Equal($"Scholar with ID {id} not found.", problem.Detail);
@@ -137,11 +137,11 @@ public class ScholarsControllerTests
     {
         var (controller, dataAccess) = MakeController();
 
-        var result = await controller.GetScholarById(Guid.Empty, TestContext.Current.CancellationToken);
+        var result = await controller.GetScholar(Guid.Empty, TestContext.Current.CancellationToken);
 
         var problem = AssertValidationProblem(result.Result);
         Assert.Contains("scholarId", problem.Errors.Keys);
-        dataAccess.Verify(d => d.GetScholarByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()), Times.Never);
+        dataAccess.Verify(d => d.GetScholarAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
     // ---------------------------------------
@@ -245,9 +245,9 @@ public class ScholarsControllerTests
     {
         var (controller, dataAccess) = MakeController();
         var page = new PagedResponse<GlobalAuditLogEntry>([], 45, 2, 20);
-        dataAccess.Setup(d => d.GetAllAuditLogAsync(2, 20, It.IsAny<CancellationToken>())).ReturnsAsync(page);
+        dataAccess.Setup(d => d.GetAllScholarAuditLogAsync(2, 20, It.IsAny<CancellationToken>())).ReturnsAsync(page);
 
-        var result = await controller.GetAllAuditLog(2, 20, TestContext.Current.CancellationToken);
+        var result = await controller.GetAllScholarAuditLog(2, 20, TestContext.Current.CancellationToken);
 
         var ok = Assert.IsType<OkObjectResult>(result.Result);
         Assert.Equal(45, ((PagedResponse<GlobalAuditLogEntry>)ok.Value!).TotalItems);
@@ -257,9 +257,9 @@ public class ScholarsControllerTests
     public async Task DeleteAllAuditLog_Success_ReturnsNoContent()
     {
         var (controller, dataAccess) = MakeController();
-        dataAccess.Setup(d => d.DeleteAllAuditLogAsync(It.IsAny<CancellationToken>())).Returns(Task.CompletedTask);
+        dataAccess.Setup(d => d.DeleteAllScholarAuditLogAsync(It.IsAny<CancellationToken>())).Returns(Task.CompletedTask);
 
-        var result = await controller.DeleteAllAuditLog(TestContext.Current.CancellationToken);
+        var result = await controller.DeleteAllScholarAuditLog(TestContext.Current.CancellationToken);
 
         Assert.IsType<NoContentResult>(result);
     }

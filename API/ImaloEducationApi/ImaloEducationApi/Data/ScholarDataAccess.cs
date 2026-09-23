@@ -163,7 +163,7 @@ public class ScholarDataAccess : IScholarDataAccess
         return scholars;
     }
 
-    public async Task<Scholar?> GetScholarByIdAsync(Guid scholarId, CancellationToken cancellationToken)
+    public async Task<Scholar?> GetScholarAsync(Guid scholarId, CancellationToken cancellationToken)
     {
         if (scholarId == Guid.Empty)
             throw new ArgumentException("Scholar ID must not be empty.", nameof(scholarId));
@@ -563,7 +563,7 @@ public class ScholarDataAccess : IScholarDataAccess
         return entries;
     }
 
-    public async Task<PagedResponse<GlobalAuditLogEntry>> GetAllAuditLogAsync(int pageNumber, int pageSize,
+    public async Task<PagedResponse<GlobalAuditLogEntry>> GetAllScholarAuditLogAsync(int pageNumber, int pageSize,
         CancellationToken cancellationToken)
     {
         // LEFT JOIN, not INNER: ScholarAuditLog has no FK to Scholar (a deleted
@@ -630,7 +630,7 @@ public class ScholarDataAccess : IScholarDataAccess
         return new PagedResponse<GlobalAuditLogEntry>(items, totalItems, pageNumber, pageSize);
     }
 
-    public async Task DeleteAllAuditLogAsync(CancellationToken cancellationToken)
+    public async Task DeleteAllScholarAuditLogAsync(CancellationToken cancellationToken)
     {
         const string sql = "DELETE FROM dbo.ScholarAuditLog;";
 

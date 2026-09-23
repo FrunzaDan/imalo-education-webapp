@@ -4,7 +4,7 @@ import { DatePipe } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { FormField, form } from '@angular/forms/signals';
 import { forkJoin } from 'rxjs';
-import { ScholarsService } from '../../services/scholars.service';
+import { ScholarService } from '../../services/scholar.service';
 import { AttendanceService } from '../../services/attendance.service';
 import { CsvExportService } from '../../services/csv-export.service';
 import { Scholar } from '../../interfaces/scholar';
@@ -30,7 +30,7 @@ import { extractErrorMessage } from '../../utils/extract-error-message';
   styleUrl: './attendance.component.css',
 })
 export class AttendanceComponent implements OnInit {
-  private readonly scholarsService = inject(ScholarsService);
+  private readonly scholarService = inject(ScholarService);
   private readonly attendanceService = inject(AttendanceService);
   private readonly csvExportService = inject(CsvExportService);
 
@@ -70,7 +70,7 @@ export class AttendanceComponent implements OnInit {
 
   private loadData(): void {
     forkJoin({
-      scholars: this.scholarsService.getScholars(),
+      scholars: this.scholarService.getScholars(),
       allAttendance: this.attendanceService.getAllScholarAttendance(),
     }).subscribe({
       next: ({ scholars, allAttendance }) => {

@@ -11,8 +11,8 @@ import { rxResource } from '@angular/core/rxjs-interop';
 import { DatePipe, TitleCasePipe } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Router, RouterModule } from '@angular/router';
-import { ScholarsService } from '../../services/scholars.service';
-import { SchoolsService } from '../../services/schools.service';
+import { ScholarService } from '../../services/scholar.service';
+import { SchoolService } from '../../services/school.service';
 import { ConfirmDialogService } from '../../services/confirm-dialog.service';
 import { AuditLogService } from '../../services/audit-log.service';
 import { auditActionLabel } from '../../utils/audit-action-label';
@@ -20,14 +20,14 @@ import { WEEK_DAYS } from '../../constants/week-days';
 import { extractErrorMessage } from '../../utils/extract-error-message';
 
 @Component({
-  selector: 'app-scholar-detail',
+  selector: 'app-scholar-details',
   imports: [DatePipe, TitleCasePipe, RouterModule],
-  templateUrl: './scholar-detail.component.html',
-  styleUrl: './scholar-detail.component.css',
+  templateUrl: './scholar-details.component.html',
+  styleUrl: './scholar-details.component.css',
 })
-export class ScholarDetailComponent {
-  private readonly scholarsService = inject(ScholarsService);
-  private readonly schoolsService = inject(SchoolsService);
+export class ScholarDetailsComponent {
+  private readonly scholarService = inject(ScholarService);
+  private readonly schoolService = inject(SchoolService);
   private readonly router = inject(Router);
   private readonly confirmDialogService = inject(ConfirmDialogService);
   private readonly auditLogService = inject(AuditLogService);
@@ -41,7 +41,7 @@ export class ScholarDetailComponent {
   private readonly scholarResource = rxResource({
     params: () => this.scholarId(),
     stream: ({ params: scholarId }) =>
-      this.scholarsService.getScholarById(scholarId),
+      this.scholarService.getScholar(scholarId),
   });
   readonly scholar = computed(() =>
     this.scholarResource.hasValue() ? this.scholarResource.value() : null,
@@ -59,8 +59,7 @@ export class ScholarDetailComponent {
   // Idle (no request) until the scholar has loaded and has a school.
   private readonly schoolResource = rxResource({
     params: () => this.scholar()?.schoolId || undefined,
-    stream: ({ params: schoolId }) =>
-      this.schoolsService.getSchoolById(schoolId),
+    stream: ({ params: schoolId }) => this.schoolService.getSchool(schoolId),
   });
   readonly school = computed(() =>
     this.schoolResource.hasValue() ? this.schoolResource.value() : null,
@@ -116,7 +115,7 @@ export class ScholarDetailComponent {
     this.deleting.set(true);
     this.deleteError.set(null);
 
-    this.scholarsService.deleteScholar(scholar.scholarId).subscribe({
+    this.scholarService.deleteScholar(scholar.scholarId).subscribe({
       next: () => this.router.navigate(['/scholars']),
       error: (error: HttpErrorResponse) => {
         this.deleting.set(false);

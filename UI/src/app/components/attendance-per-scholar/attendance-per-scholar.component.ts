@@ -14,8 +14,8 @@ import { FieldTree, FormField, form } from '@angular/forms/signals';
 import { DatePipe } from '@angular/common';
 import { map, switchMap } from 'rxjs';
 
-import { ScholarsService } from '../../services/scholars.service';
-import { SchoolsService } from '../../services/schools.service';
+import { ScholarService } from '../../services/scholar.service';
+import { SchoolService } from '../../services/school.service';
 import { AttendanceService } from '../../services/attendance.service';
 import { CsvExportService } from '../../services/csv-export.service';
 import { Scholar } from '../../interfaces/scholar';
@@ -44,8 +44,8 @@ import { HasUnsavedChanges } from '../../services/unsaved-changes.guard';
 export class AttendancePerScholarComponent
   implements OnInit, HasUnsavedChanges
 {
-  private readonly scholarsService = inject(ScholarsService);
-  private readonly schoolsService = inject(SchoolsService);
+  private readonly scholarService = inject(ScholarService);
+  private readonly schoolService = inject(SchoolService);
   private readonly attendanceService = inject(AttendanceService);
   private readonly csvExportService = inject(CsvExportService);
   private readonly destroyRef = inject(DestroyRef);
@@ -156,8 +156,8 @@ export class AttendancePerScholarComponent
     // The attendance list is only shown (and so only saveable) once it has
     // loaded: Save replaces the scholar's whole list, so saving over a failed
     // load would wipe the attendance that couldn't be read.
-    this.scholarsService
-      .getScholarById(scholarId)
+    this.scholarService
+      .getScholar(scholarId)
       .pipe(
         switchMap((scholar) => {
           this.loadSchoolPrices(scholar);
@@ -181,8 +181,8 @@ export class AttendancePerScholarComponent
 
   private loadSchoolPrices(scholar: Scholar): void {
     if (scholar.schoolId == null) return;
-    this.schoolsService
-      .getSchoolById(scholar.schoolId)
+    this.schoolService
+      .getSchool(scholar.schoolId)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe((school) => {
         this.lunchPrice = school?.lunchPrice ?? 0;

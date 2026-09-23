@@ -9,7 +9,7 @@ public interface IScholarDataAccess
 {
     Task<Scholar> CreateScholarAsync(Scholar scholar, CancellationToken cancellationToken);
     Task<IEnumerable<Scholar>> GetScholarsAsync(CancellationToken cancellationToken);
-    Task<Scholar?> GetScholarByIdAsync(Guid scholarId, CancellationToken cancellationToken);
+    Task<Scholar?> GetScholarAsync(Guid scholarId, CancellationToken cancellationToken);
     Task<Scholar?> UpdateScholarAsync(Scholar scholar, CancellationToken cancellationToken);
     Task<bool> DeleteScholarAsync(Guid scholarId, CancellationToken cancellationToken);
 
@@ -20,7 +20,7 @@ public interface IScholarDataAccess
     Task<bool> DeleteAttendanceAsync(Guid scholarId, CancellationToken cancellationToken);
 
     Task<List<AuditLogEntry>> GetAuditLogByScholarIdAsync(Guid scholarId, CancellationToken cancellationToken);
-    Task<PagedResponse<GlobalAuditLogEntry>> GetAllAuditLogAsync(int pageNumber, int pageSize,
+    Task<PagedResponse<GlobalAuditLogEntry>> GetAllScholarAuditLogAsync(int pageNumber, int pageSize,
         CancellationToken cancellationToken);
-    Task DeleteAllAuditLogAsync(CancellationToken cancellationToken);
+    Task DeleteAllScholarAuditLogAsync(CancellationToken cancellationToken);
 }

@@ -10,16 +10,16 @@ import { NotificationService } from './notification.service';
 // A successful change confirms itself with a toast; the *Silently variants
 // skip it, for bulk callers that show one summary toast instead.
 @Injectable({ providedIn: 'root' })
-export class ScholarsService {
+export class ScholarService {
   private readonly http = inject(HttpClient);
   private readonly notificationService = inject(NotificationService);
-  private readonly baseUrl = `${environment.apiUrl}/api/scholars`;
+  private readonly API_URL = `${environment.apiUrl}/api/scholars`;
 
   getScholars(): Observable<Scholar[]> {
-    return this.http.get<Scholar[]>(this.baseUrl);
+    return this.http.get<Scholar[]>(this.API_URL);
   }
 
-  getScholarById(scholarId: string): Observable<Scholar> {
+  getScholar(scholarId: string): Observable<Scholar> {
     return this.http.get<Scholar>(this.urlWithId(scholarId));
   }
 
@@ -30,7 +30,7 @@ export class ScholarsService {
   }
 
   createScholarSilently(scholar: Scholar): Observable<Scholar> {
-    return this.http.post<Scholar>(this.baseUrl, scholar);
+    return this.http.post<Scholar>(this.API_URL, scholar);
   }
 
   updateScholar(scholar: Scholar): Observable<Scholar> {
@@ -54,6 +54,6 @@ export class ScholarsService {
   }
 
   private urlWithId(scholarId: string): string {
-    return `${this.baseUrl}/${scholarId}`;
+    return `${this.API_URL}/${scholarId}`;
   }
 }

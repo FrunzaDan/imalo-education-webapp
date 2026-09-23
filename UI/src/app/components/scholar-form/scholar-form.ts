@@ -64,13 +64,13 @@ export const PHONE_PATTERN = new RegExp(environment.phoneNumberRegex);
 const NAME_MAX_LENGTH = 100;
 
 export const scholarFormSchema = schema<ScholarFormModel>((p) => {
-  required(p.firstName, { message: 'First Name is required.' });
+  required(p.firstName, { message: 'First name is required.' });
   maxLength(p.firstName, NAME_MAX_LENGTH, {
-    message: `First Name can't exceed ${NAME_MAX_LENGTH} characters.`,
+    message: `First name can't exceed ${NAME_MAX_LENGTH} characters.`,
   });
-  required(p.lastName, { message: 'Last Name is required.' });
+  required(p.lastName, { message: 'Last name is required.' });
   maxLength(p.lastName, NAME_MAX_LENGTH, {
-    message: `Last Name can't exceed ${NAME_MAX_LENGTH} characters.`,
+    message: `Last name can't exceed ${NAME_MAX_LENGTH} characters.`,
   });
 
   required(p.schoolId, { message: 'School is required.' });
@@ -79,7 +79,7 @@ export const scholarFormSchema = schema<ScholarFormModel>((p) => {
   min(p.grade, 0, { message: 'Grade must be between 0 and 12.' });
   max(p.grade, 12, { message: 'Grade must be between 0 and 12.' });
 
-  required(p.birthDate, { message: 'Birth Date is required.' });
+  required(p.birthDate, { message: 'Birth date is required.' });
   validate(p.birthDate, ({ value }) => {
     if (!value()) return undefined; // the required() rule above reports blanks
     // parseDateOnly, not new Date(value()): the latter reads 'YYYY-MM-DD' as UTC

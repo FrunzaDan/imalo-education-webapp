@@ -3,8 +3,8 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { of, throwError } from 'rxjs';
 import { AttendancePerScholarComponent } from './attendance-per-scholar.component';
-import { ScholarsService } from '../../services/scholars.service';
-import { SchoolsService } from '../../services/schools.service';
+import { ScholarService } from '../../services/scholar.service';
+import { SchoolService } from '../../services/school.service';
 import { AttendanceService } from '../../services/attendance.service';
 import { CsvExportService } from '../../services/csv-export.service';
 import {
@@ -80,14 +80,14 @@ function setup(options: SetupOptions = {}) {
       detail: 'Scholar with ID scholar-1 not found.',
     },
   });
-  const scholarsService = {
-    getScholarById: vi.fn(() =>
+  const scholarService = {
+    getScholar: vi.fn(() =>
       options.loadResult === 'scholar-error'
         ? throwError(() => notFound)
         : of(SCHOLAR),
     ),
   };
-  const schoolsService = { getSchoolById: vi.fn(() => of(SCHOOL)) };
+  const schoolService = { getSchool: vi.fn(() => of(SCHOOL)) };
   const saveAttendance = vi.fn(() =>
     options.saveResult === 'error' ? throwError(() => notFound) : of(undefined),
   );
@@ -105,8 +105,8 @@ function setup(options: SetupOptions = {}) {
     imports: [AttendancePerScholarComponent],
     providers: [
       provideZonelessChangeDetection(),
-      { provide: ScholarsService, useValue: scholarsService },
-      { provide: SchoolsService, useValue: schoolsService },
+      { provide: ScholarService, useValue: scholarService },
+      { provide: SchoolService, useValue: schoolService },
       { provide: AttendanceService, useValue: attendanceService },
       { provide: CsvExportService, useValue: csvExportService },
     ],
@@ -125,8 +125,8 @@ function setup(options: SetupOptions = {}) {
   return {
     fixture,
     component: fixture.componentInstance,
-    scholarsService,
-    schoolsService,
+    scholarService,
+    schoolService,
     attendanceService,
     csvExportService,
   };
@@ -187,8 +187,8 @@ describe('AttendancePerScholarComponent', () => {
     });
 
     it('does nothing and calls no service when the route has no scholar id', () => {
-      const { scholarsService } = setup({ routeScholarId: null });
-      expect(scholarsService.getScholarById).not.toHaveBeenCalled();
+      const { scholarService } = setup({ routeScholarId: null });
+      expect(scholarService.getScholar).not.toHaveBeenCalled();
     });
 
     it('shows the load error, not the form, when the scholar cannot be loaded', () => {
@@ -212,7 +212,7 @@ describe('AttendancePerScholarComponent', () => {
         'Failed to load attendance (500). Please try again.',
       );
       expect(el.querySelector('table')).toBeNull();
-      expect(el.textContent).not.toContain('Save Changes');
+      expect(el.textContent).not.toContain('Save changes');
     });
 
     it('defaults to the month of the latest existing attendance record', () => {

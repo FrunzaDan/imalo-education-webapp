@@ -20,7 +20,7 @@ public sealed record GlobalAuditLogEntry
 
     public required Guid ScholarId { get; init; }
 
-    // Null when the scholar no longer exists (GetAllAuditLogAsync LEFT JOINs
+    // Null when the scholar no longer exists (GetAllScholarAuditLogAsync LEFT JOINs
     // Scholar, since audit history outlives a deleted scholar).
     public string? ScholarFirstName { get; init; }
 

@@ -19,7 +19,7 @@ SQL Server schema for the `ImaloEducation` database, defined as an SSDT database
 - `FirstName`, `LastName NVARCHAR(100)` NOT NULL (NVARCHAR: Romanian diacritics)
 - `BirthDate DATE` NOT NULL (API: `Scholar.BirthDate`, a `DateOnly`)
 - `Grade TINYINT` NULL (0–12, enforced app-side; API: `byte?`)
-- `SchoolId INT` NULL — **not a foreign key**, no `Schools` table exists in the DB. Schools are static frontend config (`UI/src/assets/schools.json`: schoolId, name, color, lunchPrice, transportPrice) served by `SchoolsService`, not persisted server-side. `SchoolId` here is just an integer the frontend resolves against that static list.
+- `SchoolId INT` NULL — **not a foreign key**, no `Schools` table exists in the DB. Schools are static frontend config (`UI/public/assets/schools.json`: schoolId, name, color, lunchPrice, transportPrice) served by `SchoolService`, not persisted server-side. `SchoolId` here is just an integer the frontend resolves against that static list.
 
 **`ScholarPickupSchedule`** (`ScholarPickupSchedule.sql`) — one row per scholar, JSON blob, not normalized.
 - `ScholarId UNIQUEIDENTIFIER` PK **and** FK → `Scholar.ScholarId`, `ON DELETE CASCADE`

@@ -1,8 +1,8 @@
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
 import { FormField, form } from '@angular/forms/signals';
-import { ScholarsService } from '../../services/scholars.service';
-import { SchoolsService } from '../../services/schools.service';
+import { ScholarService } from '../../services/scholar.service';
+import { SchoolService } from '../../services/school.service';
 import { SortingService } from '../../services/sorting.service';
 import { CsvExportService } from '../../services/csv-export.service';
 import { NotificationService } from '../../services/notification.service';
@@ -29,13 +29,13 @@ interface TransformedScholarData {
 
 @Component({
   imports: [FormField, NgStyle, RouterModule],
-  selector: 'app-scholar-table',
-  templateUrl: './scholar-table.component.html',
-  styleUrl: './scholar-table.component.css',
+  selector: 'app-scholar-list',
+  templateUrl: './scholar-list.component.html',
+  styleUrl: './scholar-list.component.css',
 })
-export class ScholarTableComponent implements OnInit {
-  private readonly scholarsService = inject(ScholarsService);
-  private readonly schoolsService = inject(SchoolsService);
+export class ScholarListComponent implements OnInit {
+  private readonly scholarService = inject(ScholarService);
+  private readonly schoolService = inject(SchoolService);
   private readonly sortingService = inject(SortingService);
   private readonly csvExportService = inject(CsvExportService);
   private readonly notificationService = inject(NotificationService);
@@ -64,8 +64,8 @@ export class ScholarTableComponent implements OnInit {
   private loadData(): void {
     this.loadError.set(null);
     forkJoin({
-      scholars: this.scholarsService.getScholars(),
-      schools: this.schoolsService.getSchools(),
+      scholars: this.scholarService.getScholars(),
+      schools: this.schoolService.getSchools(),
     })
       .pipe(
         map(({ scholars, schools }) => {
@@ -197,7 +197,7 @@ export class ScholarTableComponent implements OnInit {
     from(ids)
       .pipe(
         concatMap((scholarId) =>
-          this.scholarsService.deleteScholarSilently(scholarId).pipe(
+          this.scholarService.deleteScholarSilently(scholarId).pipe(
             map(() => true),
             catchError(() => of(false)),
           ),

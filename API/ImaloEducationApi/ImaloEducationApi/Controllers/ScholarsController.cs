@@ -23,7 +23,7 @@ public class ScholarsController(IScholarDataAccess scholarDataAccess) : Controll
         CancellationToken cancellationToken)
     {
         var createdScholar = await scholarDataAccess.CreateScholarAsync(scholar, cancellationToken);
-        return CreatedAtAction(nameof(GetScholarById), new { scholarId = createdScholar.ScholarId }, createdScholar);
+        return CreatedAtAction(nameof(GetScholar), new { scholarId = createdScholar.ScholarId }, createdScholar);
     }
 
     [HttpGet]
@@ -31,11 +31,11 @@ public class ScholarsController(IScholarDataAccess scholarDataAccess) : Controll
         Ok(await scholarDataAccess.GetScholarsAsync(cancellationToken));
 
     [HttpGet("{scholarId:guid}")]
-    public async Task<ActionResult<Scholar>> GetScholarById(Guid scholarId, CancellationToken cancellationToken)
+    public async Task<ActionResult<Scholar>> GetScholar(Guid scholarId, CancellationToken cancellationToken)
     {
         if (scholarId == Guid.Empty) return EmptyScholarId();
 
-        var scholar = await scholarDataAccess.GetScholarByIdAsync(scholarId, cancellationToken);
+        var scholar = await scholarDataAccess.GetScholarAsync(scholarId, cancellationToken);
         return scholar is null ? ScholarNotFound(scholarId) : Ok(scholar);
     }
 
@@ -79,18 +79,18 @@ public class ScholarsController(IScholarDataAccess scholarDataAccess) : Controll
     }
 
     [HttpGet("audit-log/all")]
-    public async Task<ActionResult<PagedResponse<GlobalAuditLogEntry>>> GetAllAuditLog(
+    public async Task<ActionResult<PagedResponse<GlobalAuditLogEntry>>> GetAllScholarAuditLog(
         [FromQuery, Range(1, int.MaxValue, ErrorMessage = "Page number must be 1 or greater.")]
         int pageNumber = 1,
         [FromQuery, Range(1, 100, ErrorMessage = "Page size must be between 1 and 100.")]
         int pageSize = 20,
         CancellationToken cancellationToken = default) =>
-        Ok(await scholarDataAccess.GetAllAuditLogAsync(pageNumber, pageSize, cancellationToken));
+        Ok(await scholarDataAccess.GetAllScholarAuditLogAsync(pageNumber, pageSize, cancellationToken));
 
     [HttpDelete("audit-log/all")]
-    public async Task<IActionResult> DeleteAllAuditLog(CancellationToken cancellationToken)
+    public async Task<IActionResult> DeleteAllScholarAuditLog(CancellationToken cancellationToken)
     {
-        await scholarDataAccess.DeleteAllAuditLogAsync(cancellationToken);
+        await scholarDataAccess.DeleteAllScholarAuditLogAsync(cancellationToken);
         return NoContent();
     }
 

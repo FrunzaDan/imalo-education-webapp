@@ -657,7 +657,7 @@
 								"all"
 							]
 						},
-						"description": "**Destructive — permanently wipes every audit-log row for every scholar, no soft-delete, no confirmation, no auth (`DeleteAllAuditLogAsync`, a plain unconditional DELETE).** Not wired into any other flow in this collection; run it only when you actually mean to clear the log. See ai_docs/api.md."
+						"description": "**Destructive — permanently wipes every audit-log row for every scholar, no soft-delete, no confirmation, no auth (`DeleteAllScholarAuditLogAsync`, a plain unconditional DELETE).** Not wired into any other flow in this collection; run it only when you actually mean to clear the log. See ai_docs/api.md."
 					},
 					"response": [],
 					"event": [
