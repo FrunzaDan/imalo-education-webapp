@@ -2,24 +2,24 @@
 <Project DefaultTargets="Build">
   <Sdk Name="Microsoft.Build.Sql" Version="1.0.0" />
   <PropertyGroup>
-    <Name>ImaloEducationDB</Name>
+    <Name>ImaloEducation</Name>
     <ProjectGuid>{AAD63E17-4222-4DFC-A51A-90F700A04929}</ProjectGuid>
     <DSP>Microsoft.Data.Tools.Schema.Sql.SqlAzureV12DatabaseSchemaProvider</DSP>
     <ModelCollation>1033, CI</ModelCollation>
-    <TargetDatabaseName>ImaloEducationDB</TargetDatabaseName>
+    <TargetDatabaseName>ImaloEducation</TargetDatabaseName>
     <DefaultSchema>dbo</DefaultSchema>
     <DefaultCollation>SQL_Latin1_General_CP1_CI_AS</DefaultCollation>
     <DefaultFileStructure>BySchemaAndSchemaType</DefaultFileStructure>
   </PropertyGroup>
   <ItemGroup>
     <Folder Include="Scripts" />
-    <Folder Include="Scripts\Pre-Deployment" />
-    <Folder Include="Scripts\Post-Deployment" />
+    <Folder Include="Scripts\PreDeployment" />
+    <Folder Include="Scripts\PostDeployment" />
     <Folder Include="Tables" />
   </ItemGroup>
   <ItemGroup>
-    <PreDeploy Include="Scripts\Pre-Deployment\Script.PreDeployment.sql" />
-    <PostDeploy Include="Scripts\Post-Deployment\Script.PostDeployment.sql" />
+    <PreDeploy Include="Scripts\PreDeployment\PreDeployment.sql" />
+    <PostDeploy Include="Scripts\PostDeployment\PostDeployment.sql" />
   </ItemGroup>
   <Target Name="BeforeBuild">
     <Delete Files="$(BaseIntermediateOutputPath)\project.assets.json" />

@@ -47,9 +47,9 @@ docker run -e "ACCEPT_EULA=1" -e "MSSQL_SA_PASSWORD=MyStrongPassw0rd?" -p 1433:1
         <code>.sqlproj</code>), not migration scripts. It has three tables:
       </p>
       <ul>
-        <li><code>Scholars</code> — one row per scholar: name, school, grade, and date of birth, keyed by a server-generated GUID.</li>
-        <li><code>PickUpSchedule</code> — one row per scholar, storing their Monday&ndash;Friday pickup times as a JSON blob.</li>
-        <li><code>Attendance</code> — one row per scholar, storing every recorded day's lunch/transport cost and selection state as a JSON blob.</li>
+        <li><code>Scholar</code> — one row per scholar: name, school, grade, and date of birth, keyed by a server-generated GUID.</li>
+        <li><code>ScholarPickupSchedule</code> — one row per scholar, storing their Monday&ndash;Friday pickup times as a JSON blob.</li>
+        <li><code>ScholarAttendance</code> — one row per scholar, storing every recorded day's lunch/transport cost and selection state as a JSON blob.</li>
       </ul>
       <p>
         All reads and writes go through raw ADO.NET <code>SqlCommand</code>s in

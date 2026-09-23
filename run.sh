@@ -9,9 +9,9 @@ API_PROJ_DIR="$ROOT_DIR/API/ImaloEducationApi/ImaloEducationApi"
 API_PROJ="$API_PROJ_DIR/ImaloEducationApi.csproj"
 API_LAUNCH_SETTINGS="$API_PROJ_DIR/Properties/launchSettings.json"
 API_LAUNCH_PROFILE="ImaloEducationApi"
-DB_DIR="$ROOT_DIR/DB"
-DB_PROJ="ImaloEducationDB.sqlproj"
-DB_DACPAC="$DB_DIR/bin/Debug/ImaloEducationDB.dacpac"
+DB_DIR="$ROOT_DIR/DB/ImaloEducation"
+DB_PROJ="ImaloEducation.sqlproj"
+DB_DACPAC="$DB_DIR/bin/Debug/ImaloEducation.dacpac"
 UI_DIR="$ROOT_DIR/UI"
 RUN_DIR="$ROOT_DIR/.run"
 
@@ -29,7 +29,7 @@ if [[ "$(uname -s)" == "Darwin" && "$(uname -m)" == "arm64" ]]; then
 else
   SQL_PLATFORM="${SQL_PLATFORM:-linux/amd64}"
 fi
-SQL_DATABASE="${SQL_DATABASE:-ImaloEducationDB}"
+SQL_DATABASE="${SQL_DATABASE:-ImaloEducation}"
 
 # Default falls back to the "ImaloEducationApi" launch profile's applicationUrl so the
 # script doesn't silently poll the wrong port if the profile is ever changed; set

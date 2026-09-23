@@ -9,9 +9,9 @@
 /UI/.angular/cache/
 /UI/coverage/
 
-# ImaloEducationDB build output
-/DB/bin/
-/DB/obj/
+# ImaloEducation (DB project) build output
+/DB/ImaloEducation/bin/
+/DB/ImaloEducation/obj/
 
 # SQL Server Data Tools (SSDT) intermediate files
 *.dbmdl

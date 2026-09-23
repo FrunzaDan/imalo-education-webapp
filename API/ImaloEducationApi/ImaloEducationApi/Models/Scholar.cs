@@ -32,8 +32,8 @@ public partial class Scholar
 
     // Optional — a scholar may have a mother, a father, both, or neither, and each
     // of a parent's own fields (name, phone) is independently optional too. Stored
-    // as separate rows (Role 'Mother'/'Father') in the Parents table, not as
-    // columns on Scholars, so the two roles can be added/edited/removed independently.
+    // as separate rows (Role 'Mother'/'Father') in the ScholarParent table, not as
+    // columns on Scholar, so the two roles can be added/edited/removed independently.
     [StringLength(100)]
     public string? MotherFirstName { get; set; }
 

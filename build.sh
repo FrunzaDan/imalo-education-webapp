@@ -6,8 +6,8 @@ set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 API_SLN="$ROOT_DIR/API/ImaloEducationApi/ImaloEducationApi.slnx"
-DB_DIR="$ROOT_DIR/DB"
-DB_PROJ="ImaloEducationDB.sqlproj"
+DB_DIR="$ROOT_DIR/DB/ImaloEducation"
+DB_PROJ="ImaloEducation.sqlproj"
 UI_DIR="$ROOT_DIR/UI"
 
 SKIP_TESTS=0

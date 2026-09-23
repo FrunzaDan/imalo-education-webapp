@@ -36,19 +36,19 @@ public class ScholarDataAccess : IScholarDataAccess
 
         const string insertScholarSql = """
 
-                                                INSERT INTO Scholars (FirstName, LastName, DateOfBirth, Grade, SchoolId)
-                                                OUTPUT INSERTED.Id
-                                                VALUES (@FirstName, @LastName, @DateOfBirth, @Grade, @SchoolId);
+                                                INSERT INTO dbo.Scholar (FirstName, LastName, BirthDate, Grade, SchoolId)
+                                                OUTPUT INSERTED.ScholarId
+                                                VALUES (@FirstName, @LastName, @BirthDate, @Grade, @SchoolId);
                                         """;
 
         const string insertScheduleSql = """
 
-                                                 INSERT INTO PickUpSchedule (ScholarId, ScheduleJson)
+                                                 INSERT INTO dbo.ScholarPickupSchedule (ScholarId, ScheduleJson)
                                                  VALUES (@ScholarId, @ScheduleJson);
                                          """;
 
         const string insertParentSql = """
-                                        INSERT INTO Parents (ScholarId, Role, FirstName, LastName, PhoneNumber)
+                                        INSERT INTO dbo.ScholarParent (ScholarId, Role, FirstName, LastName, PhoneNumber)
                                         VALUES (@ScholarId, @Role, @FirstName, @LastName, @PhoneNumber);
                                         """;
 
@@ -61,7 +61,7 @@ public class ScholarDataAccess : IScholarDataAccess
             await using var insertScholarCmd = new SqlCommand(insertScholarSql, connection, transaction);
             AddParam(insertScholarCmd, "@FirstName", SqlDbType.NVarChar, scholar.FirstName, 100);
             AddParam(insertScholarCmd, "@LastName", SqlDbType.NVarChar, scholar.LastName ?? string.Empty, 100);
-            AddParam(insertScholarCmd, "@DateOfBirth", SqlDbType.Date, scholar.DateOfBirth);
+            AddParam(insertScholarCmd, "@BirthDate", SqlDbType.Date, scholar.DateOfBirth);
             AddParam(insertScholarCmd, "@Grade", SqlDbType.TinyInt, (object?)scholar.Grade ?? DBNull.Value);
             AddParam(insertScholarCmd, "@SchoolId", SqlDbType.Int, (object?)scholar.SchoolId ?? DBNull.Value);
 
@@ -132,18 +132,18 @@ public class ScholarDataAccess : IScholarDataAccess
 
     public async Task<IEnumerable<Scholar>> GetScholarsAsync(CancellationToken cancellationToken)
     {
-        // Parents is joined once per role, with the role in the ON clause. (ScholarId, Role)
-        // is Parents' primary key, so each join matches at most one row and the scholar
+        // ScholarParent is joined once per role, with the role in the ON clause. (ScholarId, Role)
+        // is ScholarParent's primary key, so each join matches at most one row and the scholar
         // row is never duplicated — and each join is a clustered-index seek.
         const string sql = """
 
-                                           SELECT s.Id, s.FirstName, s.LastName, s.DateOfBirth, s.Grade, s.SchoolId, ps.ScheduleJson,
+                                           SELECT s.ScholarId, s.FirstName, s.LastName, s.BirthDate, s.Grade, s.SchoolId, ps.ScheduleJson,
                                                   mother.FirstName AS MotherFirstName, mother.LastName AS MotherLastName, mother.PhoneNumber AS MotherPhoneNumber,
                                                   father.FirstName AS FatherFirstName, father.LastName AS FatherLastName, father.PhoneNumber AS FatherPhoneNumber
-                                           FROM Scholars s
-                                           LEFT JOIN PickUpSchedule ps ON s.Id = ps.ScholarId
-                                           LEFT JOIN Parents AS mother ON mother.ScholarId = s.Id AND mother.Role = 'Mother'
-                                           LEFT JOIN Parents AS father ON father.ScholarId = s.Id AND father.Role = 'Father';
+                                           FROM dbo.Scholar AS s
+                                           LEFT JOIN dbo.ScholarPickupSchedule AS ps ON s.ScholarId = ps.ScholarId
+                                           LEFT JOIN dbo.ScholarParent AS mother ON mother.ScholarId = s.ScholarId AND mother.Role = 'Mother'
+                                           LEFT JOIN dbo.ScholarParent AS father ON father.ScholarId = s.ScholarId AND father.Role = 'Father';
                            """;
 
         var scholars = new List<Scholar>();
@@ -190,19 +190,19 @@ public class ScholarDataAccess : IScholarDataAccess
 
         const string sql = """
 
-                                           SELECT s.Id, s.FirstName, s.LastName, s.DateOfBirth, s.Grade, s.SchoolId, ps.ScheduleJson,
+                                           SELECT s.ScholarId, s.FirstName, s.LastName, s.BirthDate, s.Grade, s.SchoolId, ps.ScheduleJson,
                                                   mother.FirstName AS MotherFirstName, mother.LastName AS MotherLastName, mother.PhoneNumber AS MotherPhoneNumber,
                                                   father.FirstName AS FatherFirstName, father.LastName AS FatherLastName, father.PhoneNumber AS FatherPhoneNumber
-                                           FROM Scholars s
-                                           LEFT JOIN PickUpSchedule ps ON s.Id = ps.ScholarId
-                                           LEFT JOIN Parents AS mother ON mother.ScholarId = s.Id AND mother.Role = 'Mother'
-                                           LEFT JOIN Parents AS father ON father.ScholarId = s.Id AND father.Role = 'Father'
-                                           WHERE s.Id = @Id;
+                                           FROM dbo.Scholar AS s
+                                           LEFT JOIN dbo.ScholarPickupSchedule AS ps ON s.ScholarId = ps.ScholarId
+                                           LEFT JOIN dbo.ScholarParent AS mother ON mother.ScholarId = s.ScholarId AND mother.Role = 'Mother'
+                                           LEFT JOIN dbo.ScholarParent AS father ON father.ScholarId = s.ScholarId AND father.Role = 'Father'
+                                           WHERE s.ScholarId = @ScholarId;
                            """;
 
         await using var connection = new SqlConnection(_connectionString);
         await using var command = new SqlCommand(sql, connection);
-        AddParam(command, "@Id", SqlDbType.UniqueIdentifier, id);
+        AddParam(command, "@ScholarId", SqlDbType.UniqueIdentifier, id);
 
         try
         {
@@ -244,37 +244,37 @@ public class ScholarDataAccess : IScholarDataAccess
 
         const string updateScholarSql = """
 
-                                                UPDATE Scholars
+                                                UPDATE dbo.Scholar
                                                 SET FirstName = @FirstName,
                                                     LastName = @LastName,
-                                                    DateOfBirth = @DateOfBirth,
+                                                    BirthDate = @BirthDate,
                                                     Grade = @Grade,
                                                     SchoolId = @SchoolId
-                                                WHERE Id = @Id;
+                                                WHERE ScholarId = @ScholarId;
                                         """;
 
         const string updateScheduleSql = """
 
-                                                 IF EXISTS (SELECT 1 FROM PickUpSchedule WHERE ScholarId = @Id)
-                                                     UPDATE PickUpSchedule
+                                                 IF EXISTS (SELECT 1 FROM dbo.ScholarPickupSchedule WHERE ScholarId = @ScholarId)
+                                                     UPDATE dbo.ScholarPickupSchedule
                                                      SET ScheduleJson = @ScheduleJson
-                                                     WHERE ScholarId = @Id
+                                                     WHERE ScholarId = @ScholarId
                                                  ELSE
-                                                     INSERT INTO PickUpSchedule (ScholarId, ScheduleJson)
-                                                     VALUES (@Id, @ScheduleJson);
+                                                     INSERT INTO dbo.ScholarPickupSchedule (ScholarId, ScheduleJson)
+                                                     VALUES (@ScholarId, @ScheduleJson);
                                          """;
 
         const string upsertParentSql = """
-                                        IF EXISTS (SELECT 1 FROM Parents WHERE ScholarId = @Id AND Role = @Role)
-                                            UPDATE Parents
+                                        IF EXISTS (SELECT 1 FROM dbo.ScholarParent WHERE ScholarId = @ScholarId AND Role = @Role)
+                                            UPDATE dbo.ScholarParent
                                             SET FirstName = @FirstName, LastName = @LastName, PhoneNumber = @PhoneNumber
-                                            WHERE ScholarId = @Id AND Role = @Role
+                                            WHERE ScholarId = @ScholarId AND Role = @Role
                                         ELSE
-                                            INSERT INTO Parents (ScholarId, Role, FirstName, LastName, PhoneNumber)
-                                            VALUES (@Id, @Role, @FirstName, @LastName, @PhoneNumber);
+                                            INSERT INTO dbo.ScholarParent (ScholarId, Role, FirstName, LastName, PhoneNumber)
+                                            VALUES (@ScholarId, @Role, @FirstName, @LastName, @PhoneNumber);
                                         """;
 
-        const string deleteParentSql = "DELETE FROM Parents WHERE ScholarId = @Id AND Role = @Role;";
+        const string deleteParentSql = "DELETE FROM dbo.ScholarParent WHERE ScholarId = @ScholarId AND Role = @Role;";
 
         await using var connection = new SqlConnection(_connectionString);
         await connection.OpenAsync(cancellationToken);
@@ -283,10 +283,10 @@ public class ScholarDataAccess : IScholarDataAccess
         try
         {
             await using var updateScholarCmd = new SqlCommand(updateScholarSql, connection, transaction);
-            AddParam(updateScholarCmd, "@Id", SqlDbType.UniqueIdentifier, scholar.Id);
+            AddParam(updateScholarCmd, "@ScholarId", SqlDbType.UniqueIdentifier, scholar.Id);
             AddParam(updateScholarCmd, "@FirstName", SqlDbType.NVarChar, scholar.FirstName ?? string.Empty, 100);
             AddParam(updateScholarCmd, "@LastName", SqlDbType.NVarChar, scholar.LastName ?? string.Empty, 100);
-            AddParam(updateScholarCmd, "@DateOfBirth", SqlDbType.Date, scholar.DateOfBirth);
+            AddParam(updateScholarCmd, "@BirthDate", SqlDbType.Date, scholar.DateOfBirth);
             AddParam(updateScholarCmd, "@Grade", SqlDbType.TinyInt, (object?)scholar.Grade ?? DBNull.Value);
             AddParam(updateScholarCmd, "@SchoolId", SqlDbType.Int, (object?)scholar.SchoolId ?? DBNull.Value);
 
@@ -302,7 +302,7 @@ public class ScholarDataAccess : IScholarDataAccess
             if (scholar.PickUpSchedule != null)
             {
                 await using var updateScheduleCmd = new SqlCommand(updateScheduleSql, connection, transaction);
-                AddParam(updateScheduleCmd, "@Id", SqlDbType.UniqueIdentifier, scholar.Id);
+                AddParam(updateScheduleCmd, "@ScholarId", SqlDbType.UniqueIdentifier, scholar.Id);
                 AddParam(updateScheduleCmd, "@ScheduleJson", SqlDbType.NVarChar,
                     JsonSerializer.Serialize(scholar.PickUpSchedule, JsonOptions), -1);
                 await updateScheduleCmd.ExecuteNonQueryAsync(cancellationToken);
@@ -323,14 +323,14 @@ public class ScholarDataAccess : IScholarDataAccess
                 if (isEmpty)
                 {
                     await using var deleteParentCmd = new SqlCommand(deleteParentSql, connection, transaction);
-                    AddParam(deleteParentCmd, "@Id", SqlDbType.UniqueIdentifier, scholar.Id);
+                    AddParam(deleteParentCmd, "@ScholarId", SqlDbType.UniqueIdentifier, scholar.Id);
                     AddParam(deleteParentCmd, "@Role", SqlDbType.VarChar, role, 6);
                     await deleteParentCmd.ExecuteNonQueryAsync(cancellationToken);
                 }
                 else
                 {
                     await using var upsertParentCmd = new SqlCommand(upsertParentSql, connection, transaction);
-                    AddParam(upsertParentCmd, "@Id", SqlDbType.UniqueIdentifier, scholar.Id);
+                    AddParam(upsertParentCmd, "@ScholarId", SqlDbType.UniqueIdentifier, scholar.Id);
                     AddParam(upsertParentCmd, "@Role", SqlDbType.VarChar, role, 6);
                     AddParam(upsertParentCmd, "@FirstName", SqlDbType.NVarChar, ToDbValue(firstName), 100);
                     AddParam(upsertParentCmd, "@LastName", SqlDbType.NVarChar, ToDbValue(lastName), 100);
@@ -364,14 +364,14 @@ public class ScholarDataAccess : IScholarDataAccess
         if (id == Guid.Empty)
             throw new ArgumentException("Scholar ID must not be empty.", nameof(id));
 
-        // PickUpSchedule, Attendance and Parents all have ON DELETE CASCADE back to
-        // Scholars (see their .sql table definitions), so deleting the Scholars row
+        // ScholarPickupSchedule, ScholarAttendance and ScholarParent all have ON DELETE CASCADE
+        // back to Scholar (see their .sql table definitions), so deleting the Scholar row
         // is enough on its own — no need to delete the child rows here first.
-        const string deleteScholarSql = "DELETE FROM Scholars WHERE Id = @Id;";
+        const string deleteScholarSql = "DELETE FROM dbo.Scholar WHERE ScholarId = @ScholarId;";
 
         await using var connection = new SqlConnection(_connectionString);
         await using var command = new SqlCommand(deleteScholarSql, connection);
-        AddParam(command, "@Id", SqlDbType.UniqueIdentifier, id);
+        AddParam(command, "@ScholarId", SqlDbType.UniqueIdentifier, id);
 
         try
         {
@@ -415,12 +415,12 @@ public class ScholarDataAccess : IScholarDataAccess
         ArgumentNullException.ThrowIfNull(attendanceRecords);
 
         const string upsertAttendanceSql = """
-                                           IF EXISTS (SELECT 1 FROM Attendance WHERE ScholarId = @ScholarId)
-                                               UPDATE Attendance
+                                           IF EXISTS (SELECT 1 FROM dbo.ScholarAttendance WHERE ScholarId = @ScholarId)
+                                               UPDATE dbo.ScholarAttendance
                                                SET AttendanceJson = @AttendanceJson
                                                WHERE ScholarId = @ScholarId;
                                            ELSE
-                                               INSERT INTO Attendance (ScholarId, AttendanceJson)
+                                               INSERT INTO dbo.ScholarAttendance (ScholarId, AttendanceJson)
                                                VALUES (@ScholarId, @AttendanceJson);
                                            """;
 
@@ -456,7 +456,7 @@ public class ScholarDataAccess : IScholarDataAccess
         if (scholarId == Guid.Empty)
             throw new ArgumentException("Scholar ID must not be empty.", nameof(scholarId));
 
-        const string sql = "SELECT AttendanceJson FROM Attendance WHERE ScholarId = @ScholarId;";
+        const string sql = "SELECT AttendanceJson FROM dbo.ScholarAttendance WHERE ScholarId = @ScholarId;";
 
         await using var connection = new SqlConnection(_connectionString);
         await using var command = new SqlCommand(sql, connection);
@@ -496,7 +496,7 @@ public class ScholarDataAccess : IScholarDataAccess
     public async Task<List<ScholarAttendance>> GetAllAttendanceAsync(
         CancellationToken cancellationToken)
     {
-        const string sql = "SELECT ScholarId, AttendanceJson FROM Attendance;";
+        const string sql = "SELECT ScholarId, AttendanceJson FROM dbo.ScholarAttendance;";
 
         var results = new List<ScholarAttendance>();
 
@@ -544,7 +544,7 @@ public class ScholarDataAccess : IScholarDataAccess
         if (scholarId == Guid.Empty)
             throw new ArgumentException("Scholar ID must not be empty.", nameof(scholarId));
 
-        const string sql = "DELETE FROM Attendance WHERE ScholarId = @ScholarId;";
+        const string sql = "DELETE FROM dbo.ScholarAttendance WHERE ScholarId = @ScholarId;";
 
         await using var connection = new SqlConnection(_connectionString);
         await using var command = new SqlCommand(sql, connection);
@@ -589,8 +589,8 @@ public class ScholarDataAccess : IScholarDataAccess
     private async Task LogAuditAsync(Guid scholarId, AuditAction action, string? details, CancellationToken cancellationToken)
     {
         const string sql = """
-                            INSERT INTO ScholarAuditLog (ScholarId, Action, Details)
-                            VALUES (@ScholarId, @Action, @Details); -- ActionDate defaults to SYSUTCDATETIME()
+                            INSERT INTO dbo.ScholarAuditLog (ScholarId, ActionType, Details)
+                            VALUES (@ScholarId, @ActionType, @Details); -- OccurredAt defaults to SYSUTCDATETIME()
                             """;
 
         try
@@ -599,7 +599,7 @@ public class ScholarDataAccess : IScholarDataAccess
             await using var command = new SqlCommand(sql, connection);
 
             AddParam(command, "@ScholarId", SqlDbType.UniqueIdentifier, scholarId);
-            AddParam(command, "@Action", SqlDbType.VarChar, action.ToString(), 10);
+            AddParam(command, "@ActionType", SqlDbType.VarChar, action.ToString(), 10);
             AddParam(command, "@Details", SqlDbType.NVarChar, ToDbValue(details), 500);
 
             await connection.OpenAsync(cancellationToken);
@@ -618,10 +618,10 @@ public class ScholarDataAccess : IScholarDataAccess
             throw new ArgumentException("Scholar ID must not be empty.", nameof(scholarId));
 
         const string sql = """
-                            SELECT AuditId, ScholarId, Action, Details, ActionDate
-                            FROM ScholarAuditLog
+                            SELECT ScholarAuditLogId, ScholarId, ActionType, Details, OccurredAt
+                            FROM dbo.ScholarAuditLog
                             WHERE ScholarId = @ScholarId
-                            ORDER BY ActionDate DESC, AuditId DESC;
+                            ORDER BY OccurredAt DESC, ScholarAuditLogId DESC;
                             """;
 
         var entries = new List<AuditLogEntry>();
@@ -639,13 +639,13 @@ public class ScholarDataAccess : IScholarDataAccess
             {
                 entries.Add(new AuditLogEntry
                 {
-                    AuditId = reader.GetInt32(reader.GetOrdinal("AuditId")),
+                    AuditId = reader.GetInt32(reader.GetOrdinal("ScholarAuditLogId")),
                     ScholarId = reader.GetGuid(reader.GetOrdinal("ScholarId")),
-                    Action = Enum.Parse<AuditAction>(reader.GetString(reader.GetOrdinal("Action"))),
+                    Action = Enum.Parse<AuditAction>(reader.GetString(reader.GetOrdinal("ActionType"))),
                     Details = reader.IsDBNull(reader.GetOrdinal("Details"))
                         ? null
                         : reader.GetString(reader.GetOrdinal("Details")),
-                    ActionDate = reader.GetDateTimeOffset(reader.GetOrdinal("ActionDate")),
+                    ActionDate = reader.GetDateTimeOffset(reader.GetOrdinal("OccurredAt")),
                 });
             }
 
@@ -663,18 +663,18 @@ public class ScholarDataAccess : IScholarDataAccess
     public async Task<PagedResult<GlobalAuditLogEntry>> GetAllAuditLogAsync(int pageNumber, int pageSize,
         CancellationToken cancellationToken)
     {
-        // LEFT JOIN, not INNER: ScholarAuditLog has no FK to Scholars (a deleted
+        // LEFT JOIN, not INNER: ScholarAuditLog has no FK to Scholar (a deleted
         // scholar's history must survive the delete — see ScholarAuditLog.sql), so
         // FirstName/LastName come back NULL for a scholar that no longer exists
         // rather than dropping that row.
-        const string countSql = "SELECT COUNT(*) FROM ScholarAuditLog;";
+        const string countSql = "SELECT COUNT(*) FROM dbo.ScholarAuditLog;";
 
         const string pageSql = """
                             SELECT
-                                l.AuditId, l.ScholarId, s.FirstName, s.LastName, l.Action, l.Details, l.ActionDate
-                            FROM ScholarAuditLog AS l
-                            LEFT JOIN Scholars AS s ON s.Id = l.ScholarId
-                            ORDER BY l.ActionDate DESC, l.AuditId DESC
+                                l.ScholarAuditLogId, l.ScholarId, s.FirstName, s.LastName, l.ActionType, l.Details, l.OccurredAt
+                            FROM dbo.ScholarAuditLog AS l
+                            LEFT JOIN dbo.Scholar AS s ON s.ScholarId = l.ScholarId
+                            ORDER BY l.OccurredAt DESC, l.ScholarAuditLogId DESC
                             OFFSET (@PageNumber - 1) * @PageSize ROWS
                             FETCH NEXT @PageSize ROWS ONLY;
                             """;
@@ -707,7 +707,7 @@ public class ScholarDataAccess : IScholarDataAccess
             {
                 result.Items.Add(new GlobalAuditLogEntry
                 {
-                    AuditId = reader.GetInt32(reader.GetOrdinal("AuditId")),
+                    AuditId = reader.GetInt32(reader.GetOrdinal("ScholarAuditLogId")),
                     ScholarId = reader.GetGuid(reader.GetOrdinal("ScholarId")),
                     FirstName = reader.IsDBNull(reader.GetOrdinal("FirstName"))
                         ? null
@@ -715,11 +715,11 @@ public class ScholarDataAccess : IScholarDataAccess
                     LastName = reader.IsDBNull(reader.GetOrdinal("LastName"))
                         ? null
                         : reader.GetString(reader.GetOrdinal("LastName")),
-                    Action = Enum.Parse<AuditAction>(reader.GetString(reader.GetOrdinal("Action"))),
+                    Action = Enum.Parse<AuditAction>(reader.GetString(reader.GetOrdinal("ActionType"))),
                     Details = reader.IsDBNull(reader.GetOrdinal("Details"))
                         ? null
                         : reader.GetString(reader.GetOrdinal("Details")),
-                    ActionDate = reader.GetDateTimeOffset(reader.GetOrdinal("ActionDate")),
+                    ActionDate = reader.GetDateTimeOffset(reader.GetOrdinal("OccurredAt")),
                 });
             }
 
@@ -736,7 +736,7 @@ public class ScholarDataAccess : IScholarDataAccess
 
     public async Task DeleteAllAuditLogAsync(CancellationToken cancellationToken)
     {
-        const string sql = "DELETE FROM ScholarAuditLog;";
+        const string sql = "DELETE FROM dbo.ScholarAuditLog;";
 
         await using var connection = new SqlConnection(_connectionString);
         await using var command = new SqlCommand(sql, connection);
@@ -761,10 +761,10 @@ public class ScholarDataAccess : IScholarDataAccess
         {
             var scholar = new Scholar
             {
-                Id = reader.GetGuid(reader.GetOrdinal("Id")),
+                Id = reader.GetGuid(reader.GetOrdinal("ScholarId")),
                 FirstName = reader.GetString(reader.GetOrdinal("FirstName")),
                 LastName = reader.GetString(reader.GetOrdinal("LastName")),
-                DateOfBirth = reader.GetFieldValue<DateOnly>(reader.GetOrdinal("DateOfBirth")),
+                DateOfBirth = reader.GetFieldValue<DateOnly>(reader.GetOrdinal("BirthDate")),
                 Grade =
                     reader.IsDBNull(reader.GetOrdinal("Grade")) ? null : reader.GetByte(reader.GetOrdinal("Grade")),
                 SchoolId = reader.IsDBNull(reader.GetOrdinal("SchoolId"))

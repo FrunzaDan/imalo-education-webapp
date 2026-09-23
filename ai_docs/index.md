@@ -9,7 +9,7 @@ A small full-stack CRUD app for tracking scholars (students), their pick-up sche
 |---|---|---|---|
 | UI | `UI` | Angular 22 (SSR via `@angular/ssr`, Express server) | [angular-frontend](angular-frontend.md) |
 | API | `API/ImaloEducationApi/ImaloEducationApi` | .NET 10 / ASP.NET Core Web API, C# | [api](api.md) |
-| DB | `DB` | SQL Server (SSDT `.sqlproj`, deployed via `sqlpackage`) | [database](database.md) |
+| DB | `DB/ImaloEducation` | SQL Server (SSDT `.sqlproj`, deployed via `sqlpackage`) | [database](database.md) |
 | Build/run | repo root | `build.sh`, `run.sh`, Docker | [build-and-run](build-and-run.md) |
 
 The three layers only talk over HTTP — nothing shares process or memory. Angular UI → ASP.NET Core API (parameterized ADO.NET, no ORM, no stored procs) → SQL Server. School reference data (name/color/prices) is static frontend JSON, not a DB table — see [angular-frontend](angular-frontend.md) and [database](database.md).

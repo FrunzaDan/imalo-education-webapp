@@ -18,7 +18,7 @@ public class AuditLogEntry
 public class GlobalAuditLogEntry : AuditLogEntry
 {
     // Null when the scholar no longer exists (GetAllAuditLogAsync LEFT JOINs
-    // Scholars, since audit history outlives a deleted scholar).
+    // Scholar, since audit history outlives a deleted scholar).
     public string? FirstName { get; set; }
 
     public string? LastName { get; set; }
