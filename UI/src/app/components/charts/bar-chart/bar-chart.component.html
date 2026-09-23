@@ -3,7 +3,12 @@
 } @else {
 <div class="bar-chart">
   @if (hoveredBar(); as hovered) {
-  <div class="bar-chart__tooltip" role="status">
+  <div
+    class="bar-chart__tooltip"
+    role="status"
+    animate.enter="reveal-enter"
+    animate.leave="reveal-leave"
+  >
     <p class="bar-chart__tooltip-title">{{ hovered.label }}</p>
     @for (row of hovered.tooltipRows; track row.series) {
     <p class="bar-chart__tooltip-row">

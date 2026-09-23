@@ -196,7 +196,12 @@
         {{ isSaving() ? 'Saving...' : 'Save Changes' }}
       </button>
       @if (hasUnsavedChanges() && !isSaving()) {
-        <span class="attendance-container__unsaved-note">Unsaved changes</span>
+        <span
+          class="attendance-container__unsaved-note"
+          animate.enter="reveal-enter"
+          animate.leave="reveal-leave"
+          >Unsaved changes</span
+        >
       }
     </div>
   </div>

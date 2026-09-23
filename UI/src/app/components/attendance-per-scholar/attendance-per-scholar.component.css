@@ -94,6 +94,7 @@
 }
 
 .attendance-container__unsaved-note {
+  display: inline-block; /* so its enter/leave slide (a transform) applies */
   color: var(--orange-text-color);
   font-style: italic;
   font-size: 0.9rem;

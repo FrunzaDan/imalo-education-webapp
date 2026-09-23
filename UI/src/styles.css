@@ -40,6 +40,13 @@
   --border-width-thick: 2px;
   --border-color: rgba(var(--cyan-main-color-for-alpha), 0.2);
   --card-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+
+  /* Motion: one set of durations and curves for every transition/animation. */
+  --duration-fast: 0.15s;
+  --duration-base: 0.25s;
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-in: cubic-bezier(0.55, 0, 1, 0.45);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 @font-face {
@@ -119,9 +126,11 @@ input[type='checkbox']:disabled {
   text-align: center;
   text-decoration: none; /* Remove underline for routerLink buttons */
   transition:
-    filter 0.2s ease,
-    transform 0.2s ease,
-    box-shadow 0.3s ease; /* Smooth transitions for effects */
+    filter var(--duration-fast) ease,
+    transform var(--duration-fast) var(--ease-out),
+    background-color var(--duration-fast) ease,
+    color var(--duration-fast) ease,
+    box-shadow var(--duration-base) ease; /* Smooth transitions for effects */
   -webkit-appearance: none; /* Remove default button styles for cross-browser consistency */
   -moz-appearance: none;
   appearance: none;
@@ -139,7 +148,7 @@ input[type='checkbox']:disabled {
 /* Active/Click Effect */
 .app-button:active:not(:disabled) {
   filter: brightness(0.75); /* Darken further when clicked */
-  transform: translateY(0); /* Press button down */
+  transform: translateY(0) scale(0.97); /* Press button down */
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); /* Smaller shadow when pressed */
 }
 
@@ -278,6 +287,7 @@ select.app-input {
 /* Page-level error (a load or an action that failed), shown inline where the
    user is looking. .app-error-message stays for field-level messages. */
 .app-alert {
+  animation: reveal-in var(--duration-base) var(--ease-out);
   margin: 0 0 var(--space-4);
   padding: var(--space-3) var(--space-4);
   border: var(--border-width) solid var(--orange-main-color);
@@ -320,6 +330,7 @@ select.app-input {
 .table-header.sortable {
   cursor: pointer;
   user-select: none;
+  transition: background-color var(--duration-fast) ease;
 }
 
 .table-header.sortable:hover {
@@ -347,6 +358,7 @@ select.app-input {
 
 .table-row {
   background-color: #ffffff;
+  transition: background-color var(--duration-fast) ease;
   border-bottom: var(--border-width) solid rgba(var(--cyan-main-color-for-alpha), 0.15);
 }
 
@@ -394,6 +406,61 @@ select.app-input {
   font-style: italic;
   color: var(--dark-main-color);
   opacity: 0.65;
+}
+
+/* ---------------------------------------------------------------------
+   Motion
+   --------------------------------------------------------------------- */
+
+/* For content that opens and closes, with Angular's animate.enter /
+   animate.leave: animate.enter="reveal-enter" animate.leave="reveal-leave". */
+.reveal-enter {
+  animation: reveal-in var(--duration-base) var(--ease-out);
+}
+
+.reveal-leave {
+  animation: reveal-out var(--duration-fast) var(--ease-in) forwards;
+}
+
+@keyframes reveal-in {
+  from {
+    opacity: 0;
+    transform: translateY(-0.5rem);
+  }
+}
+
+@keyframes reveal-out {
+  to {
+    opacity: 0;
+    transform: translateY(-0.5rem);
+  }
+}
+
+/* Route changes cross-fade (the router's withViewTransitions). The header
+   gets its own name so it stays put instead of fading with the page. */
+header {
+  view-transition-name: site-header;
+}
+
+::view-transition-old(root) {
+  animation: page-out var(--duration-fast) var(--ease-in) both;
+}
+
+::view-transition-new(root) {
+  animation: page-in var(--duration-base) var(--ease-out) both;
+}
+
+@keyframes page-out {
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes page-in {
+  from {
+    opacity: 0;
+    transform: translateY(0.5rem);
+  }
 }
 
 /* Print utilities: .no-print hides UI chrome (nav, buttons, toolbars) from a
@@ -468,5 +535,16 @@ main [tabindex='-1']:focus {
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
+  }
+
+  .app-button:hover:not(:disabled),
+  .app-button:active:not(:disabled) {
+    transform: none;
+  }
+
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none !important;
   }
 }

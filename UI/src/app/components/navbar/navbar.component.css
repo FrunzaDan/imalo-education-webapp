@@ -29,6 +29,7 @@
 }
 
 .nav-link {
+  position: relative;
   display: inline-block;
   text-decoration: none;
   /* Cream, not cyan-light: cyan-light on this teal is only ~3.9:1. */
@@ -38,17 +39,45 @@
   border-radius: var(--radius-md);
   border-bottom: var(--border-width-thick) solid transparent;
   transition:
-    color 0.2s ease,
-    background-color 0.2s ease;
+    color var(--duration-fast) ease,
+    background-color var(--duration-fast) ease,
+    transform var(--duration-fast) var(--ease-out);
+}
+
+/* Orange underline over the bottom border: grows from the centre on hover and
+   stays full width on the active page. */
+.nav-link::after {
+  content: '';
+  position: absolute;
+  right: var(--space-2);
+  bottom: calc(-1 * var(--border-width-thick));
+  left: var(--space-2);
+  height: var(--border-width-thick);
+  border-radius: var(--border-width-thick);
+  background-color: var(--orange-main-color);
+  transform: scaleX(0);
+  transition: transform var(--duration-base) var(--ease-out);
 }
 
 .nav-link:hover {
   color: var(--light-main-color);
   background-color: rgba(var(--cyan-light-color-for-alpha), 0.14);
+  transform: translateY(-1px);
+}
+
+.nav-link:hover::after {
+  transform: scaleX(0.5);
+}
+
+.nav-link:active {
+  transform: translateY(0) scale(0.96);
 }
 
 .nav-link.active {
   color: var(--light-main-color);
   background-color: rgba(255, 255, 255, 0.12);
-  border-bottom-color: var(--orange-main-color);
+}
+
+.nav-link.active::after {
+  transform: scaleX(1);
 }
