@@ -297,7 +297,7 @@ export class AboutComponent {
     };
   }
 
-  // Every month from July 2024 to July 2026 inclusive, most (not all)
+  // Every month from July 2024 to September 2026 inclusive, most (not all)
   // weekdays, so the attendance dashboard's Charts page has real month- and
   // year-spanning trends to show right away instead of just the last couple
   // of months. No scholar ever gets Transport in July or August — school
@@ -307,7 +307,7 @@ export class AboutComponent {
   ): AttendanceRecord[] {
     const lunchPrice = school?.lunchPrice ?? 15;
     const transportPrice = school?.transportPrice ?? 5;
-    const months = monthsInRange(2024, 7, 2026, 7);
+    const months = monthsInRange(2024, 7, 2026, 9);
 
     const records: AttendanceRecord[] = [];
     for (const { year, month } of months) {

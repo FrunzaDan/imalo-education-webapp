@@ -43,9 +43,11 @@ const AXIS_HEIGHT = 24;
 // tip it on its side instead, like a normal chart's category axis.
 const ROTATE_LABEL_THRESHOLD = 10;
 const ROTATED_AXIS_HEIGHT = 64;
-// Extra left margin so the first bar's diagonal label (which trails up and
-// to the left from its tick) doesn't get clipped by the SVG's left edge.
-const ROTATED_LEFT_PADDING = 24;
+// Left margin reserved for the y-axis tick labels ("0", "50", "1.2k", ...) so
+// the first bar — painted after them — doesn't cover them. Also wide enough
+// that a rotated x-axis label on the first bar (which trails up and to the
+// left from its tick) doesn't get clipped by the SVG's left edge.
+const LEFT_PADDING = 24;
 const SEGMENT_GAP = 2;
 const MIN_CHART_WIDTH = 320;
 
@@ -90,7 +92,7 @@ export class BarChartComponent {
     () => PLOT_HEIGHT + TOP_PADDING + (this.rotateLabels() ? ROTATED_AXIS_HEIGHT : AXIS_HEIGHT),
   );
 
-  private readonly leftPadding = computed(() => (this.rotateLabels() ? ROTATED_LEFT_PADDING : 0));
+  private readonly leftPadding = computed(() => LEFT_PADDING);
 
   readonly svgWidth = computed(() =>
     Math.max(this.points().length * BAND_WIDTH + this.leftPadding(), MIN_CHART_WIDTH),

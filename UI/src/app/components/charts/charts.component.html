@@ -125,25 +125,27 @@
     </div>
   </div>
 
-  <div class="charts-card__chart">
-    <h4 class="charts-card__chart-title">Scholars present per month</h4>
-    <app-bar-chart
-      [points]="monthlyPresentBars()"
-      series1Label="Present"
-      [formatValue]="formatCount"
-      emptyMessage="No attendance recorded for this year."
-    />
-  </div>
+  <div class="charts-card__chart-row">
+    <div class="charts-card__chart">
+      <h4 class="charts-card__chart-title">Scholars present per month</h4>
+      <app-bar-chart
+        [points]="monthlyPresentBars()"
+        series1Label="Present"
+        [formatValue]="formatCount"
+        emptyMessage="No attendance recorded for this year."
+      />
+    </div>
 
-  <div class="charts-card__chart">
-    <h4 class="charts-card__chart-title">Revenue per month</h4>
-    <app-bar-chart
-      [points]="monthlyRevenueBars()"
-      series1Label="Transport"
-      series2Label="Lunch"
-      [formatValue]="formatRon"
-      emptyMessage="No revenue recorded for this year."
-    />
+    <div class="charts-card__chart">
+      <h4 class="charts-card__chart-title">Revenue per month</h4>
+      <app-bar-chart
+        [points]="monthlyRevenueBars()"
+        series1Label="Transport"
+        series2Label="Lunch"
+        [formatValue]="formatRon"
+        emptyMessage="No revenue recorded for this year."
+      />
+    </div>
   </div>
 </section>
 
@@ -167,24 +169,26 @@
     </div>
   </div>
 
-  <div class="charts-card__chart">
-    <h4 class="charts-card__chart-title">Scholars by class</h4>
-    <app-bar-chart
-      [points]="classCounts()"
-      series1Label="Scholars"
-      [formatValue]="formatCount"
-      emptyMessage="No scholars found."
-    />
-  </div>
+  <div class="charts-card__chart-row">
+    <div class="charts-card__chart">
+      <h4 class="charts-card__chart-title">Scholars by class</h4>
+      <app-bar-chart
+        [points]="classCounts()"
+        series1Label="Scholars"
+        [formatValue]="formatCount"
+        emptyMessage="No scholars found."
+      />
+    </div>
 
-  <div class="charts-card__chart">
-    <h4 class="charts-card__chart-title">Scholars by school</h4>
-    <app-bar-chart
-      [points]="schoolCounts()"
-      series1Label="Scholars"
-      [formatValue]="formatCount"
-      emptyMessage="No scholars found."
-    />
+    <div class="charts-card__chart">
+      <h4 class="charts-card__chart-title">Scholars by school</h4>
+      <app-bar-chart
+        [points]="schoolCounts()"
+        series1Label="Scholars"
+        [formatValue]="formatCount"
+        emptyMessage="No scholars found."
+      />
+    </div>
   </div>
 </section>
 }

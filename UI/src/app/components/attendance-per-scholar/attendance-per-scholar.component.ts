@@ -29,7 +29,7 @@ import {
   weekdaysOfMonth,
   withWeekdayStubs,
 } from './attendance-form';
-import { shiftMonth } from '../../utils/weekday-dates';
+import { DEFAULT_MONTH, shiftMonth } from '../../utils/weekday-dates';
 import { RonPipe } from '../../pipes/ron.pipe';
 
 @Component({
@@ -204,11 +204,11 @@ export class AttendancePerScholarComponent implements OnInit, OnDestroy {
     this.monthForm.month().value.set(this.pickDefaultMonth(records));
   }
 
-  // Defaults to the most recent month that already has data, or the current
-  // real-world month if this scholar has no attendance yet.
+  // Defaults to the most recent month that already has data, or
+  // DEFAULT_MONTH if this scholar has no attendance yet.
   private pickDefaultMonth(records: AttendanceRecord[]): string {
     if (records.length === 0) {
-      return toMonthString(new Date());
+      return DEFAULT_MONTH;
     }
     const latest = records
       .map((r) => new Date(r.date))

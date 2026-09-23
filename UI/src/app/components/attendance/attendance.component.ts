@@ -8,7 +8,7 @@ import { AttendanceService } from '../../services/attendance.service';
 import { CsvExportService } from '../../services/csv-export.service';
 import { Scholar } from '../../interfaces/scholar';
 import { ScholarAttendance } from '../../interfaces/scholar-attendance';
-import { shiftMonth, toMonthString, weekdaysOfMonth } from '../../utils/weekday-dates';
+import { DEFAULT_MONTH, shiftMonth, weekdaysOfMonth } from '../../utils/weekday-dates';
 import {
   buildScholarRows,
   cellLabel,
@@ -32,9 +32,9 @@ export class AttendanceComponent implements OnInit {
   private readonly allAttendance = signal<ScholarAttendance[]>([]);
   loading = signal(true);
 
-  // 'YYYY-MM', the value format of <input type="month">, defaulting to the
-  // current real-world month. The prev/next arrows write straight into it.
-  readonly monthForm = form(signal({ month: toMonthString(new Date()) }));
+  // 'YYYY-MM', the value format of <input type="month">, defaulting to
+  // DEFAULT_MONTH. The prev/next arrows write straight into it.
+  readonly monthForm = form(signal({ month: DEFAULT_MONTH }));
   readonly selectedMonth = computed(() => this.monthForm.month().value());
 
   readonly weekdayDates = computed(() => weekdaysOfMonth(this.selectedMonth()));

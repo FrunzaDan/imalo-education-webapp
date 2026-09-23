@@ -39,6 +39,10 @@
 .dashboard-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(20rem, 1fr));
+  /* Without this, grid's default stretch forces a short card (e.g. an empty
+     "Upcoming Birthdays") to match the height of a tall scrollable sibling
+     ("Today's Pickups"), leaving a block of dead space inside it. */
+  align-items: start;
   gap: var(--space-4);
 }
 
@@ -74,6 +78,24 @@
      height instead of letting it push everything below it off-screen. */
   max-height: 22rem;
   overflow-y: auto;
+  /* A capped list with no visible scrollbar (macOS overlay scrollbars are
+     invisible at rest) looks like content got clipped rather than that
+     there's more to scroll to — keep a thin one always on. */
+  scrollbar-width: thin;
+  scrollbar-color: rgba(var(--cyan-main-color-for-alpha), 0.4) transparent;
+}
+
+.dashboard-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.dashboard-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.dashboard-list::-webkit-scrollbar-thumb {
+  background-color: rgba(var(--cyan-main-color-for-alpha), 0.4);
+  border-radius: var(--radius-sm);
 }
 
 .dashboard-list__item {

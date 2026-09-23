@@ -7,7 +7,7 @@ import { SchoolsService } from '../../services/schools.service';
 import { Scholar } from '../../interfaces/scholar';
 import { ScholarAttendance } from '../../interfaces/scholar-attendance';
 import { School } from '../../interfaces/school';
-import { shiftMonth, toMonthString, weekdaysOfMonth } from '../../utils/weekday-dates';
+import { DEFAULT_MONTH, DEFAULT_YEAR, shiftMonth, weekdaysOfMonth } from '../../utils/weekday-dates';
 import { RonPipe } from '../../pipes/ron.pipe';
 import { BarChartComponent, BarChartPoint } from './bar-chart/bar-chart.component';
 import {
@@ -18,7 +18,6 @@ import {
   countBySchool,
   shiftYear,
   topCategory,
-  toYear,
   totalOf,
 } from './charts-data';
 
@@ -43,12 +42,12 @@ export class ChartsComponent implements OnInit {
   readonly topClass = computed(() => topCategory(this.classCounts()));
   readonly topSchool = computed(() => topCategory(this.schoolCounts()));
 
-  readonly monthForm = form(signal({ month: toMonthString(new Date()) }));
+  readonly monthForm = form(signal({ month: DEFAULT_MONTH }));
   readonly selectedMonth = computed(() => this.monthForm.month().value());
   private readonly weekdaysInMonth = computed(() => weekdaysOfMonth(this.selectedMonth()));
 
-  readonly yearForm = form(signal({ year: toYear(new Date()) }));
-  readonly selectedYear = computed(() => this.yearForm.year().value() || toYear(new Date()));
+  readonly yearForm = form(signal({ year: DEFAULT_YEAR }));
+  readonly selectedYear = computed(() => this.yearForm.year().value() || DEFAULT_YEAR);
 
   readonly dailyPoints = computed(() =>
     buildDailyPoints(this.allAttendance(), this.selectedMonth()),

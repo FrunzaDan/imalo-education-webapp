@@ -14,7 +14,7 @@ const serverConfig: ApplicationConfig = {
     // 1MB by default, server-side only. GET /attendance across every
     // scholar's multi-year history (AttendanceComponent, ChartsComponent)
     // now regularly exceeds that, which broke SSR for both pages once the
-    // test-data seeder started generating July 2024-July 2026 attendance.
+    // test-data seeder started generating July 2024-September 2026 attendance.
     // No public (non-ɵ) API raises this limit as of Angular 22.
     { provide: HTTP_FETCH_MAX_RESPONSE_SIZE, useValue: 10 * 1024 * 1024 },
   ],

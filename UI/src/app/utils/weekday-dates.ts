@@ -16,6 +16,12 @@ export function getWeekdayDatesInMonth(year: number, month: number): string[] {
   return dates;
 }
 
+// The month every month/year picker opens on ('YYYY-MM'), instead of the
+// current real-world month — matches the last month the test-data seeder
+// (AboutComponent) generates attendance for.
+export const DEFAULT_MONTH = '2026-09';
+export const DEFAULT_YEAR = Number(DEFAULT_MONTH.substring(0, 4));
+
 // 'YYYY-MM', the value format of <input type="month">.
 export const toMonthString = (date: Date): string =>
   `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;

@@ -7,7 +7,7 @@ import { SchoolsService } from '../../services/schools.service';
 import { AttendanceService } from '../../services/attendance.service';
 import { CsvExportService } from '../../services/csv-export.service';
 import { NotificationService } from '../../services/notification.service';
-import { getWeekdayDatesInMonth } from '../../utils/weekday-dates';
+import { DEFAULT_MONTH, getWeekdayDatesInMonth } from '../../utils/weekday-dates';
 import { toDateOnly } from './attendance-form';
 import type { Scholar } from '../../interfaces/scholar';
 import type { School } from '../../interfaces/school';
@@ -162,13 +162,10 @@ describe('AttendancePerScholarComponent', () => {
       expect(component.selectedMonth()).toBe('2024-03');
     });
 
-    it('defaults to the current month when the scholar has no attendance yet', () => {
-      vi.useFakeTimers();
-      vi.setSystemTime(new Date('2024-07-15T00:00:00'));
-
+    it('defaults to DEFAULT_MONTH when the scholar has no attendance yet', () => {
       const { component } = setup({ attendance: [] });
 
-      expect(component.selectedMonth()).toBe('2024-07');
+      expect(component.selectedMonth()).toBe(DEFAULT_MONTH);
     });
 
     it('marks the day with an existing record as persisted, with its saved values', () => {

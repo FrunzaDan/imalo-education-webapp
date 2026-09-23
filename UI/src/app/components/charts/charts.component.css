@@ -81,6 +81,31 @@
   margin-bottom: 0;
 }
 
+/* Pairs a section's two charts side by side once there's enough width for
+   both without squeezing a bar chart below its MIN_CHART_WIDTH — otherwise
+   they stack full-width, each with a lot of unused space to the right of a
+   narrow (few-bar) chart. */
+.charts-card__chart-row {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-5);
+  margin-bottom: var(--space-5);
+}
+
+.charts-card__chart-row:last-child {
+  margin-bottom: 0;
+}
+
+.charts-card__chart-row .charts-card__chart {
+  margin-bottom: 0;
+}
+
+@media (min-width: 900px) {
+  .charts-card__chart-row {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
 .charts-card__chart-title {
   margin: 0 0 var(--space-3);
   font-size: 1rem;
