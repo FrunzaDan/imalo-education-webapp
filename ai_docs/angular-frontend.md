@@ -69,11 +69,11 @@ Angular 22 standalone-component app, zoneless change detection, SSR via `@angula
 
 **AboutComponent** (`about/`, route `about`) — dev/diagnostics page. Toggles `ApiLoggerService` (persisted to `localStorage`). `addTestScholars()` generates `TEST_SCHOLAR_COUNT = 20` randomized scholars (random names, school, grade, pickup schedule on the Gantt chart's 15-min slots, randomized attendance for every month from July 2024 to September 2026 inclusive — `monthsInRange()` — priced from that scholar's school, with Transport forced off in every July/August to model summer break) and creates them sequentially via the `…Silently` methods of `ScholarsService`/`AttendanceService`, reporting one summary toast. The API-logging toggle confirms with a toast too. Also documents the app architecture inline in its template.
 
-**NavbarComponent** (`navbar/`) — static nav links to `/scholars`, `/pickup-time`, `/attendance`, `/charts`, `/audit-log`, `/about`. No injected state.
+**NavigationBarComponent** (`navigation-bar/`) — static nav links to `/scholars`, `/pickup-time`, `/attendance`, `/charts`, `/audit-log`, `/about`. No injected state.
 
 **NotificationComponent** (`notification/`) — global toast host (rendered once, in `app.ts`), driven entirely by `NotificationService.notifications` (readonly signal); `dismiss(id)` per-toast. Success toasts are `role="status"`, error toasts `role="alert"`.
 
-**NotFoundComponent** (`not-found/`) — wildcard (`**`) route target, static link back.
+**PageNotFoundComponent** (`page-not-found/`) — wildcard (`**`) route target, static link back.
 
 **ConfirmDialogComponent** (`confirm-dialog/`) — global confirm-dialog host (rendered once, in `app.ts`, alongside `NotificationComponent`), driven by `ConfirmDialogService.state`/`closing` signals. Replaces native `confirm()`. WAI-ARIA alertdialog: `role="alertdialog"` + `aria-modal` + labelled by its title and described by its message; focus goes to the Cancel button on open, Tab/Shift+Tab are trapped, Escape and a backdrop click cancel, and focus returns to the trigger once answered. Dimmed overlay + centered card; opens with a 0.2s scale(0.7→1)-with-overshoot + fade-in, closes with a 0.15s zoom-out/fade-out. `variant: 'danger'` switches the confirm button to the ink fill (the palette has no red). The TypeScript is identical to the sibling apps'.
 
