@@ -6,7 +6,7 @@ ASP.NET Core Web API (.NET 10, C#), single controller, plain ADO.NET data access
 
 ## Key files / paths
 
-- `API/ImaloEducationApi/ImaloEducationApi/Program.cs` — host setup: Problem Details + exception handler, CORS, OpenAPI/Swagger UI, logging middleware, `no-store` cache header.
+- `API/ImaloEducationApi/ImaloEducationApi/Program.cs` — host setup: Problem Details + exception handler, CORS, OpenAPI/Swagger UI, HTTP access logging (see *Logging*), `no-store` cache header.
 - `API/ImaloEducationApi/ImaloEducationApi/ErrorHandling/GlobalExceptionHandler.cs` — the one place an unhandled exception is logged and turned into a `500` (see "Error handling").
 - `API/ImaloEducationApi/ImaloEducationApi/Controllers/ScholarController.cs` — the one controller, `ScholarsController`, route `api/Scholars`.
 - `API/ImaloEducationApi/ImaloEducationApi/Data/ScholarDataAccess.cs` — all SQL, scoped DI service. Implements `IScholarDataAccess` (`Data/IScholarDataAccess.cs`) — extracted solely to let `ScholarsController` be unit-tested against a mock (see Gotchas), not for a second implementation.
@@ -15,7 +15,7 @@ ASP.NET Core Web API (.NET 10, C#), single controller, plain ADO.NET data access
 - `API/ImaloEducationApi/ImaloEducationApi/Models/AttendanceRecord.cs`, `ScholarAttendance.cs`, `AuditLogEntry.cs` (+ `GlobalAuditLogEntry : AuditLogEntry`), `AuditAction.cs`, `PagedResponse.cs` — the other DTOs/models.
 
 **Wire types** (JSON ↔ C# ↔ SQL): dates-without-time are `DateOnly` ↔ `"YYYY-MM-DD"` ↔ `DATE`/JSON string (`Scholar.BirthDate`, `AttendanceRecord.Date`); instants are `DateTime` with `Kind = Utc` ↔ ISO ending in `Z` ↔ `DATETIME2(3)` holding UTC (`AuditLogEntry.OccurredAt`; `ScholarDataAccess.GetUtcDateTime` marks the value UTC when it's read, since `DATETIME2` carries no offset); pickup times are `TimeOnly?` ↔ `"HH:mm"`; `AuditAction` is an enum serialized by name (`JsonStringEnumConverter<AuditAction>`); money is `decimal`. Every `SqlParameter` is added with an explicit `SqlDbType` + size matching its column (no `AddWithValue`).
-- `API/ImaloEducationApi/ImaloEducationApi/appsettings.json` — `ConnectionStrings:DefaultConnection`.
+- `API/ImaloEducationApi/ImaloEducationApi/appsettings.json` — `ConnectionStrings:DefaultConnection` (see "Database connection").
 
 ## Endpoints
 
@@ -71,8 +71,21 @@ Every error response is **RFC 9457 Problem Details** (`Content-Type: application
 - `Parents` upsert logic (both create and update): a role's row is written only if at least one of `FirstName`/`LastName`/`PhoneNumber` is non-blank; on update, a role that's gone fully blank gets its row deleted rather than left empty (enforced at the DB layer too, by `Parents`' `CHECK` constraint — see [[database]]).
 - `Scholar.PickupSchedule` is the typed `PickupSchedule` class, validated **by deserialization**, not a validator: `[JsonUnmappedMemberHandling(Disallow)]` rejects any key but the five weekdays, and `HourMinuteTimeOnlyConverter` accepts only strict `HH:mm` (`TimeOnly.TryParseExact` — not a lenient parse, which would take a bare `"12"`), reading `""`/whitespace as null. Either failure is a `400` from model binding, with the converter's message under `$.pickupSchedule.<day>`. `TimeOnly`'s built-in `"HH:mm:ss"` format is deliberately not used — the UI and stored data are `"HH:mm"`.
 - `CreateOrUpdateAttendance`'s duplicate-date and `Present`-gates-`LunchSelected`/`TransportSelected` checks are manual LINQ in the controller (cross-record/cross-field rules), while per-field rules (cost `[Range]`) are DataAnnotations on `AttendanceRecord`, enforced by `[ApiController]` before the action runs.
-- Logging is ASP.NET Core's default setup (console + debug providers, levels from `appsettings.json`), with no custom logger or request-logging middleware — the same as the sibling apps.
 - A middleware in `Program.cs` sets `Cache-Control: no-store` on every response — added specifically because Angular's `HttpClient` (`withFetch()` backend) was heuristically caching bare `200 OK` responses with no cache headers, showing stale data after mutations until a hard refresh.
+
+### Database connection
+
+One connection string in all three sibling apps: `ConnectionStrings:DefaultConnection` in `appsettings.json`, pointing at the local Docker SQL Server (`Server=localhost,1433;Database=ImaloEducation;User Id=sa;…;Encrypt=True;TrustServerCertificate=True` — encrypted, with the container's self-signed certificate trusted; `run.sh`'s `sqlpackage` publish uses the same settings). `ScholarDataAccess`'s constructor reads it with `GetConnectionString("DefaultConnection")` and throws `InvalidOperationException` if it's missing. To point a machine elsewhere (a Windows SQL Server instance, another password), override it without editing the file: `dotnet user-secrets set ConnectionStrings:DefaultConnection "<connection string>"` in the API project (it has a `UserSecretsId`; secrets load in Development), or the `ConnectionStrings__DefaultConnection` environment variable. Every data-access call opens a new `SqlConnection` and disposes it; SqlClient pools the physical connections, so that's the intended usage, not a cost. There is no connection probing or fallback: if the database is unreachable, the `SqlException` goes to `GlobalExceptionHandler` like any other unexpected error (logged once, `500` Problem Details).
+
+### Logging
+
+Same setup in all three APIs (the sibling apps' `api.md` has this section too): built-in `Microsoft.Extensions.Logging`, no third-party logger.
+
+- **Console output**: JSON (`FormatterName: json`, UTC ISO-8601 timestamps, scopes on) in `appsettings.json`, so every line carries `TraceId`/`SpanId`/`RequestId` and can be read by any log collector; `appsettings.Development.json` switches to the readable single-line `simple` formatter. Levels: `Default: Information`, `Microsoft.AspNetCore: Warning`.
+- **Access log**: `AddHttpLogging` + `UseHttpLogging()` (outermost middleware, so it records the final status, including a 500 from the exception handler) writes one line per request (`CombineLogs`) with method, path, status code and duration only; headers and bodies are left out because they carry bearer tokens, passwords and personal data. `/health` opts out (`.WithHttpLogging(HttpLoggingFields.None)`) because the UI polls it every 15 s. The category `Microsoft.AspNetCore.HttpLogging.HttpLoggingMiddleware` is raised to `Information` in `appsettings.json`.
+- **Application logs** use compile-time `[LoggerMessage]` methods (`private static partial void Log…(ILogger logger, …)` on a `partial` class), not `logger.LogX(...)` extension calls: the template is parsed at build time, arguments aren't boxed, and nothing runs when the level is off. Event ids are shared across the three APIs: `1` = unhandled exception (`GlobalExceptionHandler`), `2` = audit write failed (the best-effort audit write).
+- **What gets logged**: unexpected failures only, once each. An unhandled exception is logged by `GlobalExceptionHandler` alone (since .NET 10 `ExceptionHandlerMiddleware` doesn't log exceptions an `IExceptionHandler` handled), and the client gets its `traceId` in the Problem Details body to match the log entry. Expected outcomes (404, 409, validation 400) are not logged separately; the access log already has them. Data access and services don't log routine operations.
+- **Tests**: `Microsoft.Extensions.Diagnostics.Testing`'s `FakeLogger`/`FakeLogCollector` check what was logged (level, event id, structured state), in the audit-logger tests and in `ErrorResponseTests` (the exception is logged exactly once, and there's one access-log line per request and none for `/health`).
 
 ## Gotchas / conventions
 

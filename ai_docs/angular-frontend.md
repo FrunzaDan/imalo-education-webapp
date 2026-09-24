@@ -92,7 +92,7 @@ Angular 22 standalone-component app, zoneless change detection, SSR via `@angula
 - **`unsavedChangesGuard`** (`services/unsaved-changes.guard.ts`) — `canDeactivate` on `create-scholar`, `scholars/update/:scholarId` and `attendance/:scholarId`: when `component.hasUnsavedChanges()`, asks "Discard changes?" (Keep editing / Discard changes). Reload and tab close aren't router navigations, so those components also listen to `window:beforeunload`.
 - **`AppTitleStrategy`** — page titles, see App bootstrap.
 - **`HealthService`** — `checkApiHealth()` (GET `/health`, maps HTTP ok→bool), `pollApiHealth()` (`timer(0, 15000)` + `switchMap`). Consumed only by `app.ts`, browser-only.
-- **`ApiLoggerService`** + **`apiLoggerInterceptor`** — toggle (persisted to `localStorage`, default on) that makes every HTTP request/response/error print to the browser console (color-coded), skipped entirely during SSR.
+- **`ApiLoggerService`** + **`apiLoggerInterceptor`** — toggle (persisted to `localStorage`, default `isDevMode()`) that makes every HTTP request/response/error print to the browser console (color-coded), skipped entirely during SSR. See *Logging* below.
 
 ## Interfaces
 
@@ -101,6 +101,14 @@ Mirror the API's C# models 1:1 (see [[api]]): `Scholar`, `PickupSchedule` (`Reco
 - `constants/week-days.ts` — `WEEK_DAYS` (`as const` tuple, `monday`…`friday`) and `WeekDay` derived from it; used instead of a TS `enum` (no runtime enum object, list and type can't drift).
 - Dates from the API are already `'YYYY-MM-DD'` (`DateOnly`), so they're used as-is — compare/sort as strings, and turn into a `Date` only via `parseDateOnly` (local midnight), never `new Date('YYYY-MM-DD')` (UTC midnight, can shift a day in display or comparisons).
 - The scholar form keeps blank pickup times as `''` (a time input can't hold null) and `toScholar` sends them as `null`.
+
+## Logging
+
+Same setup in all three apps (`api-logger.service.ts`, `api-logger.interceptor.ts` and their specs are byte-identical copies, so if you change one, copy it to all three):
+
+- **HTTP traffic is logged in one place**: `apiLoggerInterceptor` logs each API call to the devtools console, in color: `→` request (with body), `←` response (status, duration, body), `✖` failure (status, duration, Problem Details body including the API's `traceId`). It runs in the browser only (nothing during SSR). It redacts `password` in request bodies and `accessToken` in response bodies, including inside the `ResponseModel` `data` envelope (Imalo has no login, so nothing here matches, but the file stays identical to the sibling apps).
+- **On/off**: `ApiLoggerService.enabled` defaults to `isDevMode()`, so it's on in `ng serve`/development builds and off in production builds. The About page toggle overrides that, and the choice is stored in `localStorage` (the service falls back safely if storage is blocked).
+- **No double logging**: services and components don't `console.error` an HTTP failure. The interceptor has already logged it, and the user sees it through `extractErrorMessage`/notifications (see *User feedback* under Gotchas); `HealthService` maps a failed poll to `false` and `SchoolService` a failed load to an empty list. Uncaught errors reach Angular's `ErrorHandler` through `provideBrowserGlobalErrorListeners()`. `console.warn` is kept for data anomalies the user can't see (for example a scholar whose school id isn't in `schools.json`).
 
 ## Gotchas / conventions
 

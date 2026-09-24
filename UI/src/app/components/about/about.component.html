@@ -106,7 +106,10 @@ docker run -e "ACCEPT_EULA=1" -e "MSSQL_SA_PASSWORD=MyStrongPassw0rd?" -p 1433:1
           request fails.
         </li>
       </ul>
-      <p>Purely a learning aid, so it can be switched off:</p>
+      <p>
+        On by default in development builds and off in production ones; this
+        switch overrides that and is remembered in this browser:
+      </p>
       <button
         type="button"
         class="app-button"

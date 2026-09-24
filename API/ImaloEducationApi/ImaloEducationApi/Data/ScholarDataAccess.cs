@@ -5,7 +5,7 @@ using Microsoft.Data.SqlClient;
 
 namespace ImaloEducationApi.Data;
 
-public class ScholarDataAccess : IScholarDataAccess
+public partial class ScholarDataAccess : IScholarDataAccess
 {
     // One shared instance: JsonSerializerOptions caches per-type serialization
     // metadata, so a new instance per call would rebuild that cache every time.
@@ -16,8 +16,13 @@ public class ScholarDataAccess : IScholarDataAccess
 
     public ScholarDataAccess(IConfiguration configuration, ILogger<ScholarDataAccess> logger)
     {
-        _connectionString = configuration.GetConnectionString("DefaultConnection")
-                            ?? throw new InvalidOperationException("Connection string 'DefaultConnection' is missing.");
+        // The one database connection (ConnectionStrings:DefaultConnection). appsettings.json holds the
+        // local Docker SQL Server's; override it per machine with user-secrets or the
+        // ConnectionStrings__DefaultConnection environment variable rather than editing the file.
+        // A new SqlConnection per call is cheap: SqlClient pools the physical connections.
+        _connectionString = configuration.GetConnectionString("DefaultConnection") ??
+                            throw new InvalidOperationException(
+                                "Missing ConnectionStrings:DefaultConnection configuration.");
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
@@ -78,7 +83,6 @@ public class ScholarDataAccess : IScholarDataAccess
             throw new InvalidOperationException("Scholar was inserted, but no ID was returned.");
 
         scholar.ScholarId = insertedId;
-        _logger.LogInformation("Scholar created with ID: {ScholarId}", insertedId);
 
         // Insert pickup schedule if provided
         if (scholar.PickupSchedule != null)
@@ -89,7 +93,6 @@ public class ScholarDataAccess : IScholarDataAccess
                 JsonSerializer.Serialize(scholar.PickupSchedule, JsonOptions), -1);
 
             await insertScheduleCmd.ExecuteNonQueryAsync(cancellationToken);
-            _logger.LogInformation("Pickup schedule inserted for scholar ID: {ScholarId}", insertedId);
         }
 
         // Insert parent rows for whichever of Mother/Father has at least one field
@@ -151,7 +154,6 @@ public class ScholarDataAccess : IScholarDataAccess
             scholars.Add(MapScholarFromReader(reader));
         }
 
-        _logger.LogInformation("Fetched {Count} scholars.", scholars.Count);
         return scholars;
     }
 
@@ -163,15 +165,7 @@ public class ScholarDataAccess : IScholarDataAccess
         await using var connection = new SqlConnection(_connectionString);
         await connection.OpenAsync(cancellationToken);
 
-        var scholar = await ReadScholarAsync(connection, null, scholarId, cancellationToken);
-        if (scholar != null)
-        {
-            _logger.LogInformation("Retrieved scholar with ID: {ScholarId}", scholarId);
-            return scholar;
-        }
-
-        _logger.LogWarning("No scholar found with ID: {ScholarId}", scholarId);
-        return null;
+        return await ReadScholarAsync(connection, null, scholarId, cancellationToken);
     }
 
     // One scholar with its schedule and parents. Inside an update's transaction the Scholar row
@@ -258,10 +252,7 @@ public class ScholarDataAccess : IScholarDataAccess
 
         var rowsAffected = await updateScholarCmd.ExecuteNonQueryAsync(cancellationToken);
         if (rowsAffected == 0)
-        {
-            _logger.LogWarning("No scholar found to update with ID: {ScholarId}", scholar.ScholarId);
             return null; // Scholar not found (nothing was written; disposing the transaction ends it)
-        }
 
         // Update or insert pickup schedule if provided
         if (scholar.PickupSchedule != null)
@@ -271,7 +262,6 @@ public class ScholarDataAccess : IScholarDataAccess
             AddParam(updateScheduleCmd, "@ScheduleJson", SqlDbType.NVarChar,
                 JsonSerializer.Serialize(scholar.PickupSchedule, JsonOptions), -1);
             await updateScheduleCmd.ExecuteNonQueryAsync(cancellationToken);
-            _logger.LogInformation("Updated pickup schedule for scholar ID: {ScholarId}", scholar.ScholarId);
         }
 
         // Upsert whichever of Mother/Father has at least one field set, delete the row
@@ -309,7 +299,6 @@ public class ScholarDataAccess : IScholarDataAccess
         await LogAuditAsync(scholar.ScholarId, AuditAction.Edited,
             before is null ? null : ScholarChanges.Describe(before, scholar));
 
-        _logger.LogInformation("Updated scholar with ID: {ScholarId}", scholar.ScholarId);
         return scholar;
     }
 
@@ -332,14 +321,10 @@ public class ScholarDataAccess : IScholarDataAccess
         var rowsAffected = await command.ExecuteNonQueryAsync(cancellationToken);
 
         if (rowsAffected == 0)
-        {
-            _logger.LogWarning("No scholar found to delete with ID: {ScholarId}", scholarId);
             return false; // Scholar not found
-        }
 
         await LogAuditAsync(scholarId, AuditAction.Deleted);
 
-        _logger.LogInformation("Deleted scholar with ID: {ScholarId}", scholarId);
         return true;
     }
 
@@ -388,12 +373,8 @@ public class ScholarDataAccess : IScholarDataAccess
         var rowsAffected = await command.ExecuteNonQueryAsync(cancellationToken);
 
         if (rowsAffected == 0)
-        {
-            _logger.LogWarning("No scholar found to save attendance for with ID: {ScholarId}", scholarId);
             return false;
-        }
 
-        _logger.LogInformation("Attendance record upserted for scholar ID: {ScholarId}", scholarId);
         return true;
     }
 
@@ -413,10 +394,7 @@ public class ScholarDataAccess : IScholarDataAccess
         var result = await command.ExecuteScalarAsync(cancellationToken);
 
         if (result is not string json)
-        {
-            _logger.LogInformation("No attendance found for scholar ID: {ScholarId}", scholarId);
             return new List<AttendanceRecord>();
-        }
 
         return JsonSerializer.Deserialize<List<AttendanceRecord>>(json, JsonOptions) ?? new List<AttendanceRecord>();
     }
@@ -443,7 +421,6 @@ public class ScholarDataAccess : IScholarDataAccess
             results.Add(new ScholarAttendance(scholarId, records));
         }
 
-        _logger.LogInformation("Fetched attendance for {Count} scholars.", results.Count);
         return results;
     }
 
@@ -461,14 +438,7 @@ public class ScholarDataAccess : IScholarDataAccess
         await connection.OpenAsync(cancellationToken);
         var rows = await command.ExecuteNonQueryAsync(cancellationToken);
 
-        if (rows > 0)
-        {
-            _logger.LogInformation("Deleted attendance for scholar ID: {ScholarId}", scholarId);
-            return true;
-        }
-
-        _logger.LogWarning("No attendance found to delete for scholar ID: {ScholarId}", scholarId);
-        return false;
+        return rows > 0;
     }
 
     // ---------------------------
@@ -505,8 +475,7 @@ public class ScholarDataAccess : IScholarDataAccess
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to write audit log entry for scholar {ScholarId}, action {Action}",
-                scholarId, action);
+            LogAuditWriteFailed(_logger, ex, scholarId, action);
         }
     }
 
@@ -545,8 +514,6 @@ public class ScholarDataAccess : IScholarDataAccess
             });
         }
 
-        _logger.LogInformation("Fetched {Count} audit log entries for scholar {ScholarId}.", entries.Count,
-            scholarId);
         return entries;
     }
 
@@ -612,8 +579,6 @@ public class ScholarDataAccess : IScholarDataAccess
             });
         }
 
-        _logger.LogInformation("Fetched page {PageNumber} ({Count} of {Total}) of the global audit log.",
-            pageNumber, items.Count, totalItems);
         return new PagedResponse<GlobalAuditLogEntry>(items, totalItems, pageNumber, pageSize);
     }
 
@@ -625,9 +590,7 @@ public class ScholarDataAccess : IScholarDataAccess
         await using var command = new SqlCommand(sql, connection);
 
         await connection.OpenAsync(cancellationToken);
-        var rows = await command.ExecuteNonQueryAsync(cancellationToken);
-
-        _logger.LogInformation("Cleared the audit log ({Count} entries deleted).", rows);
+        await command.ExecuteNonQueryAsync(cancellationToken);
     }
 
     // No catch for a JsonException: the API is the only writer, and ScheduleJson has a
@@ -673,4 +636,9 @@ public class ScholarDataAccess : IScholarDataAccess
 
         return scholar;
     }
+
+    [LoggerMessage(EventId = 2, Level = LogLevel.Error,
+        Message = "Failed to write audit log entry for scholar {ScholarId}, action {Action}")]
+    private static partial void LogAuditWriteFailed(ILogger logger, Exception exception, Guid scholarId,
+        AuditAction action);
 }

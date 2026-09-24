@@ -8,7 +8,7 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 API_PROJ_DIR="$ROOT_DIR/API/ImaloEducationApi/ImaloEducationApi"
 API_PROJ="$API_PROJ_DIR/ImaloEducationApi.csproj"
 API_LAUNCH_SETTINGS="$API_PROJ_DIR/Properties/launchSettings.json"
-API_LAUNCH_PROFILE="ImaloEducationApi"
+API_LAUNCH_PROFILE="http"
 DB_DIR="$ROOT_DIR/DB/ImaloEducation"
 DB_PROJ="ImaloEducation.sqlproj"
 DB_DACPAC="$DB_DIR/bin/Debug/ImaloEducation.dacpac"
@@ -31,7 +31,7 @@ else
 fi
 SQL_DATABASE="${SQL_DATABASE:-ImaloEducation}"
 
-# Default falls back to the "ImaloEducationApi" launch profile's applicationUrl so the
+# Default falls back to the "http" launch profile's applicationUrl so the
 # script doesn't silently poll the wrong port if the profile is ever changed; set
 # API_URL yourself to override. This project has no HTTPS profile (see ai_docs/api.md's
 # Gotchas) — plain HTTP only, deliberately, since this is local-only.
@@ -156,7 +156,7 @@ echo "==> [5/6] Deploying database schema (retrying until SQL Server accepts con
 # Azure SQL Edge doesn't ship sqlcmd/mssql-tools inside the container, so instead of
 # probing readiness separately, we retry the real publish (the actual connection the
 # API will use) until it succeeds.
-TARGET_CONN="Data Source=localhost,$SQL_PORT;Initial Catalog=$SQL_DATABASE;User ID=SA;Password=$SQL_SA_PASSWORD;TrustServerCertificate=True;Encrypt=False"
+TARGET_CONN="Data Source=localhost,$SQL_PORT;Initial Catalog=$SQL_DATABASE;User ID=SA;Password=$SQL_SA_PASSWORD;TrustServerCertificate=True;Encrypt=True"
 PUBLISH_LOG="$RUN_DIR/sqlpackage.log"
 
 published=0

@@ -1,6 +1,7 @@
 using ImaloEducationApi.Data;
 using ImaloEducationApi.ErrorHandling;
 using ImaloEducationApi.Routing;
+using Microsoft.AspNetCore.HttpLogging;
 using Microsoft.AspNetCore.Mvc.ApplicationModels;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -18,6 +19,17 @@ builder.Services.AddScoped<IScholarDataAccess, ScholarDataAccess>();
 
 // Health checks (liveness only — no DB probe)
 builder.Services.AddHealthChecks();
+
+// Access log: one structured line per request ("GET /api/... 200 12ms", CombineLogs), written at
+// Information by Microsoft.AspNetCore.HttpLogging. Headers and bodies stay out on purpose — they
+// carry bearer tokens, passwords and personal data. Outside Development the console writes JSON
+// with scopes, so every line carries the TraceId that a Problem Details body returns as traceId.
+builder.Services.AddHttpLogging(options =>
+{
+    options.LoggingFields = HttpLoggingFields.RequestMethod | HttpLoggingFields.RequestPath |
+                            HttpLoggingFields.ResponseStatusCode | HttpLoggingFields.Duration;
+    options.CombineLogs = true;
+});
 
 // Every error response is RFC 9457 Problem Details (application/problem+json): validation
 // failures from [ApiController], Problem()/NotFound results, bare status codes (UseStatusCodePages)
@@ -42,7 +54,9 @@ var app = builder.Build();
 // Configure Middleware
 // --------------------------------------------------
 
-// First, so it catches exceptions from everything after it.
+// Outermost, so the logged status is the final one (a 500 written by the exception handler too).
+app.UseHttpLogging();
+// Next, so it catches exceptions from everything after it.
 app.UseExceptionHandler();
 // Gives an empty 4xx/5xx (unknown route, wrong method, unsupported media type) a Problem Details body.
 app.UseStatusCodePages();
@@ -67,7 +81,9 @@ app.Use(async (context, next) =>
     await next();
 });
 
-app.MapHealthChecks("/health");
+app.MapHealthChecks("/health")
+    // Polled every 15 s by the UI; one access-log line per poll would drown the real traffic.
+    .WithHttpLogging(HttpLoggingFields.None);
 
 // Map attribute-based controllers
 app.MapControllers();

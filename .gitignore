@@ -1,99 +1,61 @@
-# See https://docs.github.com/get-started/getting-started-with-git/ignoring-files for more about ignoring files.
+# Shared by customer-management-system, employee-management-system and imalo-education-webapp
+# (identical in all three): .NET API, SQL database project, Angular UI.
 
-# --- Compiled Output & Build Artifacts ---
-# Angular build output
+# --- .NET (API and DB projects) ---
+[Bb]in/
+[Oo]bj/
+[Pp]ublish/
+*.user
+*.suo
+*.userprefs
+*.dbmdl
+*.[Cc]ache
+!*.[Cc]ache/
+*.nupkg
+**/packages/*
+!**/packages/build/
+*.pfx
+*.pubxml
+*.publishproj
+
+# Test results and coverage (dotnet test, Microsoft Testing Platform)
+[Tt]est[Rr]esult*/
+*.trx
+*.coverage
+*.coveragexml
+*.cobertura.xml
+
+# --- Angular UI ---
+/UI/node_modules/
 /UI/dist/
 /UI/tmp/
 /UI/out-tsc/
-/UI/bazel-out/
-/UI/.angular/cache/
+/UI/.angular/
 /UI/coverage/
+npm-debug.log*
+yarn-error.log*
 
-# ImaloEducation (DB project) build output
-/DB/ImaloEducation/bin/
-/DB/ImaloEducation/obj/
+# --- Local dev orchestration (run.sh: logs, pid files, exported dev TLS cert) ---
+/.run/
 
-# SQL Server Data Tools (SSDT) intermediate files
-*.dbmdl
-*.sqlproj.user
-
-# .NET / C# build output
-/API/ImaloEducationApi/ImaloEducationApi/bin/
-/API/ImaloEducationApi/ImaloEducationApi/obj/
-/API/ImaloEducationApi/ImaloEducationApi/publish/
-/API/ImaloEducationApi/ImaloEducationApi.Tests/bin/
-/API/ImaloEducationApi/ImaloEducationApi.Tests/obj/
-
-# dotnet test results (in the API folder and at the repo root)
-[Tt]est[Rr]esult*/
-
-# Debugging symbols
-*.pdb
-# Visual Studio Solution User Options
-*.suo
-# Visual Studio user settings
-*.user
-# Backup files
-*.bak
-
-# --- Dependencies ---
-# Node.js modules for Angular
-/UI/node_modules/
-npm-debug.log
-yarn-error.log
-.pnp/
-.pnp.js
-
-# .NET packages
-# NuGet packages are typically restored, not committed
-packages/
-# Rider and ReSharper specific files
-*.DotSettings.user
-*.resharper
-*.dotsettings
-
-# --- IDEs and Editors ---
-.idea/
-.project
-.classpath
-.c9/
-*.launch
-.settings/
-*.sublime-workspace
-*.vspscc
-*.vssscc
-# Visual Studio hidden folder for solution-specific files
+# --- IDEs and editors ---
 .vs/
-
-# Visual Studio Code
+.idea/
+*.sublime-workspace
+.history/
+# VS Code: keep the shared launch/tasks/settings/extensions files, ignore the rest.
 .vscode/*
 !.vscode/settings.json
 !.vscode/tasks.json
 !.vscode/launch.json
 !.vscode/extensions.json
-.history/
 
-# --- Miscellaneous ---
-.sass-cache/
-/connect.lock
-/libpeerconnection.log
-testem.log
-/typings
-# General log files
-*.log
-# If using local SQLite databases
-*.sqlite
-
-# --- System Files ---
+# --- OS ---
 .DS_Store
 Thumbs.db
+*~
 
-# --- Local dev orchestration (run.sh) ---
-/.run/
-
-# --- Environment Specific Configuration ---
-# You might want to ignore appsettings.Development.json or other environment-specific
-# config files if they contain sensitive information or are managed separately.
-# For example:
-# /API/ImaloEducationApi/ImaloEducationApi/appsettings.Development.json
-# /API/ImaloEducationApi/ImaloEducationApi/appsettings.Production.json
+# --- Logs and local databases ---
+*.log
+*.mdf
+*.ldf
