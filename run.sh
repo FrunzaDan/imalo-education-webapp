@@ -16,7 +16,7 @@ UI_DIR="$ROOT_DIR/UI"
 RUN_DIR="$ROOT_DIR/.run"
 
 # Same container/port/password convention as the other local .NET projects on this
-# machine (e.g. Customer_Management_System) — the container is shared across them.
+# machine (e.g. customer-management-system) — the container is shared across them.
 SQL_IMAGE="${SQL_IMAGE:-mcr.microsoft.com/azure-sql-edge}"
 SQL_CONTAINER_NAME="${SQL_CONTAINER_NAME:-sqlserver}"
 SQL_SA_PASSWORD="${SQL_SA_PASSWORD:-MyStrongPassw0rd?}"

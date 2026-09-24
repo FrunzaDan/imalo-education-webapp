@@ -8,7 +8,7 @@ Three layers, talking only over HTTP — nothing shares process or memory:
 
 ```
 Angular 22 UI  --HTTP-->  ASP.NET Core Web API  --ADO.NET-->  SQL Server
- (SSR, port 4200)          (.NET 10, port 5244)                (Azure SQL Edge, port 1433)
+ (SSR, port 4204)          (.NET 10, port 5244)                (Azure SQL Edge, port 1433)
 ```
 
 | Layer | Folder | Tech |
@@ -25,7 +25,7 @@ School reference data (name, color, lunch/transport prices) is static frontend J
 ./run.sh    # starts Docker's SQL Server container, deploys the schema, runs the API, then `ng serve` in the foreground
 ```
 
-Then open `http://localhost:4200`. `Ctrl+C` stops both the API and Angular. `run.sh` is idempotent — safe to re-run.
+Then open `http://localhost:4204`. `Ctrl+C` stops both the API and Angular. `run.sh` is idempotent — safe to re-run.
 
 ```bash
 ./build.sh  # CI-style: builds the API, the DB project, and the Angular app, then runs both test suites — no services started
