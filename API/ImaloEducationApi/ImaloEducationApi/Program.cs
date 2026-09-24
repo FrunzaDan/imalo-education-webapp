@@ -1,3 +1,4 @@
+using ImaloEducationApi.Configuration;
 using ImaloEducationApi.Data;
 using ImaloEducationApi.ErrorHandling;
 using ImaloEducationApi.Routing;
@@ -5,6 +6,14 @@ using Microsoft.AspNetCore.HttpLogging;
 using Microsoft.AspNetCore.Mvc.ApplicationModels;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Configuration, bound and validated at startup (ValidateOnStart): a missing or invalid value stops
+// the app with an OptionsValidationException naming the key, instead of failing on the first
+// request that needs it.
+builder.Services.AddOptions<DatabaseOptions>()
+    .BindConfiguration(DatabaseOptions.SectionName)
+    .ValidateDataAnnotations()
+    .ValidateOnStart();
 
 // Routes are declared as "api/[controller]"; the transformer turns the PascalCase class name
 // into the lowercase, kebab-case URL segment (ScholarsController -> /api/scholars).
@@ -15,6 +24,7 @@ builder.Services.AddControllers(options =>
 builder.Services.AddOpenApi();
 
 // Custom Services
+builder.Services.AddSingleton<ISqlConnectionFactory, SqlConnectionFactory>();
 builder.Services.AddScoped<IScholarDataAccess, ScholarDataAccess>();
 
 // Health checks (liveness only — no DB probe)

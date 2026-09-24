@@ -1,4 +1,5 @@
-import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { Component, computed, inject, signal } from '@angular/core';
+import { rxResource } from '@angular/core/rxjs-interop';
 import { HttpErrorResponse } from '@angular/common/http';
 import { DatePipe } from '@angular/common';
 import { RouterModule } from '@angular/router';
@@ -29,15 +30,36 @@ import { extractErrorMessage } from '../../utils/extract-error-message';
   templateUrl: './attendance.component.html',
   styleUrl: './attendance.component.css',
 })
-export class AttendanceComponent implements OnInit {
+export class AttendanceComponent {
   private readonly scholarService = inject(ScholarService);
   private readonly attendanceService = inject(AttendanceService);
   private readonly csvExportService = inject(CsvExportService);
 
-  private readonly scholars = signal<Scholar[]>([]);
-  private readonly allAttendance = signal<ScholarAttendance[]>([]);
-  loading = signal(true);
-  readonly loadError = signal<string | null>(null);
+  // Everything the page needs, fetched in parallel once per visit. hasValue()
+  // guards the reads: value() throws while the resource is in error.
+  private readonly data = rxResource({
+    stream: () =>
+      forkJoin({
+        scholars: this.scholarService.getScholars(),
+        allAttendance: this.attendanceService.getAllScholarAttendance(),
+      }),
+  });
+  private readonly scholars = computed<Scholar[]>(() =>
+    this.data.hasValue() ? this.data.value().scholars : [],
+  );
+  private readonly allAttendance = computed<ScholarAttendance[]>(() =>
+    this.data.hasValue() ? this.data.value().allAttendance : [],
+  );
+  readonly loading = this.data.isLoading;
+  readonly loadError = computed(() => {
+    const error = this.data.error();
+    return error
+      ? extractErrorMessage(
+          error as HttpErrorResponse,
+          'Failed to load attendance',
+        )
+      : null;
+  });
 
   // 'YYYY-MM', the value format of <input type="month">, defaulting to
   // DEFAULT_MONTH. The prev/next arrows write straight into it.
@@ -63,29 +85,6 @@ export class AttendanceComponent implements OnInit {
   readonly totalTransport = computed(() =>
     sum(this.dailyCounts().transportSelected),
   );
-
-  ngOnInit(): void {
-    this.loadData();
-  }
-
-  private loadData(): void {
-    forkJoin({
-      scholars: this.scholarService.getScholars(),
-      allAttendance: this.attendanceService.getAllScholarAttendance(),
-    }).subscribe({
-      next: ({ scholars, allAttendance }) => {
-        this.scholars.set(scholars);
-        this.allAttendance.set(allAttendance);
-        this.loading.set(false);
-      },
-      error: (error: HttpErrorResponse) => {
-        this.loadError.set(
-          extractErrorMessage(error, 'Failed to load attendance'),
-        );
-        this.loading.set(false);
-      },
-    });
-  }
 
   previousMonth(): void {
     this.monthForm.month().value.set(shiftMonth(this.selectedMonth(), -1));

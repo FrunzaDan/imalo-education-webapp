@@ -11,18 +11,12 @@ public partial class ScholarDataAccess : IScholarDataAccess
     // metadata, so a new instance per call would rebuild that cache every time.
     private static readonly JsonSerializerOptions JsonOptions = new() { PropertyNameCaseInsensitive = true };
 
-    private readonly string _connectionString;
+    private readonly ISqlConnectionFactory _connectionFactory;
     private readonly ILogger<ScholarDataAccess> _logger;
 
-    public ScholarDataAccess(IConfiguration configuration, ILogger<ScholarDataAccess> logger)
+    public ScholarDataAccess(ISqlConnectionFactory connectionFactory, ILogger<ScholarDataAccess> logger)
     {
-        // The one database connection (ConnectionStrings:DefaultConnection). appsettings.json holds the
-        // local Docker SQL Server's; override it per machine with user-secrets or the
-        // ConnectionStrings__DefaultConnection environment variable rather than editing the file.
-        // A new SqlConnection per call is cheap: SqlClient pools the physical connections.
-        _connectionString = configuration.GetConnectionString("DefaultConnection") ??
-                            throw new InvalidOperationException(
-                                "Missing ConnectionStrings:DefaultConnection configuration.");
+        _connectionFactory = connectionFactory ?? throw new ArgumentNullException(nameof(connectionFactory));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
@@ -64,8 +58,7 @@ public partial class ScholarDataAccess : IScholarDataAccess
                                         VALUES (@ScholarId, @Role, @FirstName, @LastName, @PhoneNumber);
                                         """;
 
-        await using var connection = new SqlConnection(_connectionString);
-        await connection.OpenAsync(cancellationToken);
+        await using var connection = await _connectionFactory.OpenConnectionAsync(cancellationToken);
         // No catch/rollback: anything thrown before CommitAsync propagates to GlobalExceptionHandler,
         // and disposing an uncommitted SqlTransaction rolls it back (on every exit path, including
         // a cancelled request).
@@ -143,10 +136,9 @@ public partial class ScholarDataAccess : IScholarDataAccess
 
         var scholars = new List<Scholar>();
 
-        await using var connection = new SqlConnection(_connectionString);
+        await using var connection = await _connectionFactory.OpenConnectionAsync(cancellationToken);
         await using var command = new SqlCommand(sql, connection);
 
-        await connection.OpenAsync(cancellationToken);
         await using var reader = await command.ExecuteReaderAsync(cancellationToken);
 
         while (await reader.ReadAsync(cancellationToken))
@@ -162,8 +154,7 @@ public partial class ScholarDataAccess : IScholarDataAccess
         if (scholarId == Guid.Empty)
             throw new ArgumentException("Scholar ID must not be empty.", nameof(scholarId));
 
-        await using var connection = new SqlConnection(_connectionString);
-        await connection.OpenAsync(cancellationToken);
+        await using var connection = await _connectionFactory.OpenConnectionAsync(cancellationToken);
 
         return await ReadScholarAsync(connection, null, scholarId, cancellationToken);
     }
@@ -233,8 +224,7 @@ public partial class ScholarDataAccess : IScholarDataAccess
 
         const string deleteParentSql = "DELETE FROM dbo.ScholarParent WHERE ScholarId = @ScholarId AND Role = @Role;";
 
-        await using var connection = new SqlConnection(_connectionString);
-        await connection.OpenAsync(cancellationToken);
+        await using var connection = await _connectionFactory.OpenConnectionAsync(cancellationToken);
         // Same as CreateScholarAsync: an uncommitted transaction rolls back when it's disposed.
         await using var transaction = (SqlTransaction)await connection.BeginTransactionAsync(cancellationToken);
 
@@ -312,11 +302,10 @@ public partial class ScholarDataAccess : IScholarDataAccess
         // is enough on its own — no need to delete the child rows here first.
         const string deleteScholarSql = "DELETE FROM dbo.Scholar WHERE ScholarId = @ScholarId;";
 
-        await using var connection = new SqlConnection(_connectionString);
+        await using var connection = await _connectionFactory.OpenConnectionAsync(cancellationToken);
         await using var command = new SqlCommand(deleteScholarSql, connection);
         AddParam(command, "@ScholarId", SqlDbType.UniqueIdentifier, scholarId);
 
-        await connection.OpenAsync(cancellationToken);
 
         var rowsAffected = await command.ExecuteNonQueryAsync(cancellationToken);
 
@@ -362,13 +351,12 @@ public partial class ScholarDataAccess : IScholarDataAccess
                                            COMMIT TRANSACTION;
                                            """;
 
-        await using var connection = new SqlConnection(_connectionString);
+        await using var connection = await _connectionFactory.OpenConnectionAsync(cancellationToken);
         await using var command = new SqlCommand(upsertAttendanceSql, connection);
 
         AddParam(command, "@ScholarId", SqlDbType.UniqueIdentifier, scholarId);
         AddParam(command, "@AttendanceJson", SqlDbType.NVarChar, JsonSerializer.Serialize(attendanceRecords, JsonOptions), -1);
 
-        await connection.OpenAsync(cancellationToken);
         // The rows the UPDATE or the INSERT touched: 0 only when the scholar doesn't exist.
         var rowsAffected = await command.ExecuteNonQueryAsync(cancellationToken);
 
@@ -386,11 +374,10 @@ public partial class ScholarDataAccess : IScholarDataAccess
 
         const string sql = "SELECT AttendanceJson FROM dbo.ScholarAttendance WHERE ScholarId = @ScholarId;";
 
-        await using var connection = new SqlConnection(_connectionString);
+        await using var connection = await _connectionFactory.OpenConnectionAsync(cancellationToken);
         await using var command = new SqlCommand(sql, connection);
         AddParam(command, "@ScholarId", SqlDbType.UniqueIdentifier, scholarId);
 
-        await connection.OpenAsync(cancellationToken);
         var result = await command.ExecuteScalarAsync(cancellationToken);
 
         if (result is not string json)
@@ -406,10 +393,9 @@ public partial class ScholarDataAccess : IScholarDataAccess
 
         var results = new List<ScholarAttendance>();
 
-        await using var connection = new SqlConnection(_connectionString);
+        await using var connection = await _connectionFactory.OpenConnectionAsync(cancellationToken);
         await using var command = new SqlCommand(sql, connection);
 
-        await connection.OpenAsync(cancellationToken);
         await using var reader = await command.ExecuteReaderAsync(cancellationToken);
 
         while (await reader.ReadAsync(cancellationToken))
@@ -431,11 +417,10 @@ public partial class ScholarDataAccess : IScholarDataAccess
 
         const string sql = "DELETE FROM dbo.ScholarAttendance WHERE ScholarId = @ScholarId;";
 
-        await using var connection = new SqlConnection(_connectionString);
+        await using var connection = await _connectionFactory.OpenConnectionAsync(cancellationToken);
         await using var command = new SqlCommand(sql, connection);
         AddParam(command, "@ScholarId", SqlDbType.UniqueIdentifier, scholarId);
 
-        await connection.OpenAsync(cancellationToken);
         var rows = await command.ExecuteNonQueryAsync(cancellationToken);
 
         return rows > 0;
@@ -463,14 +448,13 @@ public partial class ScholarDataAccess : IScholarDataAccess
 
         try
         {
-            await using var connection = new SqlConnection(_connectionString);
+            await using var connection = await _connectionFactory.OpenConnectionAsync();
             await using var command = new SqlCommand(sql, connection);
 
             AddParam(command, "@ScholarId", SqlDbType.UniqueIdentifier, scholarId);
             AddParam(command, "@ActionType", SqlDbType.VarChar, action.ToString(), 20);
             AddParam(command, "@Details", SqlDbType.NVarChar, ToDbValue(details), 500);
 
-            await connection.OpenAsync();
             await command.ExecuteNonQueryAsync();
         }
         catch (Exception ex)
@@ -493,11 +477,10 @@ public partial class ScholarDataAccess : IScholarDataAccess
 
         var entries = new List<AuditLogEntry>();
 
-        await using var connection = new SqlConnection(_connectionString);
+        await using var connection = await _connectionFactory.OpenConnectionAsync(cancellationToken);
         await using var command = new SqlCommand(sql, connection);
         AddParam(command, "@ScholarId", SqlDbType.UniqueIdentifier, scholarId);
 
-        await connection.OpenAsync(cancellationToken);
         await using var reader = await command.ExecuteReaderAsync(cancellationToken);
 
         while (await reader.ReadAsync(cancellationToken))
@@ -539,9 +522,8 @@ public partial class ScholarDataAccess : IScholarDataAccess
         var items = new List<GlobalAuditLogEntry>();
         int totalItems;
 
-        await using var connection = new SqlConnection(_connectionString);
+        await using var connection = await _connectionFactory.OpenConnectionAsync(cancellationToken);
 
-        await connection.OpenAsync(cancellationToken);
 
         // Fetched independently of the page query below, so TotalItems is always
         // correct even when the requested page itself has zero rows (past the
@@ -586,10 +568,9 @@ public partial class ScholarDataAccess : IScholarDataAccess
     {
         const string sql = "DELETE FROM dbo.ScholarAuditLog;";
 
-        await using var connection = new SqlConnection(_connectionString);
+        await using var connection = await _connectionFactory.OpenConnectionAsync(cancellationToken);
         await using var command = new SqlCommand(sql, connection);
 
-        await connection.OpenAsync(cancellationToken);
         await command.ExecuteNonQueryAsync(cancellationToken);
     }
 

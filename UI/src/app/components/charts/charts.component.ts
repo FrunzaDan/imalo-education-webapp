@@ -1,4 +1,5 @@
-import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { Component, computed, inject, signal } from '@angular/core';
+import { rxResource } from '@angular/core/rxjs-interop';
 import { HttpErrorResponse } from '@angular/common/http';
 import { FormField, form } from '@angular/forms/signals';
 import { forkJoin } from 'rxjs';
@@ -37,16 +38,40 @@ import { extractErrorMessage } from '../../utils/extract-error-message';
   templateUrl: './charts.component.html',
   styleUrl: './charts.component.css',
 })
-export class ChartsComponent implements OnInit {
+export class ChartsComponent {
   private readonly scholarService = inject(ScholarService);
   private readonly attendanceService = inject(AttendanceService);
   private readonly schoolService = inject(SchoolService);
 
-  private readonly scholars = signal<Scholar[]>([]);
-  private readonly allAttendance = signal<ScholarAttendance[]>([]);
-  private readonly schools = signal<School[]>([]);
-  loading = signal(true);
-  readonly loadError = signal<string | null>(null);
+  // Everything the page needs, fetched in parallel once per visit. hasValue()
+  // guards the reads: value() throws while the resource is in error.
+  private readonly data = rxResource({
+    stream: () =>
+      forkJoin({
+        scholars: this.scholarService.getScholars(),
+        allAttendance: this.attendanceService.getAllScholarAttendance(),
+        schools: this.schoolService.getSchools(),
+      }),
+  });
+  private readonly scholars = computed<Scholar[]>(() =>
+    this.data.hasValue() ? this.data.value().scholars : [],
+  );
+  private readonly allAttendance = computed<ScholarAttendance[]>(() =>
+    this.data.hasValue() ? this.data.value().allAttendance : [],
+  );
+  private readonly schools = computed<School[]>(() =>
+    this.data.hasValue() ? this.data.value().schools : [],
+  );
+  readonly loading = this.data.isLoading;
+  readonly loadError = computed(() => {
+    const error = this.data.error();
+    return error
+      ? extractErrorMessage(
+          error as HttpErrorResponse,
+          'Failed to load chart data',
+        )
+      : null;
+  });
 
   readonly classCounts = computed(() => countByGrade(this.scholars()));
   readonly schoolCounts = computed(() =>
@@ -142,27 +167,6 @@ export class ChartsComponent implements OnInit {
     ).length;
     return activeMonths > 0 ? this.yearTotalRevenue() / activeMonths : 0;
   });
-
-  ngOnInit(): void {
-    forkJoin({
-      scholars: this.scholarService.getScholars(),
-      allAttendance: this.attendanceService.getAllScholarAttendance(),
-      schools: this.schoolService.getSchools(),
-    }).subscribe({
-      next: ({ scholars, allAttendance, schools }) => {
-        this.scholars.set(scholars);
-        this.allAttendance.set(allAttendance);
-        this.schools.set(schools);
-        this.loading.set(false);
-      },
-      error: (error: HttpErrorResponse) => {
-        this.loadError.set(
-          extractErrorMessage(error, 'Failed to load chart data'),
-        );
-        this.loading.set(false);
-      },
-    });
-  }
 
   previousMonth(): void {
     this.monthForm.month().value.set(shiftMonth(this.selectedMonth(), -1));

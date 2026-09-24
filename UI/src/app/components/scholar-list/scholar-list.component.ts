@@ -1,4 +1,11 @@
-import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import {
+  Component,
+  computed,
+  inject,
+  linkedSignal,
+  signal,
+} from '@angular/core';
+import { rxResource } from '@angular/core/rxjs-interop';
 import { HttpErrorResponse } from '@angular/common/http';
 import { FormField, form } from '@angular/forms/signals';
 import { ScholarService } from '../../services/scholar.service';
@@ -33,7 +40,7 @@ interface TransformedScholarData {
   templateUrl: './scholar-list.component.html',
   styleUrl: './scholar-list.component.css',
 })
-export class ScholarListComponent implements OnInit {
+export class ScholarListComponent {
   private readonly scholarService = inject(ScholarService);
   private readonly schoolService = inject(SchoolService);
   private readonly sortingService = inject(SortingService);
@@ -41,96 +48,78 @@ export class ScholarListComponent implements OnInit {
   private readonly notificationService = inject(NotificationService);
   private readonly confirmDialogService = inject(ConfirmDialogService);
 
-  scholars: Scholar[] = [];
-  schools: Map<string, School> = new Map();
-  scholarData = signal<TransformedScholarData[]>([]);
-  readonly loading = signal(true);
-  readonly loadError = signal<string | null>(null);
+  // Scholars and schools, fetched in parallel; reload() after a bulk delete.
+  // hasValue() guards the read: value() throws while the resource is in error.
+  private readonly data = rxResource({
+    stream: () =>
+      forkJoin({
+        scholars: this.scholarService.getScholars(),
+        schools: this.schoolService.getSchools(),
+      }),
+  });
+  // The first load only: a reload (after a bulk delete) keeps the table on
+  // screen with the previous rows until the fresh ones arrive.
+  readonly loading = computed(() => this.data.status() === 'loading');
+  readonly loadError = computed(() => {
+    const error = this.data.error();
+    return error
+      ? extractErrorMessage(
+          error as HttpErrorResponse,
+          'Failed to load scholars',
+        )
+      : null;
+  });
 
-  currentSortColumn: string = '';
-  isAscending: boolean = true;
+  private readonly rows = computed(() =>
+    this.data.hasValue()
+      ? toRows(this.data.value().scholars, this.data.value().schools)
+      : [],
+  );
+
+  readonly currentSortColumn = signal<keyof TransformedScholarData | ''>('');
+  private readonly currentSortType = signal<'string' | 'number' | 'date'>(
+    'string',
+  );
+  readonly isAscending = signal(true);
+
+  readonly scholarData = computed(() => {
+    const column = this.currentSortColumn();
+    return column
+      ? this.sortingService.sort(
+          this.rows(),
+          column,
+          this.currentSortType(),
+          this.isAscending(),
+        )
+      : this.rows();
+  });
 
   // A one-field signal form for the search box; searchTerm is its value.
   readonly searchForm = form(signal({ term: '' }));
   readonly searchTerm = computed(() => this.searchForm.term().value());
 
-  selectedScholarIds = signal<Set<string>>(new Set());
+  // Emptied whenever the rows reload: stale selections would otherwise
+  // reference rows that may no longer exist.
+  readonly selectedScholarIds = linkedSignal<
+    TransformedScholarData[],
+    Set<string>
+  >({
+    source: this.rows,
+    computation: () => new Set(),
+  });
   bulkDeleteInProgress = signal(false);
 
-  ngOnInit(): void {
-    this.loadData();
-  }
-
-  private loadData(): void {
-    this.loadError.set(null);
-    forkJoin({
-      scholars: this.scholarService.getScholars(),
-      schools: this.schoolService.getSchools(),
-    })
-      .pipe(
-        map(({ scholars, schools }) => {
-          const schoolsMap = new Map(
-            schools.map((school) => [school.schoolId.toString(), school]),
-          );
-
-          return scholars.map((scholar) => {
-            const school = schoolsMap.get(scholar.schoolId?.toString() ?? '');
-            const schoolName = school ? school.name : 'Unknown';
-            const schoolColor = school ? school.color : '#FFFFFF';
-            const textColor = contrastTextColor(schoolColor);
-
-            return {
-              scholarId: scholar.scholarId,
-              name: `${scholar.firstName} ${scholar.lastName}`,
-              schoolName,
-              grade: scholar.grade,
-              schoolColor,
-              birthDate: parseDateOnly(scholar.birthDate).toLocaleDateString(
-                'en-GB',
-                {
-                  day: '2-digit',
-                  month: 'short',
-                  year: 'numeric',
-                },
-              ),
-              textColor,
-            };
-          });
-        }),
-      )
-      .subscribe({
-        next: (transformedData: TransformedScholarData[]) => {
-          this.scholarData.set(transformedData);
-          // Stale selections (from before a reload) would otherwise reference
-          // rows that may no longer exist or may have shifted.
-          this.selectedScholarIds.set(new Set());
-          this.loading.set(false);
-        },
-        error: (error: HttpErrorResponse) => {
-          this.loadError.set(
-            extractErrorMessage(error, 'Failed to load scholars'),
-          );
-          this.loading.set(false);
-        },
-      });
-  }
-
-  sortData(column: string, type: 'string' | 'number' | 'date'): void {
-    if (this.currentSortColumn === column) {
-      this.isAscending = !this.isAscending;
+  sortData(
+    column: keyof TransformedScholarData,
+    type: 'string' | 'number' | 'date',
+  ): void {
+    if (this.currentSortColumn() === column) {
+      this.isAscending.update((ascending) => !ascending);
     } else {
-      this.currentSortColumn = column;
-      this.isAscending = true;
+      this.currentSortColumn.set(column);
+      this.currentSortType.set(type);
+      this.isAscending.set(true);
     }
-
-    this.scholarData.set(
-      this.sortingService.sort(
-        this.scholarData(),
-        column as keyof TransformedScholarData,
-        type,
-        this.isAscending,
-      ),
-    );
   }
 
   // The full loaded/sorted list is client-side filtered by name for display —
@@ -214,7 +203,7 @@ export class ScholarListComponent implements OnInit {
             : `Deleted ${succeeded} scholar${succeeded === 1 ? '' : 's'}; ${failed} could not be deleted.`,
           failed === 0 ? 'success' : 'error',
         );
-        this.loadData();
+        this.data.reload();
       });
   }
 
@@ -238,4 +227,32 @@ export class ScholarListComponent implements OnInit {
       this.displayedScholarData(),
     );
   }
+}
+
+function toRows(
+  scholars: Scholar[],
+  schools: School[],
+): TransformedScholarData[] {
+  const schoolsById = new Map(
+    schools.map((school) => [school.schoolId.toString(), school]),
+  );
+
+  return scholars.map((scholar) => {
+    const school = schoolsById.get(scholar.schoolId?.toString() ?? '');
+    const schoolColor = school ? school.color : '#FFFFFF';
+
+    return {
+      scholarId: scholar.scholarId,
+      name: `${scholar.firstName} ${scholar.lastName}`,
+      schoolName: school ? school.name : 'Unknown',
+      grade: scholar.grade,
+      schoolColor,
+      birthDate: parseDateOnly(scholar.birthDate).toLocaleDateString('en-GB', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+      }),
+      textColor: contrastTextColor(schoolColor),
+    };
+  });
 }

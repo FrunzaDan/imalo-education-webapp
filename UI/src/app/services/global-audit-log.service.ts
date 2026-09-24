@@ -1,14 +1,20 @@
 import {
   HttpClient,
   HttpErrorResponse,
-  HttpParams,
+  httpResource,
 } from '@angular/common/http';
-import { computed, inject, Injectable, signal } from '@angular/core';
-import { catchError, map, Observable, of, Subject, switchMap, tap } from 'rxjs';
+import {
+  computed,
+  inject,
+  Injectable,
+  linkedSignal,
+  signal,
+} from '@angular/core';
+import { Observable, tap } from 'rxjs';
 import { environment } from '../../environments/environment';
+import { extractErrorMessage } from '../utils/extract-error-message';
 import { GlobalAuditLogEntry } from '../interfaces/global-audit-log-entry';
 import { PagedResponse } from '../interfaces/paged-response';
-import { extractErrorMessage } from '../utils/extract-error-message';
 import { NotificationService } from './notification.service';
 
 export interface LoadAllAuditLogParams {
@@ -18,94 +24,79 @@ export interface LoadAllAuditLogParams {
 
 const DEFAULT_PAGE_SIZE = 50;
 
-@Injectable({ providedIn: 'root' })
+@Injectable({
+  providedIn: 'root',
+})
 export class GlobalAuditLogService {
   private readonly API_URL = `${environment.apiUrl}/api/scholars/audit-log/all`;
-
-  private readonly state = signal({
-    entries: [] as GlobalAuditLogEntry[],
-    loading: false,
-    error: null as string | null,
-    pageNumber: 1,
-    pageSize: DEFAULT_PAGE_SIZE,
-    totalItems: 0,
-  });
-
-  readonly entries = computed(() => this.state().entries);
-  readonly loading = computed(() => this.state().loading);
-  readonly error = computed(() => this.state().error);
-  readonly pageNumber = computed(() => this.state().pageNumber);
-  readonly totalItems = computed(() => this.state().totalItems);
-
-  // Routed through switchMap so a new loadAllAuditLog() call cancels whatever request is
-  // still in flight — without this, a slower earlier response can land after a faster
-  // later one and overwrite it with stale data.
-  private readonly loadParams$ = new Subject<LoadAllAuditLogParams>();
 
   private readonly http = inject(HttpClient);
   private readonly notificationService = inject(NotificationService);
 
-  constructor() {
-    this.loadParams$
-      .pipe(
-        switchMap((params) => {
-          const httpParams = new HttpParams()
-            .set('pageNumber', params.pageNumber)
-            .set('pageSize', params.pageSize);
+  // Nothing is fetched until loadAllAuditLog() is first called, and a new page
+  // cancels the request still in flight (same shape as the sibling apps' services).
+  private readonly params = signal<LoadAllAuditLogParams | undefined>(
+    undefined,
+  );
 
-          return this.http
-            .get<PagedResponse<GlobalAuditLogEntry>>(this.API_URL, {
-              params: httpParams,
-            })
-            .pipe(
-              map((paged) => ({ paged, requestedParams: params })),
-              catchError((error: HttpErrorResponse) => {
-                this.handleError(error);
-                return of(null);
-              }),
-            );
-        }),
-      )
-      .subscribe((result) => {
-        if (!result) return;
+  private readonly entriesResource = httpResource<
+    PagedResponse<GlobalAuditLogEntry>
+  >(() => {
+    const params = this.params();
+    if (!params) return undefined;
+    return {
+      url: this.API_URL,
+      params: { pageNumber: params.pageNumber, pageSize: params.pageSize },
+    };
+  });
 
-        const { paged, requestedParams } = result;
-        this.state.update((state) => ({
-          ...state,
-          entries: paged?.items ?? [],
-          pageNumber: paged?.pageNumber ?? requestedParams.pageNumber,
-          pageSize: paged?.pageSize ?? requestedParams.pageSize,
-          totalItems: paged?.totalItems ?? 0,
-          loading: false,
-          error: null,
-        }));
-      });
-  }
+  // The last page that loaded, kept on screen while the next one loads.
+  private readonly page = linkedSignal<
+    PagedResponse<GlobalAuditLogEntry> | undefined,
+    PagedResponse<GlobalAuditLogEntry> | undefined
+  >({
+    source: () =>
+      this.entriesResource.hasValue()
+        ? this.entriesResource.value()
+        : undefined,
+    computation: (page, previous) => page ?? previous?.value,
+  });
+
+  readonly entries = computed(() => this.page()?.items ?? []);
+  readonly pageNumber = computed(
+    () => this.page()?.pageNumber ?? this.params()?.pageNumber ?? 1,
+  );
+  readonly pageSize = computed(
+    () => this.page()?.pageSize ?? this.params()?.pageSize ?? DEFAULT_PAGE_SIZE,
+  );
+  readonly totalItems = computed(() => this.page()?.totalItems ?? 0);
+  readonly loading = this.entriesResource.isLoading;
+  readonly error = computed(() => {
+    const error = this.entriesResource.error();
+    return error
+      ? extractErrorMessage(
+          error as HttpErrorResponse,
+          'Failed to load the audit log',
+        )
+      : null;
+  });
 
   loadAllAuditLog(params: LoadAllAuditLogParams): void {
-    this.state.update((state) => ({ ...state, loading: true, error: null }));
-    this.loadParams$.next(params);
+    // A new object always counts as a change, so the same page is fetched again too.
+    this.params.set({ ...params });
   }
 
   deleteAllAuditLog(): Observable<void> {
     return this.http.delete<void>(this.API_URL).pipe(
       tap(() => {
-        this.state.update((state) => ({
-          ...state,
-          entries: [],
+        this.page.set({
           pageNumber: 1,
+          pageSize: this.pageSize(),
           totalItems: 0,
-        }));
+          items: [],
+        });
         this.notificationService.show('Audit log cleared successfully.');
       }),
     );
-  }
-
-  private handleError(error: HttpErrorResponse): void {
-    this.state.update((state) => ({
-      ...state,
-      loading: false,
-      error: extractErrorMessage(error, 'Failed to load the audit log'),
-    }));
   }
 }

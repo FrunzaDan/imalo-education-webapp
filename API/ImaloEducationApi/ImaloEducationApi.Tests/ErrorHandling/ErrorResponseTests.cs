@@ -26,8 +26,6 @@ public class ErrorResponseTests
             builder.UseEnvironment(environment);
             // Captures what the app logs, next to the console, for the logging assertions below.
             builder.ConfigureLogging(logging => logging.AddFakeLogging());
-            // No connection string: the startup diagnostics skip their DB check.
-            builder.UseSetting("ConnectionStrings:DefaultConnection", "");
             builder.ConfigureTestServices(services => services.AddScoped(_ => dataAccess.Object));
         });
 

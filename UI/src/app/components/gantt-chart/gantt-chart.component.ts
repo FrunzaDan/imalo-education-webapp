@@ -1,5 +1,6 @@
 import { NgStyle } from '@angular/common';
-import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { Component, OnInit, computed, inject } from '@angular/core';
+import { rxResource } from '@angular/core/rxjs-interop';
 import { HttpErrorResponse } from '@angular/common/http';
 import { TimeSlot } from '../../interfaces/time-slot';
 import { Scholar } from '../../interfaces/scholar';
@@ -8,7 +9,6 @@ import { ScholarService } from '../../services/scholar.service';
 import { SchoolService } from '../../services/school.service';
 import { WEEK_DAYS, WeekDay } from '../../constants/week-days';
 import { forkJoin } from 'rxjs';
-import { map } from 'rxjs/operators';
 import { contrastTextColor } from '../../utils/contrast-color';
 import { extractErrorMessage } from '../../utils/extract-error-message';
 
@@ -27,10 +27,37 @@ export class GanttChartComponent implements OnInit {
   private readonly scholarService = inject(ScholarService);
   private readonly schoolService = inject(SchoolService);
 
-  scholars = signal<Scholar[]>([]);
-  readonly loading = signal(true);
-  readonly loadError = signal<string | null>(null);
-  schools = new Map<string, School>();
+  // Scholars and schools, fetched in parallel once per visit. hasValue()
+  // guards the reads: value() throws while the resource is in error.
+  private readonly data = rxResource({
+    stream: () =>
+      forkJoin({
+        scholars: this.scholarService.getScholars(),
+        schools: this.schoolService.getSchools(),
+      }),
+  });
+  readonly scholars = computed<Scholar[]>(() =>
+    this.data.hasValue() ? this.data.value().scholars : [],
+  );
+  // Keyed by schoolId, for the per-cell lookup below.
+  private readonly schools = computed(
+    () =>
+      new Map<string, School>(
+        (this.data.hasValue() ? this.data.value().schools : []).map(
+          (school) => [school.schoolId.toString(), school],
+        ),
+      ),
+  );
+  readonly loading = this.data.isLoading;
+  readonly loadError = computed(() => {
+    const error = this.data.error();
+    return error
+      ? extractErrorMessage(
+          error as HttpErrorResponse,
+          'Failed to load pickup times',
+        )
+      : null;
+  });
   timeSlots: TimeSlot[] = [];
   readonly weekDays = WEEK_DAYS;
   private readonly SLOT_DURATION = 10;
@@ -43,6 +70,7 @@ export class GanttChartComponent implements OnInit {
   // style object).
   private readonly cellsByKey = computed(() => {
     const map = new Map<string, GanttCell>();
+    const schools = this.schools();
     const slotsByMinutes = new Map(
       this.timeSlots.map((slot) => [this.timeToMinutes(slot.start), slot]),
     );
@@ -50,7 +78,7 @@ export class GanttChartComponent implements OnInit {
 
     for (const scholar of this.scholars()) {
       if (!scholar.pickupSchedule) continue;
-      const school = this.schools.get(scholar.schoolId?.toString() ?? '');
+      const school = schools.get(scholar.schoolId?.toString() ?? '');
 
       for (const day of this.weekDays) {
         const pickupTime = scholar.pickupSchedule[day];
@@ -83,41 +111,11 @@ export class GanttChartComponent implements OnInit {
 
   ngOnInit(): void {
     this.initializeTimeSlots();
-    this.loadData();
   }
 
   private initializeTimeSlots(): void {
     // Generate time slots from 11:00 to 14:00 with 15-minute intervals
     this.timeSlots = this.generateTimeSlots(11, 14, 15);
-  }
-
-  private loadData(): void {
-    // Use forkJoin to fetch scholars and schools in parallel
-    forkJoin({
-      scholars: this.scholarService.getScholars(),
-      schools: this.schoolService.getSchools(),
-    })
-      .pipe(
-        // Map the fetched schools into a Map for easy lookup by schoolId
-        map(({ scholars, schools }) => {
-          this.schools = new Map(
-            schools.map((school) => [school.schoolId.toString(), school]),
-          );
-          return scholars; // Pass scholars to the next operator
-        }),
-      )
-      .subscribe({
-        next: (scholars) => {
-          this.scholars.set(scholars);
-          this.loading.set(false);
-        },
-        error: (error: HttpErrorResponse) => {
-          this.loadError.set(
-            extractErrorMessage(error, 'Failed to load pickup times'),
-          );
-          this.loading.set(false);
-        },
-      });
   }
 
   private generateTimeSlots(

@@ -53,10 +53,12 @@
         <th class="table-header sortable" (click)="sortData('name', 'string')">
           Student name
           <span class="sort-icon">
-            <span [class.active]="currentSortColumn === 'name' && isAscending"
+            <span
+              [class.active]="currentSortColumn() === 'name' && isAscending()"
               >↑</span
             >
-            <span [class.active]="currentSortColumn === 'name' && !isAscending"
+            <span
+              [class.active]="currentSortColumn() === 'name' && !isAscending()"
               >↓</span
             >
           </span>
@@ -68,12 +70,14 @@
           School
           <span class="sort-icon">
             <span
-              [class.active]="currentSortColumn === 'schoolName' && isAscending"
+              [class.active]="
+                currentSortColumn() === 'schoolName' && isAscending()
+              "
               >↑</span
             >
             <span
               [class.active]="
-                currentSortColumn === 'schoolName' && !isAscending
+                currentSortColumn() === 'schoolName' && !isAscending()
               "
               >↓</span
             >
@@ -82,10 +86,12 @@
         <th class="table-header sortable" (click)="sortData('grade', 'number')">
           Grade
           <span class="sort-icon">
-            <span [class.active]="currentSortColumn === 'grade' && isAscending"
+            <span
+              [class.active]="currentSortColumn() === 'grade' && isAscending()"
               >↑</span
             >
-            <span [class.active]="currentSortColumn === 'grade' && !isAscending"
+            <span
+              [class.active]="currentSortColumn() === 'grade' && !isAscending()"
               >↓</span
             >
           </span>
@@ -97,11 +103,15 @@
           Birth date
           <span class="sort-icon">
             <span
-              [class.active]="currentSortColumn === 'birthDate' && isAscending"
+              [class.active]="
+                currentSortColumn() === 'birthDate' && isAscending()
+              "
               >↑</span
             >
             <span
-              [class.active]="currentSortColumn === 'birthDate' && !isAscending"
+              [class.active]="
+                currentSortColumn() === 'birthDate' && !isAscending()
+              "
               >↓</span
             >
           </span>

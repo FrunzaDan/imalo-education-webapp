@@ -1,4 +1,5 @@
-import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { Component, OnInit, computed, inject } from '@angular/core';
+import { rxResource } from '@angular/core/rxjs-interop';
 import { HttpErrorResponse } from '@angular/common/http';
 import { forkJoin } from 'rxjs';
 import { RouterModule } from '@angular/router';
@@ -33,11 +34,35 @@ export class DashboardComponent implements OnInit {
   private readonly attendanceService = inject(AttendanceService);
   private readonly globalAuditLogService = inject(GlobalAuditLogService);
 
-  private readonly scholars = signal<Scholar[]>([]);
-  private readonly schools = signal<School[]>([]);
-  private readonly allAttendance = signal<ScholarAttendance[]>([]);
-  loading = signal(true);
-  readonly loadError = signal<string | null>(null);
+  // Everything the page needs, fetched in parallel once per visit. hasValue()
+  // guards the reads: value() throws while the resource is in error.
+  private readonly data = rxResource({
+    stream: () =>
+      forkJoin({
+        scholars: this.scholarService.getScholars(),
+        schools: this.schoolService.getSchools(),
+        allAttendance: this.attendanceService.getAllScholarAttendance(),
+      }),
+  });
+  private readonly scholars = computed<Scholar[]>(() =>
+    this.data.hasValue() ? this.data.value().scholars : [],
+  );
+  private readonly schools = computed<School[]>(() =>
+    this.data.hasValue() ? this.data.value().schools : [],
+  );
+  private readonly allAttendance = computed<ScholarAttendance[]>(() =>
+    this.data.hasValue() ? this.data.value().allAttendance : [],
+  );
+  readonly loading = this.data.isLoading;
+  readonly loadError = computed(() => {
+    const error = this.data.error();
+    return error
+      ? extractErrorMessage(
+          error as HttpErrorResponse,
+          'Failed to load the dashboard',
+        )
+      : null;
+  });
 
   readonly recentActivity = this.globalAuditLogService.entries;
 
@@ -73,25 +98,6 @@ export class DashboardComponent implements OnInit {
   );
 
   ngOnInit(): void {
-    forkJoin({
-      scholars: this.scholarService.getScholars(),
-      schools: this.schoolService.getSchools(),
-      allAttendance: this.attendanceService.getAllScholarAttendance(),
-    }).subscribe({
-      next: ({ scholars, schools, allAttendance }) => {
-        this.scholars.set(scholars);
-        this.schools.set(schools);
-        this.allAttendance.set(allAttendance);
-        this.loading.set(false);
-      },
-      error: (error: HttpErrorResponse) => {
-        this.loadError.set(
-          extractErrorMessage(error, 'Failed to load the dashboard'),
-        );
-        this.loading.set(false);
-      },
-    });
-
     this.globalAuditLogService.loadAllAuditLog({ pageNumber: 1, pageSize: 5 });
   }
 
