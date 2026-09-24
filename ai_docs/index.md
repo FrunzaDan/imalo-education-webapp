@@ -1,26 +1,52 @@
+# Imalo Education Webapp — Index
 
-> **Read this file first**, per `learning_approach.md` and `CLAUDE.md`. It orients and links out; it does not itself contain the details — each concept lives in its own file so it can be taught, corrected, and updated independently.
+## What it is
 
-## What this is
+A learning full-stack CRUD app for tracking scholars (students), their pickup times and their daily attendance (lunch and transport).
 
-A small full-stack CRUD app for tracking scholars (students), their pick-up schedules, and daily attendance — a learning project built to practice the stack, not a production system.
+## Key files / paths
 
-| Layer | Folder | Tech | Doc |
-|---|---|---|---|
-| UI | `UI` | Angular 22 (SSR via `@angular/ssr`, Express server) | [angular-frontend](angular-frontend.md) |
-| API | `API/ImaloEducationApi/ImaloEducationApi` | .NET 10 / ASP.NET Core Web API, C# | [api](api.md) |
-| DB | `DB/ImaloEducation` | SQL Server (SSDT `.sqlproj`, deployed via `sqlpackage`) | [database](database.md) |
-| Build/run | repo root | `build.sh`, `run.sh`, Docker | [build-and-run](build-and-run.md) |
+| Layer | Folder | Tech |
+|---|---|---|
+| UI | `UI/` | Angular 22 (zoneless, signals, SSR) |
+| API | `API/ImaloEducationApi/ImaloEducationApi/` | .NET 10 ASP.NET Core Web API, one project |
+| DB | `DB/ImaloEducation/` | SQL Server, SSDT `.sqlproj` deployed with `sqlpackage` |
 
-The three layers only talk over HTTP — nothing shares process or memory. Angular UI → ASP.NET Core API (parameterized ADO.NET, no ORM, no stored procs) → SQL Server. School reference data (name/color/prices) is static frontend JSON, not a DB table — see [angular-frontend](angular-frontend.md) and [database](database.md).
+- `build.sh` — build and test everything; starts nothing.
+- `run.sh` — start the Docker database, deploy the schema, then start the API and UI.
+- `UI/public/assets/schools.json` — school reference data (name, color, prices). It is not stored in the DB.
 
-## Start here
+## How it works
 
-1. This file, for orientation.
-2. The relevant doc above, before exploring source directly.
+- **UI → API:** JSON over plain HTTP (`http://localhost:5244`). There's no login.
+- **API → DB:** `ScholarsController` → `ScholarDataAccess` (parameterized inline SQL through ADO.NET; no stored procedures and no ORM).
+- **Features:**
+  - a dashboard;
+  - scholar CRUD with parents and a weekly pickup schedule;
+  - a pickup-time Gantt chart;
+  - a monthly attendance grid, plus per-scholar attendance editing;
+  - charts;
+  - per-scholar and global audit logs;
+  - CSV export;
+  - a test-data generator.
 
-## Known limitations (deliberate, not bugs)
+## Documented Concepts
 
-No authentication/authorization anywhere — deliberate, the app runs locally only; each doc notes this in its own Gotchas section where relevant, don't "fix" it without checking with the user first. CORS is limited to the UI's origins (`Cors:AllowedOrigins`), and API errors are Problem Details that include exception text only in Development (see [[api]]).
+- [api](api.md) — endpoints, configuration, database connection, errors, logging, data access, tests.
+- [database](database.md) — tables, JSON columns, error handling, naming and data types.
+- [angular-frontend](angular-frontend.md) — config, routes, data loading, forms, feedback, styling, tests.
+- [build-and-run](build-and-run.md) — Docker SQL, `build.sh`/`run.sh`, SSR build.
+- [learning_approach](learning_approach.md) — how these docs are written and grown.
 
-Unit tests exist for both layers' pure business logic, plus `ScholarsController` (against a mocked `IScholarDataAccess`), a handful of pure Angular services, and three `TestBed` component specs (`AttendancePerScholarComponent`, `ScholarDetailsComponent`, `ScholarFormComponent`) (`API/ImaloEducationApi/ImaloEducationApi.Tests`, `UI/**/*.spec.ts`, run via `build.sh` — see [[build-and-run]]). Still no coverage for `ScholarDataAccess`'s actual SQL, the other 9 Angular components, or the remaining `HttpClient`-backed Angular services — see each doc's Gotchas section.
+## Glossary
+
+- **Scholar** — a student. The root entity.
+- **School** — static client-side data keyed by `schoolId`. `Scholar.SchoolId` is not a foreign key.
+- **Pickup schedule** — Monday–Friday, each an `"HH:mm"` time or null.
+- **Attendance record** — one day: `present`, `lunchSelected`/`transportSelected` and their costs.
+
+## Gotchas / conventions
+
+- **No authentication, on purpose.** The app runs locally only. Don't add auth without asking.
+- The API's shape differs from the sibling apps on purpose: one project, inline SQL, and no `ResponseModel` envelope. What is shared is the conventions: names, data types, Problem Details, logging and the database connection.
+- The sibling apps are customer-management-system and employee-management-system.

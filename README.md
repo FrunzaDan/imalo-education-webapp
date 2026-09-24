@@ -42,6 +42,8 @@ Full docs live in [`ai_docs/`](ai_docs/) — **start at [`ai_docs/index.md`](ai_
 
 ## Known limitations (deliberate, not bugs)
 
-No authentication/authorization anywhere; CORS is wide open; API error responses leak exception text. See `ai_docs/index.md` and the per-layer docs' Gotchas sections before "fixing" any of these.
+No authentication/authorization anywhere — the app runs locally only. See `ai_docs/index.md` and the per-layer docs' Gotchas sections before "fixing" this.
 
-Unit tests cover both layers' pure business logic (validation rules, sorting, CSV export, date utilities) but not controllers, data access, or Angular components — see `ai_docs/index.md`.
+CORS is limited to the UI's origins (`Cors:AllowedOrigins`), and API errors are RFC 9457 Problem Details that include exception text only in Development.
+
+Unit tests cover the API's models, controller, error responses, startup validation and connection choice, and the Angular services, utilities and main components. `ScholarDataAccess`'s SQL has no automated tests (it would need a real SQL Server) — see `ai_docs/api.md` and `ai_docs/angular-frontend.md`.

@@ -1,68 +1,58 @@
-# Build and Run
+# Build & Run
 
 ## What it is
 
-How to compile and run the three layers (DB, API, Angular UI) locally, via `build.sh` (compile-only) and `run.sh` (full dev environment), plus what the Angular SSR/build config does.
+How to build, test and run the database, API and UI locally.
 
 ## Key files / paths
 
-- `build.sh` — repo root, compiles everything and runs both test suites; no live services started.
-- `API/ImaloEducationApi/ImaloEducationApi.Tests/` — xUnit project for the API, see [[api]] Gotchas.
-- `run.sh` — repo root, full dev environment orchestration.
-- `.run/` — gitignored logs written by `run.sh` (`api.log`, `sqlpackage.log`).
+- `build.sh`:
+  1. restores and builds the API;
+  2. runs `dotnet test`;
+  3. builds the DB project;
+  4. runs `npm ci` and `npm run build`;
+  5. runs `npm test`.
+
+  It starts nothing.
+- `run.sh` — the full dev environment. Safe to re-run.
+- `.run/` — logs (`api.log`, `sqlpackage.log`), gitignored.
 - `global.json` (repo root) — .NET 10 SDK, and `dotnet test` on Microsoft Testing Platform.
-- `DB/ImaloEducation/global.json` — pins the DB project's build to the .NET 8 SDK.
-- `UI/angular.json` — `outputMode: "server"`, `ssr.entry: src/server.ts`.
-- `UI/src/server.ts` — standalone Node/Express SSR server.
-- `UI/src/environments/environment.ts` — `apiUrl: http://localhost:5244` (the services append `/api/scholars` and `/health`), `phoneNumberRegex`.
+- `DB/ImaloEducation/global.json` — pins .NET 8 for the DB project. Keep it.
+- `UI/angular.json` — `outputMode: "server"`, dev server on port 4204.
 
-## `build.sh`
+## How it works
 
-CI-style, one-shot, proves everything compiles and passes its tests:
-1. `dotnet restore`/`build` the API (`ImaloEducationApi.csproj`, Debug).
-2. `dotnet test` the API's xUnit project (`API/ImaloEducationApi/ImaloEducationApi.Tests`, Debug).
-3. `dotnet restore`/`build` the DB `.sqlproj` (Debug).
-4. `npm ci && npm run build` the Angular app.
-5. `npm test` — the Angular app's Vitest suite (single run, not watch mode).
+### `run.sh`
 
-No services are started, nothing is deployed. Run before committing API/DB/UI changes.
+1. Starts Docker, then starts or creates the `sqlserver` container (Azure SQL Edge on port 1433). The container is shared with the sibling apps; each app uses its own database.
+2. Installs `sqlpackage` 170.3.93 if it's missing, builds the `.sqlproj`, and publishes it with `BlockOnPossibleDataLoss=false`, retrying for up to 180 s.
+3. Starts the API at `http://localhost:5244` (Development) with `ConnectionStrings__Docker` pointing at that container, and waits up to 60 s for it.
+4. Starts `npm start` at `http://localhost:4204`. `Ctrl+C` stops both.
 
-## `run.sh`
+- It fails fast if a tool is missing or a port is taken.
+- You can override these environment variables: `SQL_PORT`, `SQL_SA_PASSWORD`, `SQL_DATABASE`, `SQL_CONTAINER_NAME`, `SQL_IMAGE`, `SQL_PLATFORM` and `API_URL`.
 
-Full local dev environment, idempotent (safe to re-run):
-
-1. **Docker.** Starts Docker Desktop if not running (macOS: `open -a Docker`, then polls up to 2 min).
-2. **SQL Server container.** Azure SQL Edge (`mcr.microsoft.com/azure-sql-edge`) — the only Microsoft SQL Server image with a working Apple Silicon/arm64 build. Container name `sqlserver`, port `1433`, `sa` password `MyStrongPassw0rd?` (matches `appsettings.json`) — **shared with other local .NET projects on this machine** (same container/port/password convention, e.g. Customer_Management_System); each project just targets its own DB name inside it. An existing container is `docker start`ed, not recreated; a missing one is pulled and created fresh (`--platform linux/arm64`).
-3. **Schema deploy.** Installs `sqlpackage` (pinned to `170.3.93` as a global dotnet tool — newer releases can need a .NET runtime patch this machine doesn't have), builds the `.sqlproj`, then retries `sqlpackage /Action:Publish ... /p:BlockOnPossibleDataLoss=false` with jittered backoff (3–6s) for up to 180s. It retries the *real* publish rather than a separate readiness probe because Azure SQL Edge ships no `sqlcmd`/`mssql-tools` inside the container to probe with. `BlockOnPossibleDataLoss=false` because this is a disposable local dev DB that gets iterated on — SSDT's default guard would otherwise refuse any table rebuild against a table with existing rows.
-4. **API.** Starts in the background: `ASPNETCORE_ENVIRONMENT=Development dotnet run --project API/ImaloEducationApi/ImaloEducationApi --launch-profile http`, plain HTTP at `http://localhost:5244` (read from `Properties/launchSettings.json`'s `applicationUrl`, falling back to that default). Waits for `/swagger/index.html` to respond (up to 60s). Logs to `.run/api.log`.
-5. **Angular.** Starts in the foreground: `npm start` (`ng serve`) at `http://localhost:4200`. `Ctrl+C` stops both API and Angular (`trap cleanup EXIT INT TERM`).
-
-Both scripts fail fast with a clear message if `dotnet`/`node`/`npm`/`docker`/`curl` are missing, or if a needed port is already occupied by something other than the expected container/process (pure-bash `/dev/tcp` probe, no `nc`/`lsof` dependency).
-
-## Manual Docker SQL Server (equivalent of what `run.sh` step 2 automates)
+### Manual Docker equivalent
 
 ```bash
-docker pull mcr.microsoft.com/azure-sql-edge
-
-docker run \
-  -e "ACCEPT_EULA=1" \
-  -e "MSSQL_SA_PASSWORD=MyStrongPassw0rd?" \
-  -p 1433:1433 \
-  --name sqlserver \
-  --platform linux/arm64 \
-  -d mcr.microsoft.com/azure-sql-edge
+docker run -e "ACCEPT_EULA=1" -e "MSSQL_SA_PASSWORD=MyStrongPassw0rd?" \
+  -p 1433:1433 --name sqlserver --platform linux/arm64 -d mcr.microsoft.com/azure-sql-edge
 ```
 
-## Angular build/serve/SSR
+### Which database the API uses
 
-- `npm start` (`ng serve`) — dev server, no SSR involved. This is what `run.sh` uses; it never touches the standalone Node SSR server.
-- `npm run build` (`ng build`) — esbuild-based Angular application builder. Produces `dist/imalo-education-webapp/browser` (client bundle, code-split per lazy route — see [[angular-frontend]]) and `dist/imalo-education-webapp/server` (SSR server bundle, `server.mjs`), plus prerenders `create-scholar` and `about` at build time (`app.routes.server.ts` — everything else renders server-side per-request, `RenderMode.Server`, since it depends on live API data the build machine may not have running).
-- `npm run serve:ssr:imalo-education-webapp` — runs the built standalone SSR server (`NG_ALLOWED_HOSTS=localhost,127.0.0.1 node dist/imalo-education-webapp/server/server.mjs`, port 4000 by default; same script in the sibling apps). Requires `angular.json`'s `outputMode: "server"` (without it, `server.mjs` bundles `server.ts` but never registers the Angular app engine manifest, and crashes on startup) and the `NG_ALLOWED_HOSTS` list, which `AngularNodeAppEngine` reads (bare hostnames — Angular 22's SSRF host-header hardening strips the port before comparing, so `'localhost:4000'` does not match). Only relevant when actually deploying the built SSR output — not part of the normal `run.sh` dev loop.
+- **macOS:** always the Docker container.
+- **Windows:** the Docker container if it answers within 3 s. Otherwise the local SQL Server (`ConnectionStrings:LocalSqlServer`, Windows auth).
+- The choice is logged at startup. On Windows, start Docker before the API. See [api](api.md).
+
+### SSR build
+
+- `npm run build` outputs `dist/imalo-education-webapp/browser` and `dist/imalo-education-webapp/server`.
+- `npm run serve:ssr:imalo-education-webapp` runs the built server on port 4000, with `NG_ALLOWED_HOSTS=localhost,127.0.0.1`. That's only needed for deploying; `run.sh` doesn't use it.
 
 ## Gotchas / conventions
 
-- **Formatting is Prettier**, configured identically in all three apps (`UI/.prettierrc`, with the `angular` parser for `.html`; `UI/.editorconfig` matches too). Run `npm run format` in `UI/` before committing; `npm run format:check` lists files that aren't formatted.
-- **`DB/ImaloEducation/global.json` pins the .NET 8 SDK** — a deliberate choice kept alongside the Docker SQL Server setup; the same pin exists in both sibling apps. `Microsoft.Build.Sql` is 2.3.0 (the same version as the sibling apps) and builds cleanly under it; its dacpac deploys with the pinned `sqlpackage`. Don't remove the pin without checking with the user.
-- **`sqlpackage` version is pinned deliberately** — don't bump it without checking it actually runs against the .NET runtime installed on the target machine.
-- No TLS/dev-cert setup needed anywhere in this stack — the API has no HTTPS profile and `environment.ts` points at plain `http://localhost:5244`. `Program.cs` has no `UseHttpsRedirection()` for the same reason.
-- No seed data, no test login — the DB (database and tables) is created in one `sqlpackage` publish of the `.sqlproj` tables, with no pre- or post-deployment scripts, and the app has no auth (see [[api]]).
+- There's no TLS or dev-certificate setup, because everything is plain HTTP.
+- There's no seed data and no test login.
+- `sqlpackage` is pinned; don't bump it without checking the installed .NET runtime.
+- **Formatting:** Prettier (`npm run format`, `npm run format:check`), configured the same in all three apps.

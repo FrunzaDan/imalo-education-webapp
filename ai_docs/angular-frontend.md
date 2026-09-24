@@ -2,147 +2,140 @@
 
 ## What it is
 
-Angular 22 standalone-component app, zoneless change detection, SSR via `@angular/ssr` + a standalone Node/Express server. Talks to `ImaloEducationApi` (see [[api]]) over plain HTTP for everything except school data, which is a static local JSON asset.
+The Angular 22 app under `UI/`. It is zoneless, uses standalone components and signals, and renders with SSR. It has no login.
 
 ## Key files / paths
 
-- `src/app/app.ts` / `app.config.ts` / `app.config.server.ts` — bootstrap (below).
-- `src/app/app.routes.ts` / `app.routes.server.ts` — client routing (lazy-loaded) and SSR render-mode-per-route.
-- `src/app/components/` — one folder per component (below).
-- `src/app/services/` — one file per service (below).
-- `src/app/interfaces/` — DTO shapes, mirror the API's C# models.
-- `src/app/constants/week-days.ts`, `src/app/utils/weekday-dates.ts` — shared weekday helpers.
-- `src/app/utils/extract-error-message.ts` — `extractErrorMessage(error, fallbackAction?)`: turns a failed request's Problem Details body into one user-facing line (see *User feedback* below).
-- `src/app/utils/contrast-color.ts` — `contrastTextColor(hex)`: black or white, whichever has the higher WCAG contrast against the background. Used by the scholar table's school column and the Gantt chart's cells.
-- `src/app/pipes/ron.pipe.ts` — `ron` pipe (`15.00 RON`). Replaces `currency:'RON'`, which renders `RON15.00` (no space) under the en-US locale.
-- `src/styles.css` — the shared design system (tokens, `.app-button`/`.app-input`/`.app-table`/`.app-card`, `.page-title`, `.page-toolbar`); see *Styling conventions* below.
-- `public/assets/schools.json` — static school reference data (schoolId, name, color, lunchPrice, transportPrice) — **not** in the DB, see [[database]].
-- `src/environments/environment.ts` — `apiUrl`, `phoneNumberRegex` (same keys as the sibling apps' environments).
-- See [[build-and-run]] for `ng serve`/`ng build`/SSR server details.
+- `src/environments/environment.ts` — `apiUrl` (`http://localhost:5244`), `phoneNumberRegex`.
+- `src/app/app.config.ts`, `app.config.server.ts`, `app.routes.ts`, `app.routes.server.ts`, `app.ts` (the shell).
+- `src/app/services/`:
+  - `scholar`, `school`, `attendance`, `audit-log`, `global-audit-log`;
+  - `sorting`, `csv-export`;
+  - the shared helpers (`notification`, `confirm-dialog`, `api-logger`, `health`, `unsaved-changes.guard`, `app-title-strategy`).
+- `src/app/components/` — one folder per page or widget.
+- `src/app/interfaces/` — mirrors of the API's JSON.
+- `src/app/utils/`:
+  - `extract-error-message.ts`, `audit-action-label.ts`;
+  - `weekday-dates.ts`, `contrast-color.ts`.
+- `src/app/constants/week-days.ts` — `WEEK_DAYS` and the `WeekDay` type.
+- `src/app/pipes/ron.pipe.ts`, `src/styles.css`.
+- `public/assets/schools.json` — school data. `SchoolService` loads it once (`shareReplay`) and returns `[]` if it fails.
 
-## App bootstrap
+## How it works
 
-- `app.config.ts`: `provideZonelessChangeDetection()`, `provideRouter(routes, withComponentInputBinding(), withInMemoryScrolling({ scrollPositionRestoration: 'top' }), withRouterConfig({ canceledNavigationResolution: 'computed' }))` (route params like `:scholarId` bind onto components' `input()`s; `'computed'` keeps browser history right when the unsaved-changes guard cancels a Back press), `{ provide: TitleStrategy, useClass: AppTitleStrategy }`, `provideClientHydration(withEventReplay(), withNoIncrementalHydration())`, `provideHttpClient(withFetch(), withInterceptors([apiLoggerInterceptor]))`.
-- `app.config.server.ts`: merges the above with `provideServerRendering(withRoutes(serverRoutes))` for SSR.
-- `app.ts` (`App`, selector `app-root`) — same shell as the sibling apps (`app.ts` is a near-verbatim copy): layout is `skip link → <header>(navbar) → <main id="main" tabindex="-1"> → footer`, plus the global `NotificationComponent` and `ConfirmDialogComponent`. `apiAvailable = toSignal(HealthService.pollApiHealth())` — **browser-only** (`isPlatformBrowser` guard; a repeating interval during SSR/prerendering keeps the app permanently "unstable" and hangs the build). After each client-side navigation (not the initial load) it focuses the new page's `<h1>` (or `<main>`) via `afterNextRender`, so keyboard/screen-reader users hear that the page changed (WCAG 2.4.3).
-- Each route has a `title`; `AppTitleStrategy` (`services/app-title-strategy.ts`) renders it as `"<page> · Imalo Education Webapp"` (WCAG 2.4.2).
-- `app.routes.ts`: all 12 routes use `loadComponent: () => import(...).then(m => m.XComponent)` — lazy, route-level code splitting (each route component ships as its own build chunk).
-- `app.routes.server.ts`: `create-scholar` and `about` are `RenderMode.Prerender` (no data dependency on load); everything else (`**`) is `RenderMode.Server` (renders per-request — these depend on live API data the build machine may not have).
+### Config
 
-## Components
+- `app.config.ts` sets up:
+  - `provideZonelessChangeDetection()`;
+  - the router, with component input binding, view transitions and `canceledNavigationResolution: 'computed'`;
+  - hydration with event replay;
+  - `provideHttpClient(withFetch(), withInterceptors([apiLoggerInterceptor]))`.
+- **Render modes:** `create-scholar` and `about` are prerendered; everything else renders on the server per request.
+- Every route is lazy and has a `title` (" · Imalo Education Webapp").
 
-**ScholarListComponent** (`scholar-list/`, routes `''` and `scholars`) — the scholar list/landing page.
-- Loads through an `rxResource` whose stream is `forkJoin({scholars, schools})` (`data.reload()` after a bulk delete; `loading` is the first load only, so a reload keeps the table on screen). `scholarData` is a `computed()`: the rows joined client-side (school name/color resolved per scholar; text color comes from the shared `contrastTextColor()` and is precomputed per row as `textColor`).
-- `searchForm = form(signal({ term: '' }))` (Signal Forms, bound via `[formField]="searchForm.term"`) → `searchTerm = computed(...)`; `displayedScholarData` and `allSelected` are `computed()`s (not getters) — `displayedScholarData` filters `scholarData()` by `searchTerm()` (client-side substring match on name; dataset is small enough that server-side search/pagination, used by e.g. Customer_Management_System, isn't worth the round-trip here).
-- `selectedScholarIds` is a `linkedSignal` that empties whenever the rows reload, `toggleSelection`/`toggleSelectAll`/`allSelected` (scoped to the currently-filtered rows) back a bulk-delete flow: `bulkDeleteSelected()` confirms, then deletes each selected scholar via `ScholarService.deleteScholar` with `concatMap` (sequential, not parallel), via `ScholarService.deleteScholarSilently` (no per-item toast), then shows one summary toast (an error toast if any failed) and reloads. A failed list load shows an alert box instead of the table.
-- `sortData(column, type)` sets the `currentSortColumn`/`isAscending` signals; `scholarData` re-sorts through `SortingService` (so the sort survives a reload). `exportCsv()` exports the currently visible/sorted rows via `CsvExportService`.
+### Routes
 
-**GanttChartComponent** (`gantt-chart/`, route `pickup-time`) — see the existing in-depth notes in this file's history/session context: renders a days × scholars × time-slots grid of pickup times, color-coded per school. `scholars`/`schools` are `computed()`s off an `rxResource` (`forkJoin({scholars, schools})`); a `computed()` map (`cellsByKey`) precomputes each occupied cell's style/label once per `scholars()` change rather than recomputing per template call (`getSlotStyle`/`getTimeRange`/`isTimeOccupied` are now O(1) lookups into that map). Time slots generated 11:00–14:00 in 15-min increments. Each occupied cell's style carries `color: contrastTextColor(schoolColor)` (black on bright fills, white on dark ones) — keep the cell fill at full opacity, an `opacity` on `.time-slot` washes out the school color and invalidates the contrast maths.
+| Route | Component |
+|---|---|
+| `/` → `/dashboard` | `dashboard` (KPIs, today's pickups, upcoming birthdays, recent activity) |
+| `/scholars` | `scholar-list` (client-side search, sort, bulk delete, CSV) |
+| `/scholars/:scholarId` | `scholar-details` (parents, schedule, audit trail, delete) |
+| `/create-scholar`, `/scholars/update/:scholarId` | `scholar-form` (one component for add and edit) |
+| `/pickup-time` | `gantt-chart` (days × scholars × 15-min slots, colored by school) |
+| `/attendance` | `attendance` (monthly grid for every scholar) |
+| `/attendance/:scholarId` | `attendance-per-scholar` (editable month) |
+| `/charts` | `charts` (monthly, yearly and roster charts; inline SVG `bar-chart`) |
+| `/audit-log` | `global-audit-log` |
+| `/about` | `about` (API-logging toggle, 20-scholar test-data generator) |
+| `**` | `page-not-found` |
 
-**AttendanceComponent** (`attendance/`, route `attendance`) — grid dashboard across every scholar for one month at a time: rows are scholars (name-sorted), columns are that month's weekdays, cells are Present/Lunch/Transport badges (`attendance-grid.ts`'s `buildScholarRows`/`AttendanceCell`, pure and unit-testable, kept separate from the component like `attendance-per-scholar/attendance-form.ts`).
-- `scholars`/`allAttendance` are `computed()`s off an `rxResource` whose stream is `forkJoin({scholars, allAttendance: AttendanceService.getAllScholarAttendance()})`; `rows = computed(() => buildScholarRows(...))` re-derives per month, no re-fetch.
-- Month picker is a one-field Signal Form (`monthForm = form(signal({ month: DEFAULT_MONTH }))` — `DEFAULT_MONTH = '2026-09'` in `utils/weekday-dates.ts`, shared by every month/year picker instead of the real-world current month, same pattern as `AttendancePerScholarComponent`), flanked by prev/next arrow buttons (`shiftMonth` from `utils/weekday-dates.ts`) — no `SortingService` here any more, the grid isn't column-sortable. Each scholar name links to `/attendance/:id`. `exportCsv()` via `CsvExportService`, one column per weekday.
-- `utils/weekday-dates.ts` also holds `toMonthString`/`weekdaysOfMonth`/`shiftMonth`/`parseDateOnly` (moved out of `attendance-per-scholar/attendance-form.ts`, which now re-exports them for its own existing imports) — the month-string helpers are shared between both attendance components, not per-scholar-specific.
+### Data loading
 
-**ChartsComponent** (`charts/`, route `charts`) — three `.app-card` sections: "Monthly overview" / "Yearly overview" (each with its own toggle — month: prev/next + `<input type="month">`, same Signal Form pattern as `AttendanceComponent`; year: prev/next + `<input type="number">` — a KPI stat-tile row, and two bar charts built from `charts-data.ts`'s pure `buildDailyPoints`/`buildMonthlyPoints`, aggregating every scholar's `AttendanceRecord`s by weekday-of-month or by calendar-month: `present` count, `lunchRevenue`/`transportRevenue` summed from `lunchCost`/`transportCost` where `*Selected` is true; `busiestPoint`/`totalOf` back the stat tiles), and "Scholars overview" (no toggle — a snapshot of the current roster, not date-scoped): `countByGrade`/`countBySchool` tally the loaded `Scholar[]` by `grade` (ordered 1..4, a trailing "Unassigned" bucket for a null grade) and by `schoolId` (resolved to a name via `SchoolService`, ranked highest-count-first, same "Unassigned" fallback), with `topCategory` backing the "Top class"/"Top school" stat tiles.
-- Charts render as inline SVG via the reusable **`BarChartComponent`** (`charts/bar-chart/`, `points: input.required<BarChartPoint[]>()` — a `CategoryCount` from `charts-data.ts` satisfies this shape directly, no mapping needed — with an optional `value2` for a stacked second series), not a charting library — none was installed, and the dataviz skill's method (mark specs, hover tooltip, legend for 2+ series) was hand-applied against the app's own palette. Only two of the app's existing colors pass the dataviz categorical checks (OKLCH lightness band + chroma floor) at full-size chart-fill size: `--cyan-main-color` and `--orange-text-color` — every other palette token (`--cyan-dark-color`, `--cyan-light-color`, `--orange-main-color`, `--dark-main-color`) fails one or both checks when used as a large fill (they're fine as the existing small badges/text, which lean on shape/contrast differently). Series order is fixed, never swapped: series **a** (cyan-main) is Present/Transport/scholar-count, series **b** (orange-text) is Lunch. Bars: 22px thick, 4px rounded top / square baseline (drawn as a rounded `<rect>` plus a squared-off overlay `<rect>` beneath it — SVG `<rect rx>` has no per-corner radius), 2px surface-color gap between stacked segments. Hover/focus on a band's transparent hit-`<rect>` drives a `hoveredKey` signal → a pinned top-right tooltip card (every series at that x, value-first, line-key not a box) rather than a cursor-following tooltip, to avoid fragile pixel-position math; the hovered bar's fill brightens. Only the max-total bar gets a direct value label (`marks-and-anatomy.md`: label the extreme, never every point). A category label longer than 10 characters (school names) tips the whole axis to a -45° rotation (`rotateLabels`, `ROTATE_LABEL_THRESHOLD`) with extra left padding so the first diagonal label doesn't clip against the SVG edge — found by actually screenshotting the "Scholars by school" chart, where the default horizontal labels overlapped into an unreadable smear. No dark mode — the app has none anywhere else, so charts don't invent one either.
-- No new service: reuses `ScholarService.getScholars()` + `AttendanceService.getAllScholarAttendance()` + `SchoolService.getSchools()` (same `rxResource` + `forkJoin` load as `AttendanceComponent`), no caching, same reasoning.
+- **Every read is a resource.** `subscribe()` is only for one-off actions such as save, delete and export.
+- **Pages** load with `rxResource({ stream: () => forkJoin({...}) })`:
+  - values are `computed`s guarded by `hasValue()`;
+  - `loading` is `isLoading`;
+  - `loadError` comes from `extractErrorMessage`.
+- **`scholar-list`:**
+  - `loading` is the first load only, so a reload keeps the table on screen;
+  - `selectedScholarIds` is a `linkedSignal` that clears whenever the rows reload;
+  - a bulk delete calls `data.reload()`;
+  - the sort signals survive the reload.
+- **`attendance-per-scholar`:**
+  - one `rxResource` keyed on `scholarId` loads the scholar, then (with `switchMap`) its attendance;
+  - a second `rxResource` loads the school;
+  - a failed load shows an alert, never an empty grid. Saving replaces the whole list, so saving over a failed load would erase data.
+- **`scholar-details` and `scholar-form`:** use `rxResource` keyed on the route id. The form's model is a `linkedSignal` over the loaded scholar.
+- **`AuditLogService` and `GlobalAuditLogService`:**
+  - built on `httpResource`, keyed on a signal;
+  - a newer request cancels the older one;
+  - a `linkedSignal` keeps the last page on screen while the next loads.
+- **Health banner:** `HealthService` polls `/health` every 15 s, in the browser only.
 
-**AttendancePerScholarComponent** (`attendance-per-scholar/`, route `attendance/:scholarId`) — one scholar's monthly attendance, editable.
-- `scholarId = input<string>()` (bound from `:scholarId`). Loads the scholar (`getScholar`), its school (for `lunchPrice`/`transportPrice` defaults) and attendance via `AttendanceService.getAttendanceByScholarId` through an `rxResource` keyed on `scholarId` (scholar first, then its attendance via `switchMap` — no attendance request for a scholar that doesn't exist) and a second `rxResource` for the school, idle until the scholar has one. The month form's model is a `linkedSignal` that defaults to the latest month with data once the attendance loads. **A failed scholar *or* attendance load shows an alert box instead of the grid** — never an empty month: Save replaces the scholar's whole list, so saving over a failed load would wipe the attendance that couldn't be read.
-- `selectedMonth` (`<input type="month">` bound with Signal Forms: `monthForm = form(linkedSignal(...))`, `selectedMonth = computed(...)`; any month, not just ones with data) selects which weekdays are shown (`visibleIndexes`/`dayRows`, `computed()`s, date-ordered; Mon–Fri via `getWeekdayDatesInMonth`, matching `PickupSchedule`'s convention).
-- **The attendance grid is a Signal Form over one immutable array.** `attendance-form.ts` holds the pure parts: `AttendanceDay` (an `AttendanceRecord` + a form-only `persisted` flag), `attendanceFormSchema` (`applyEach` + `disabled({ when: !present })` on Lunch/Transport), `withWeekdayStubs`, `toAttendanceDays`/`toAttendanceRecords`. The component's `days` is a **`linkedSignal`** sourced on `{ month, loadedRecords }` whose computation *adds* not-yet-persisted stubs for the selected month to the **previous value** (or starts from the loaded records when a new load lands) — so unsaved edits to one month survive switching months, and the model covers every month looked at. `attendanceForm = form(days, attendanceFormSchema)`; the template binds `[formField]="attendanceForm[index].present|lunchSelected|transportSelected"`. There is no in-place mutation any more: the form replaces the array on every edit, and `dayRows`, `totalSelected*`, `grandTotal` and `recordsToSave` are plain `computed()`s off `days()` (the old `dayRows.update(rows => [...rows])` re-notify hack and `allAttendanceRecords`/`ensurePersisted` are gone).
-- Rules (unchanged product behavior). Lunch and Transport are independent — toggling one never touches the other. Checking Present/Lunch/Transport/Both on a stub day **persists** it (`persisted` latches true and stays true even if unchecked again; a day never touched is never sent to the API); checking Lunch/Transport seeds its cost from the school's standard price when the cost is 0. "Both" (`onBothChange`) is the one control that is **not** a form field — a shortcut that sets two fields — so it stays `[checked]` + `(change)`; its `[checked]` is `lunchSelected && transportSelected`, a reflection, not a cascade source. `Present` gates Lunch/Transport/Both: declaratively via the schema's `disabled()` (which also disables the native `<input>`), plus a defense-in-depth no-op in each handler; and `onPresentChange` **clears** both when Present is unchecked, so a day can never end up with either true while Present is false (the API rejects that combination too — see [[api]]). `onPresentChange`/`onLunchChange`/`onTransportChange` are `(change)` handlers next to `[formField]`: the browser fires `input` (what `[formField]` listens to) *before* `change`, so the handler sees the field already updated. Signal Forms has no value-change hook, which is why reactions live in handlers rather than the schema.
-- `save()` → `AttendanceService.saveAttendance(scholarId, recordsToSave())` — `recordsToSave` = `persisted` days mapped **field by field** to `AttendanceRecord` (not spread: Signal Forms tags array items with a symbol-keyed identity property that a `...rest` would leak into the payload). Replaces the whole list server-side — not a per-day patch, see [[api]]. Success toasts from the service; a failure shows inline above the Save button and keeps the edits. `hasUnsavedChanges` (a signal set by every edit handler, cleared on save) feeds `unsavedChangesGuard` and a `beforeunload` listener. `exportCsv()` per-month.
+### Charts (`/charts`)
 
-**ScholarDetailsComponent** (`scholar-details/`, route `scholars/:scholarId`) — read view for one scholar.
-- `scholarId = input<string>()` (bound from `:scholarId`). `scholarResource = rxResource({ params: () => scholarId(), stream })` → `scholar = computed(...)`; a second `rxResource` keyed on `scholar()?.schoolId` (idle when there's no school) → `school`. An `effect` triggers `AuditLogService.loadAuditLog(id)`. `loadError` (via `extractErrorMessage`) surfaces a failed load in an alert box instead of "Loading…" forever. Follows the `:id` if it changes (the old `paramMap` subscription did too; `snapshot` wouldn't).
-- Renders parent info (formatted "Name — Phone", all fields optional), pickup schedule table, an audit trail card sourced from `AuditLogService` (entries/loading/error signals), and Edit/Delete/View-Attendance actions. `deleteScholar()` confirms via `ConfirmDialogService` (danger variant), then deletes and navigates to `/scholars`; a failed delete shows inline (`deleteError`) and stays on the page.
+- The charts are hand-built inline SVG, with no chart library. The pure transforms live in `charts/charts-data.ts`, which has a spec.
+- **One component:** `bar-chart` draws plain bars, or stacked bars when points carry `value2` (Transport on top of Lunch), and then shows a legend.
+- **Sections:**
+  - **Monthly overview:** a month picker; present and revenue per weekday.
+  - **Yearly overview:** a year picker; present and revenue per month.
+  - **Scholars overview:** headcount by class (ordered by grade) and by school (ranked by count).
 
-**ScholarFormComponent** (`scholar-form/`, routes `create-scholar` and `scholars/update/:scholarId`) — one component for both create and edit, **Signal Forms** (`@angular/forms/signals`, stable in Angular 22; same pattern as Customer_Management_System's add/edit customer).
-- `scholar-form.ts` holds the form's own shape and rules, separate from the API `Scholar`: `ScholarFormModel` (all strings except `grade: number | null`; `schoolId` is a string because `<select>` emits strings), `emptyScholarForm()`, `scholarFormSchema` (`required`/`maxLength`/`min`/`max`/`pattern` + one custom `validate()` for future/invalid birth date — messages live in the schema, the template just prints `errors()[0].message`), and `toFormModel(scholar)` / `toScholar(model, id)` mapping at the edges (`''` ↔ `null` for optional parent fields, `Number(schoolId)`, `Date` parsing).
-- Component: `model = signal(emptyScholarForm())`, `scholarForm = form(model, scholarFormSchema, { submission: { action, onInvalid } })`; template is `<form [formRoot]="scholarForm">` with `[formField]` on each control. Mode comes from the `scholarId` input (`isEditMode = computed(...)`), bound from the route's `:id` by `withComponentInputBinding()`. `model` is a `linkedSignal` over a `rxResource` that loads the scholar (idle on the create route), so edit mode needs no `patchValue`/`set` step; a failed load (`loadError`) replaces the form with an alert box. `hasUnsavedChanges = computed(() => !saved() && isScholarFormDirty(model(), baseline()))` compares values (not a touched flag) against the blank form or the loaded scholar; it feeds `unsavedChangesGuard` (`canDeactivate` on both routes) and a `beforeunload` listener, same as the sibling apps' add/edit forms. `schools` is `toSignal(getSchools(), { initialValue: [] })`.
-- Submit: `FormRoot` runs `action()` only when valid (`save()` → `firstValueFrom(create/update)` → set `saved` → navigate; the success toast comes from `ScholarService`; on failure `saveError` shows the backend's message in an alert box at the top of the form and the page stays put). When invalid, `onInvalid` sets an error-count summary (`invalidSummary`) and focuses the first bad control. The submit button is disabled only while `scholarForm().submitting()` — it is **not** disabled while invalid any more (that hid *why* it wouldn't submit).
-- Mother/father blocks and the five weekday inputs are `@for` loops (over a `parents` array of field trees and over `WEEK_DAYS`), not copy-pasted markup.
+  Each section also has stat tiles.
+- **Data:** one `rxResource` + `forkJoin` loads scholars, all attendance and schools. Only present days count, and a cost counts only when it is selected.
+- **Hover and focus:** each bar band is focusable and shows a custom tooltip.
+- **Colors:** series a is `--cyan-main-color` and series b is `--orange-text-color`. They are the only two tokens that pass contrast as full-size fills.
 
-**GlobalAuditLogComponent** (`global-audit-log/`, route `audit-log`) — paginated (`pageSize = 50`, as in the sibling apps) view over `GlobalAuditLogService`'s signals (`entries`, `loading`, `error`, `totalItems`; `totalPages = computed(...)`). `clearAuditLog()` confirms (danger variant), then calls `deleteAllAuditLog()` (no server-side auth guarding this — see [[api]] Gotchas); the service empties its state and shows the success toast, the component goes back to page 1; a failure shows inline (`clearError`). A row's scholar name is a `routerLink` to `/scholars/:scholarId`; a deleted scholar (no `firstName`/`lastName`) renders as plain text. Actions go through `auditActionLabel` (`utils/audit-action-label.ts`, identical in all three apps). The table has a visually hidden `<caption>` and the page indicator is `aria-live`. Same component as the customer/employee apps' `global-audit-log`, minus the "Performed by" column (no users here).
+### Forms (Signal Forms)
 
-**AboutComponent** (`about/`, route `about`) — dev/diagnostics page. Toggles `ApiLoggerService` (persisted to `localStorage`). `addTestScholars()` generates `TEST_SCHOLAR_COUNT = 20` randomized scholars (random names, school, grade, pickup schedule on the Gantt chart's 15-min slots, randomized attendance for every month from July 2024 to September 2026 inclusive — `monthsInRange()` — priced from that scholar's school, with Transport forced off in every July/August to model summer break) and creates them sequentially via the `…Silently` methods of `ScholarService`/`AttendanceService`, reporting one summary toast. The API-logging toggle confirms with a toast too. Also documents the app architecture inline in its template.
+- `form()`, `[formField]` and `[formRoot]`. There is no Reactive Forms and no `ngModel`.
+- **Scholar form:** `scholar-form.ts` holds `ScholarFormModel`, `scholarFormSchema`, `toFormModel` and `toScholar`.
+- **Attendance grid:** `attendance-form.ts` holds the attendance form.
+  - `days` is a `linkedSignal`, so unsaved edits survive a month change.
+  - Lunch and Transport are disabled unless Present is checked. Unchecking Present clears both.
+  - "Both" is a plain checkbox that sets both fields.
+- **Unsaved changes:** `unsavedChangesGuard` plus `beforeunload` on the scholar form and on the per-scholar attendance page.
 
-**NavigationBarComponent** (`navigation-bar/`) — static nav links to `/scholars`, `/pickup-time`, `/attendance`, `/charts`, `/audit-log`, `/about`. No injected state.
+### User feedback (same in all three apps)
 
-**NotificationComponent** (`notification/`) — global toast host (rendered once, in `app.ts`), driven entirely by `NotificationService.notifications` (readonly signal); `dismiss(id)` per-toast. Success toasts are `role="status"`, error toasts `role="alert"`.
+- **Success:** a toast, fired by the service in `tap`. Bulk callers use the `…Silently` variants and show one summary toast.
+- **Failed action:** an inline `.app-alert` (`role="alert"`), with text from `extractErrorMessage`.
+- **Failed page load:** an alert in place of the content.
+- **Confirmations:** `ConfirmDialogService.confirm(...)`, never `window.confirm()`.
+- **API logging:** `apiLoggerInterceptor` logs API calls to the console, in the browser only. It can be toggled on the About page.
 
-**PageNotFoundComponent** (`page-not-found/`) — wildcard (`**`) route target, static link back.
+### Styling
 
-**ConfirmDialogComponent** (`confirm-dialog/`) — global confirm-dialog host (rendered once, in `app.ts`, alongside `NotificationComponent`), driven by `ConfirmDialogService.state`/`closing` signals. Replaces native `confirm()`. WAI-ARIA alertdialog: `role="alertdialog"` + `aria-modal` + labelled by its title and described by its message; focus goes to the Cancel button on open, Tab/Shift+Tab are trapped, Escape and a backdrop click cancel, and focus returns to the trigger once answered. Dimmed overlay + centered card; opens with a 0.2s scale(0.7→1)-with-overshoot + fade-in, closes with a 0.15s zoom-out/fade-out. `variant: 'danger'` switches the confirm button to the ink fill (the palette has no red). The TypeScript is identical to the sibling apps'.
+- Custom CSS only, with no Bootstrap or Tailwind. Tokens and the `.app-button`, `.app-input`, `.app-table`, `.app-card`, `.page-title`, `.page-toolbar` and `.app-alert` classes are in `styles.css`.
+- Spacing uses `gap` and `--space-*` tokens. Buttons and inputs have no margins.
+- Display formats: text is sentence case, money uses the `ron` pipe, dates use `longDate`, timestamps use `medium`.
+- For orange text, use `--orange-text-color`, because `--orange-main-color` fails contrast on white.
+- Accessibility (WCAG 2.2 AA):
+  - one `<h1>` per page, focused after navigation;
+  - a skip link;
+  - `prefers-reduced-motion` is respected.
 
-## Services
+### Tests
 
-- **`ScholarService`** — CRUD over `${apiUrl}/api/scholars` (`GET`/`POST`/`PUT /{scholarId}`/`DELETE /{scholarId}`, matching `ScholarsController`). No caching, no signal state. Errors surface as the raw `HttpErrorResponse`; create/update/delete confirm success with a toast, and `createScholarSilently`/`deleteScholarSilently` skip it for bulk callers.
-- **`SchoolService`** — fetches `assets/schools.json` **once**, cached via `shareReplay(1)` (`schoolsCache$`); `getSchool()` derives from it. Falls back to `[]` on error — deliberately swallows rather than propagates, since a missing/broken schools file shouldn't break the rest of the app.
-- **`AttendanceService`** — `getAllScholarAttendance()`, `getAttendanceByScholarId(scholarId)`, `saveAttendance(scholarId, records)` (full-list upsert; success toast, `saveAttendanceSilently` without), `deleteAttendance(scholarId)`. Deliberately **no caching** — the dashboard needs fresh data after edits made on the per-scholar page.
-- **`AuditLogService`** — per-scholar audit trail as an `httpResource` keyed on a `scholarId` signal (a new scholar cancels the in-flight request; the same scholar again reloads), exposed as `entries`/`loading`/`error`; `loadAuditLog(scholarId)`. Same as the sibling apps' `AuditLogService`.
-- **`GlobalAuditLogService`** — paginated global audit signal state (`entries`/`loading`/`error`/`pageNumber`/`totalItems`). an `httpResource` keyed on the params `loadAllAuditLog({pageNumber, pageSize})` sets, so a newer page request cancels an older one still in flight, and a `linkedSignal` keeps the last page on screen while the next loads; `deleteAllAuditLog()` empties the state and shows the success toast. Same as the sibling apps' `GlobalAuditLogService`.
-- **`src/app/utils/extract-error-message.ts`** — `extractErrorMessage(error, fallbackAction = 'Request failed')`, the one place a failed request becomes text: offline (status 0) / Problem Details `errors` (joined) / `detail` / `title` / `"<fallbackAction> (<status>). Please try again."`, in that order. The API answers every error with RFC 9457 Problem Details, see [[api]] "Error handling". The file (and its spec) is byte-identical in all three apps, whose APIs all answer errors with Problem Details.
-- **`SortingService`** — generic `sort<T>(data, column, type: 'string'|'number'|'date', isAscending)`; nulls always sort to the "outside" regardless of direction. Used by `ScholarListComponent` (`AttendanceComponent`'s dashboard is a scholars×days grid now, not a sortable list — see Components above).
-- **`CsvExportService`** — pure client-side CSV building + Blob download (`export<T>(filenamePrefix, columns, rows)`), timestamped filename. No export API endpoint exists server-side — every table already holds its full dataset in memory.
-- **`NotificationService`** — signal-backed toast list: `show(message, type = 'success', durationMs)`; success toasts auto-dismiss after 6 s, error toasts stay until dismissed. Identical to the sibling apps' copy.
-- **`ConfirmDialogService`** — signal-backed (`state`/`closing`) replacement for native `confirm()`. `confirm(message, { title?, confirmLabel?, cancelLabel?, variant? }): Promise<boolean>` resolves as soon as the user picks an option (callers `await` it, e.g. `deleteScholar()`, `clearAuditLog()`, `bulkDeleteSelected()`, `unsavedChangesGuard`); a newer `confirm()` answers an unanswered one with `false`; `respond(result)` sets `closing` and clears `state` 150 ms later so the dialog can animate out. Identical to the sibling apps' copy.
-- **`unsavedChangesGuard`** (`services/unsaved-changes.guard.ts`) — `canDeactivate` on `create-scholar`, `scholars/update/:scholarId` and `attendance/:scholarId`: when `component.hasUnsavedChanges()`, asks "Discard changes?" (Keep editing / Discard changes). Reload and tab close aren't router navigations, so those components also listen to `window:beforeunload`.
-- **`AppTitleStrategy`** — page titles, see App bootstrap.
-- **`HealthService`** — `checkApiHealth()` (GET `/health`, maps HTTP ok→bool), `pollApiHealth()` (`timer(0, 15000)` + `switchMap`). Consumed only by `app.ts`, browser-only.
-- **`ApiLoggerService`** + **`apiLoggerInterceptor`** — toggle (persisted to `localStorage`, default `isDevMode()`) that makes every HTTP request/response/error print to the browser console (color-coded), skipped entirely during SSR. See *Logging* below.
-
-## Interfaces
-
-Mirror the API's C# models 1:1 (see [[api]]): `Scholar`, `PickupSchedule` (`Record<WeekDay, string | null>` — all five days always present, `'HH:mm'` or null), `AttendanceRecord` (`date: IsoDate`), `ScholarAttendance` (`{scholarId, attendance}`), `School`, `TimeSlot`, `AuditLogEntry` (`actionType: AuditAction` = `'Created' | 'Edited' | 'Deleted'`, `occurredAt: IsoDateTime` — UTC, ending in `Z`), `GlobalAuditLogEntry` (the same fields plus nullable `scholarFirstName`/`scholarLastName`), `PagedResponse<T>`. Dates are typed with the `IsoDate`/`IsoDateTime` aliases from `iso-date.ts`, same as the sibling apps.
-
-- `constants/week-days.ts` — `WEEK_DAYS` (`as const` tuple, `monday`…`friday`) and `WeekDay` derived from it; used instead of a TS `enum` (no runtime enum object, list and type can't drift).
-- Dates from the API are already `'YYYY-MM-DD'` (`DateOnly`), so they're used as-is — compare/sort as strings, and turn into a `Date` only via `parseDateOnly` (local midnight), never `new Date('YYYY-MM-DD')` (UTC midnight, can shift a day in display or comparisons).
-- The scholar form keeps blank pickup times as `''` (a time input can't hold null) and `toScholar` sends them as `null`.
-
-## Logging
-
-Same setup in all three apps (`api-logger.service.ts`, `api-logger.interceptor.ts` and their specs are byte-identical copies, so if you change one, copy it to all three):
-
-- **HTTP traffic is logged in one place**: `apiLoggerInterceptor` logs each API call to the devtools console, in color: `→` request (with body), `←` response (status, duration, body), `✖` failure (status, duration, Problem Details body including the API's `traceId`). It runs in the browser only (nothing during SSR). It redacts `password` in request bodies and `accessToken` in response bodies, including inside the `ResponseModel` `data` envelope (Imalo has no login, so nothing here matches, but the file stays identical to the sibling apps).
-- **On/off**: `ApiLoggerService.enabled` defaults to `isDevMode()`, so it's on in `ng serve`/development builds and off in production builds. The About page toggle overrides that, and the choice is stored in `localStorage` (the service falls back safely if storage is blocked).
-- **No double logging**: services and components don't `console.error` an HTTP failure. The interceptor has already logged it, and the user sees it through `extractErrorMessage`/notifications (see *User feedback* under Gotchas); `HealthService` maps a failed poll to `false` and `SchoolService` a failed load to an empty list. Uncaught errors reach Angular's `ErrorHandler` through `provideBrowserGlobalErrorListeners()`. `console.warn` is kept for data anomalies the user can't see (for example a scholar whose school id isn't in `schools.json`).
+- Vitest through `@angular/build:unit-test`, using the default `ng new` setup.
+- **Pure units:** tested with `new`.
+- **Component specs:** use `TestBed` with plain-object service fakes and `setInput('scholarId', …)`, then `await fixture.whenStable()` for resources.
+- **Components with specs:**
+  - `scholar-list`, `scholar-details`, `scholar-form`;
+  - `attendance-per-scholar`;
+  - `notification`, `confirm-dialog`.
+- **Audit services:** tested with `HttpTestingController`.
 
 ## Gotchas / conventions
 
-- **Unit tests** — Vitest, via the `@angular/build:unit-test` builder (`ng test` / `npm test`), configured exactly as `ng new` generates it: the `angular.json` `test` target names only the builder and relies on its defaults (Vitest runner, `tsconfig.spec.json`, the `development` build, jsdom, watch mode only in an interactive terminal), `"types": ["vitest/globals"]` in `tsconfig.spec.json`, no separate Vitest config file — same as the customer and employee apps. Pure/no-DI units are instantiated directly with `new` (no `TestBed`): `SortingService`, `CsvExportService`, `contrastTextColor`, `RonPipe` (built via `TestBed.runInInjectionContext` because it `inject()`s `LOCALE_ID`), `getWeekdayDatesInMonth`, `NotificationService`, `ConfirmDialogService`, `extractErrorMessage` (`src/app/utils/*.spec.ts`, `src/app/services/*.spec.ts`) — the two signal services use `vi.useFakeTimers()` for auto-dismiss/close-animation timing. `unsavedChangesGuard` runs via `TestBed.runInInjectionContext`. None of the `HttpClient`-backed services themselves (`ScholarService`, `AttendanceService`, `SchoolService`, etc.) are tested.
-- **`TestBed` component specs**: `notification.component.spec.ts` and `confirm-dialog.component.spec.ts` (shared with the sibling apps: roles, focus, Escape, focus trap), `attendance-per-scholar.component.spec.ts`, `scholar-details.component.spec.ts` (scholarId-input + `rxResource` loading, load error, no-school path, delete flow), `scholar-list.component.spec.ts` (the `rxResource` load, load error, sorting, search filter, and a bulk delete that reloads and clears the selection) and `scholar-form.component.spec.ts` (validation rules, create/edit submit flows, inline load/save errors, unsaved changes, mapping, and one real-DOM test that proves `[formField]` wiring on text/select/number/date/time inputs). Signal Forms gotcha for DOM tests: native controls (including `<select>`) are read on the **`input`** event, so dispatch `input`, not `change`. Route ids are fed with `fixture.componentRef.setInput('id', ...)` (not a mocked `ActivatedRoute`); resource-backed components need `await fixture.whenStable()` before asserting on loaded data. Pattern: `TestBed.configureTestingModule({ imports: [TheStandaloneComponent], providers: [provideZonelessChangeDetection(), ...plain-object service fakes via useValue] })`, `fixture.detectChanges()` to run `ngOnInit` (every fake service returns a synchronous `of`/`throwError`, so no `fakeAsync`/`tick` is needed), then either direct model/method calls for business-rule assertions or real DOM events. `attendance-per-scholar.component.spec.ts` drives every rule with real checkbox `.click()`s (fires `input` then `change`, exactly like a browser) so the `[formField]` + `(change)` wiring is under test, not just the handlers. It began as a regression net written before the signals migration, and survived both the signals migration and the Signal Forms conversion of the grid with the same *behavioral* assertions (only the driving mechanism and row shape changed). Other components have no spec yet.
-- **`rxResource` gotcha:** a resource's `value()` **throws** while it is in the error state — always read it through `hasValue()` (see `scholar`/`school` in `ScholarDetailsComponent`, `model` in `ScholarFormComponent`). `params` returning `undefined` leaves the resource idle rather than loading.
-- **SSR gotcha — `@angular/common/http`'s `FetchBackend` caps a response body at 1MB during SSR only** (`ɵHTTP_FETCH_MAX_RESPONSE_SIZE`, factory-defaulted per `ngServerMode`; no public non-`ɵ` API exists for it as of Angular 22). It throws `NG02825` and aborts the whole SSR render — not just that one request — if exceeded. `GET /api/scholars/attendance` (`AttendanceService.getAllScholarAttendance()`, used by `AttendanceComponent` and `ChartsComponent`, both `RenderMode.Server`) returns every scholar's full attendance history in one payload and crossed 1MB once the test-data seeder started generating ~2 years of monthly records (see `AboutComponent` above) — those two pages rendered stuck-empty server-side (a per-scholar fetch, e.g. `ScholarDetailsComponent`, stayed fine — its payload is tiny). Fixed by raising the cap to 10MB, SSR-only, in `app.config.server.ts` (`{ provide: ɵHTTP_FETCH_MAX_RESPONSE_SIZE, useValue: 10 * 1024 * 1024 }`) — client-side (`app.config.ts`) is untouched and stays uncapped, matching the token's own default behavior. If the attendance dataset keeps growing, this cap will need raising again (or `getAllScholarAttendance()` will need real pagination — out of scope for now).
-- **User feedback — same convention as the sibling apps** (their `angular-frontend.md` has the same section):
-  - **Success → toast, fired by the service** in a `tap`, so every caller gets it. Bulk callers use the `…Silently` variant and show one summary toast.
-  - **Failure of an action → inline, next to it**: the component catches the `HttpErrorResponse`, runs it through `extractErrorMessage(error, 'Failed to <action>')` and shows it in an `.app-alert` box (`role="alert"`). No `console.error` for errors the user already sees.
-  - **Failure of a page load → an `.app-alert` in place of the content** (dashboard, charts, attendance, pickup time, scholar list, scholar detail/form, per-scholar attendance) — never an empty page or a "Loading…" that never ends.
-  - **Error toasts** only for failures with no better place (bulk delete summary, test-data generation); they stay until dismissed.
-  - `AuditLogService` derives `error` from its `httpResource`'s error, and `GlobalAuditLogService` keeps its own `loading`/`error` state; both go through `extractErrorMessage` (`'Failed to load the audit trail'` / `'Failed to load the audit log'`). `SchoolService` and `HealthService` are the deliberate exceptions — they swallow errors and fall back to `[]`/`false`, since the rest of the app needs to keep working without schools data or a live health check.
-- **Forms: Signal Forms, not Reactive/Template-driven.** `@angular/forms/signals` (`form()`, `FormField`, `FormRoot`, `schema()`) is the standard for anything that is a form or free-text/number/date input: `ScholarFormComponent`, the scholar-list search box, the attendance month picker. No `ReactiveFormsModule`/`FormsModule`/`ngModel` remains in the app — don't reintroduce them. The only controls that are deliberately *not* fields are `ScholarListComponent`'s row-selection checkboxes (selection state in a `Set`, not form data) and the attendance grid's "Both" shortcut checkbox. Signal Forms gotchas: native controls update on the **`input`** event; array items in a model carry an internal symbol-keyed property, so build API payloads field by field instead of spreading model objects.
-- **`SchoolId` on `Scholar` is not a DB foreign key** — schools live only in `assets/schools.json`, resolved client-side. Don't assume a `Schools` table or a schools API endpoint exists.
-- **Zoneless + Signals throughout, no exceptions left** — state that needs to trigger re-render must be a `signal`/`computed`, not a plain field mutated in place (the one intentional non-reactive exception: `ScholarListComponent.scholars`/`schools` plain fields are write-once scratch state, not read reactively by the template — same reasoning applies to `AttendancePerScholarComponent.lunchPrice`/`transportPrice`, only read inside event handlers). No component uses `ChangeDetectorRef`/`markForCheck()` any more — `AttendancePerScholarComponent` was the last one (plain mutable fields + `FormsModule`/`ngModel` + manual `markForCheck()` scattered through async callbacks) and has been migrated: `scholar`/`isSaving`/`hasUnsavedChanges` are signals, the model/rows/totals are signals and `computed()`s (see the attendance bullets above), and `ngModel` is gone in favor of Signal Forms. Its `TestBed` spec was written first, against the old implementation, then carried through both migrations — proof the spec was exercising behavior, not internals.
-- **`AttendancePerScholarComponent`'s Lunch/Transport checkboxes used to cascade** (unchecking one turned the other off too, in both directions — found undocumented while writing the `TestBed` spec) — this was deliberately removed; the two are independent now, and "Both" is purely a reflect-and-set convenience, not a cascade source. If cascading logic reappears here, check with the user first — it was an explicit product decision, not an oversight.
-- **DI style: `inject()`, not constructor injection** — every component uses `private readonly x = inject(X)`; there is no remaining exception (`AttendanceComponent`, `GanttChartComponent`, `ScholarListComponent` used constructor injection until this was normalized).
-- **`styleUrl` (singular), not `styleUrls` (array)** — one CSS file per component throughout; no remaining exception.
-- All 12 routes are lazy (`loadComponent`) — adding a new route should follow the same pattern rather than an eager `component:` reference, to keep the initial bundle from growing.
-- `GanttChartComponent`'s per-cell lookup map (`cellsByKey`) must stay a `computed()` keyed off `scholars()` — recomputing style/label inline per template call again would reintroduce the O(days × scholars × slots) per-change-detection cost it was written to eliminate.
-- `NotificationService.show(...)`, not `alert()`; see *User feedback* above for when a message is a toast and when it is inline.
-- `ConfirmDialogService.confirm(...)`, not `confirm()`. It's async (a real modal, not a blocking dialog), so callers need an `async` handler method. Give it a question title and a verb label (`{ title: 'Delete scholar?', confirmLabel: 'Delete', variant: 'danger' }`).
-- **Styling conventions (from the frontend audit)** — all in `src/styles.css`; component CSS should only add what is specific to that component.
-  - **No Tailwind/Bootstrap.** Neither is installed, so utility classes like `grid gap-4 md:grid-cols-2`, `space-y-6`, `mb-2`, `text-gray-600` silently do nothing (the scholar form shipped with these and rendered with no layout). Write real CSS with the `--space-*` tokens.
-  - **Page wrapper:** every routed page gets `router-outlet + * { display:block; padding: var(--space-5) 0 }` — pages must not add their own top/bottom margin. Narrow pages centre themselves with `max-width` + `margin: 0 auto`.
-  - **Every page has one `<h1 class="page-title">`** (left-aligned, same size everywhere; sub-sections are `<h2>`, then `<h3>`, sized by class not tag). The shell focuses that `<h1>` after navigation, so a page without one gets `<main>` focused instead. Page-level actions go in `<div class="page-toolbar">`.
-  - **Page-level errors use `.app-alert`** (orange-bordered box, `role="alert"`); `.app-error-message` is only for field-level messages under an input.
-  - **Accessibility plumbing shared with the sibling apps**: skip link (`.skip-link`, first tab stop), `main:focus { outline: none }` for the programmatic focus target, and a global `prefers-reduced-motion` rule that disables animations.
-- **Display conventions** (same in all three apps): on-screen text is sentence case ("Birth date", "Audit log"); only CSV column headers stay Title Case, like the API's own export. Money goes through the shared `ron` pipe (`src/app/pipes/ron.pipe.ts`, byte-identical in all three: `1,299.00 RON`), calendar dates through `date: 'longDate'`, timestamps through `date: 'medium'`.
-  - **Motion** (same approach as the sibling apps): durations and easing curves are tokens in `:root` (`--duration-fast`/`--duration-base`, `--ease-out`/`--ease-in`/`--ease-spring`); use them instead of one-off timings. `.app-button` lifts on hover and presses in on click; `.app-alert` slides in; table rows fade their hover colour. Anything a user opens and closes uses Angular's native `animate.enter="reveal-enter" animate.leave="reveal-leave"` (global classes), not `@angular/animations`, which is deprecated and not installed (e.g. the bar-chart tooltip and the attendance "Unsaved changes" note). Toasts use `animate.enter`/`animate.leave` with their own slide classes. Route changes cross-fade through `withViewTransitions({ skipInitialTransition: true })` in `app.config.ts` with the `::view-transition-*` rules; `header` has its own `view-transition-name` so the navbar stays put. Navbar links get an orange underline that grows from the centre. TestBed disables animations by default, so `animate.leave` elements are removed immediately in specs. `prefers-reduced-motion` turns all of it off, including hover transforms and view transitions.
-  - **`.app-button` has no margin** — spacing comes from the parent's `gap` (`.page-toolbar`, `.scholar-form__actions`, `.confirm-actions`…). Baked-in margins doubled up with `gap` and pushed right-aligned/centred groups off-centre. Hover/active styles are `:hover:not(:disabled)`; the focus ring is `:focus-visible`.
-  - **`.app-input` has no margin** either; stack fields with `display:flex; flex-direction:column; gap`. `select.app-input` draws its own chevron (`appearance:none` removes the native one).
-  - **Data tables** use `.app-table` + `.table-header` + `.table-row` + `.table-cell`; add `.sortable` only on clickable headers, `.table-row--link` on rows that navigate, `.table-cell--empty` for the empty-state cell. The `.table-row:hover` rule must stay *after* `.table-row:nth-child(even)` (equal specificity — the later one wins).
-  - **Orange as text:** `--orange-main-color` (#ffa726) is ~2:1 on white — use `--orange-text-color` for any copy (errors, "unsaved changes"). Orange stays fine for fills/borders. No red exists in the palette, by design.
-  - Use `.app-card` for content cards; data grids (tables, Gantt) keep the 2px cyan outline.
-  - Dates: don't invent format strings like `'EEE, mediumDate'` — a named format (`mediumDate`) only works on its own; combined with other tokens its letters are parsed as pattern characters and print garbage.
+- The app is zoneless, so any state the template reads must be a signal.
+- `value()` throws while a resource is in error. Guard reads with `hasValue()`.
+- **Dates:**
+  - Parse `'YYYY-MM-DD'` with `parseDateOnly`, never `new Date(...)`, which reads it as UTC and can shift a day.
+  - Month pickers default to `DEFAULT_MONTH` (`'2026-09'`).
+- **Signal Forms:**
+  - native controls update on the `input` event;
+  - build API payloads field by field, because array items carry a hidden symbol-keyed property.
+- **SSR response size:** `app.config.server.ts` raises the SSR fetch limit to 10 MB. `GET /attendance` outgrew the default 1 MB.
+- **Gantt chart:** its `cellsByKey` must stay a `computed`, for performance.
+- **Shared files:** `notification`, `confirm-dialog`, `api-logger`, `extract-error-message`, `ron.pipe` and `audit-action-label` are identical in all three apps. Change them together.
