@@ -65,129 +65,142 @@
       </button>
     </div>
 
-    <table class="app-table attendance-container__table attendance-table">
-      <thead class="attendance-table__header">
-        <tr>
-          <th class="table-header attendance-table__header-cell">Date</th>
-          <th class="table-header attendance-table__header-cell">Present</th>
-          <th class="table-header attendance-table__header-cell">Lunch</th>
-          <th class="table-header attendance-table__header-cell">Transport</th>
-          <th class="table-header attendance-table__header-cell">Both</th>
-          <th class="table-header attendance-table__header-cell">Lunch cost</th>
-          <th class="table-header attendance-table__header-cell">
-            Transport cost
-          </th>
-        </tr>
-      </thead>
-      <tbody class="attendance-table__body">
-        @for (index of visibleIndexes(); track index) {
-          @let day = attendanceForm[index];
-          @let row = day().value();
-          <tr
-            class="table-row attendance-table__row"
-            [class.attendance-table__row--unsaved]="
-              !row.persisted && (row.lunchSelected || row.transportSelected)
-            "
-          >
-            <td class="table-cell attendance-table__data-cell">
-              {{ row.date | date: 'EEE, MMM d, y' }}
-            </td>
-            <td class="table-cell attendance-table__data-cell">
-              <input
-                type="checkbox"
-                [formField]="day.present"
-                (change)="onPresentChange(index)"
-                class="attendance-table__checkbox"
-              />
-            </td>
-            <td class="table-cell attendance-table__data-cell">
-              <input
-                type="checkbox"
-                [formField]="day.lunchSelected"
-                (change)="onLunchChange(index)"
-                class="attendance-table__checkbox"
-              />
-            </td>
-            <td class="table-cell attendance-table__data-cell">
-              <input
-                type="checkbox"
-                [formField]="day.transportSelected"
-                (change)="onTransportChange(index)"
-                class="attendance-table__checkbox"
-              />
-            </td>
-            <td class="table-cell attendance-table__data-cell">
-              <input
-                type="checkbox"
-                [checked]="row.lunchSelected && row.transportSelected"
-                [disabled]="!row.present"
-                (change)="onBothChange(index, $event)"
-                class="attendance-table__checkbox"
-              />
-            </td>
-            <td class="table-cell attendance-table__data-cell">
-              @if (row.lunchSelected) {
-                {{ row.lunchCost | ron }}
-              } @else {
-                <span class="attendance-table__muted">&mdash;</span>
-              }
-            </td>
-            <td class="table-cell attendance-table__data-cell">
-              @if (row.transportSelected) {
-                {{ row.transportCost | ron }}
-              } @else {
-                <span class="attendance-table__muted">&mdash;</span>
-              }
-            </td>
+    <div
+      class="table-scroll"
+      role="region"
+      aria-label="Attendance for the month"
+      tabindex="0"
+    >
+      <table class="app-table attendance-container__table attendance-table">
+        <thead class="attendance-table__header">
+          <tr>
+            <th class="table-header attendance-table__header-cell">Date</th>
+            <th class="table-header attendance-table__header-cell">Present</th>
+            <th class="table-header attendance-table__header-cell">Lunch</th>
+            <th class="table-header attendance-table__header-cell">
+              Transport
+            </th>
+            <th class="table-header attendance-table__header-cell">Both</th>
+            <th class="table-header attendance-table__header-cell">
+              Lunch cost
+            </th>
+            <th class="table-header attendance-table__header-cell">
+              Transport cost
+            </th>
           </tr>
-        } @empty {
-          <tr class="table-row attendance-table__row">
-            <td
-              colspan="7"
-              class="table-cell table-cell--empty attendance-table__data-cell attendance-table__data-cell--empty"
+        </thead>
+        <tbody class="attendance-table__body">
+          @for (index of visibleIndexes(); track index) {
+            @let day = attendanceForm[index];
+            @let row = day().value();
+            <tr
+              class="table-row attendance-table__row"
+              animate.enter="row-enter"
+              [style.--row-index]="$index"
+              [class.attendance-table__row--unsaved]="
+                !row.persisted && (row.lunchSelected || row.transportSelected)
+              "
             >
-              No weekdays in this month.
+              <td class="table-cell attendance-table__data-cell">
+                {{ row.date | date: 'EEE, MMM d, y' }}
+              </td>
+              <td class="table-cell attendance-table__data-cell">
+                <input
+                  type="checkbox"
+                  [formField]="day.present"
+                  (change)="onPresentChange(index)"
+                  class="attendance-table__checkbox"
+                />
+              </td>
+              <td class="table-cell attendance-table__data-cell">
+                <input
+                  type="checkbox"
+                  [formField]="day.lunchSelected"
+                  (change)="onLunchChange(index)"
+                  class="attendance-table__checkbox"
+                />
+              </td>
+              <td class="table-cell attendance-table__data-cell">
+                <input
+                  type="checkbox"
+                  [formField]="day.transportSelected"
+                  (change)="onTransportChange(index)"
+                  class="attendance-table__checkbox"
+                />
+              </td>
+              <td class="table-cell attendance-table__data-cell">
+                <input
+                  type="checkbox"
+                  [checked]="row.lunchSelected && row.transportSelected"
+                  [disabled]="!row.present"
+                  (change)="onBothChange(index, $event)"
+                  class="attendance-table__checkbox"
+                />
+              </td>
+              <td class="table-cell attendance-table__data-cell">
+                @if (row.lunchSelected) {
+                  {{ row.lunchCost | ron }}
+                } @else {
+                  <span class="attendance-table__muted">&mdash;</span>
+                }
+              </td>
+              <td class="table-cell attendance-table__data-cell">
+                @if (row.transportSelected) {
+                  {{ row.transportCost | ron }}
+                } @else {
+                  <span class="attendance-table__muted">&mdash;</span>
+                }
+              </td>
+            </tr>
+          } @empty {
+            <tr class="table-row attendance-table__row">
+              <td
+                colspan="7"
+                class="table-cell table-cell--empty attendance-table__data-cell attendance-table__data-cell--empty"
+              >
+                No weekdays in this month.
+              </td>
+            </tr>
+          }
+        </tbody>
+        <tfoot class="attendance-table__footer">
+          <tr class="attendance-table__total-row">
+            <td
+              colspan="5"
+              class="table-cell attendance-table__data-cell attendance-table__data-cell--total-label"
+            >
+              <strong>Total for the month (lunch and transport)</strong>
+            </td>
+            <td
+              class="table-cell attendance-table__data-cell attendance-table__data-cell--total-value"
+            >
+              <strong>{{ totalSelectedLunchCost() | ron }}</strong>
+            </td>
+            <td
+              class="table-cell attendance-table__data-cell attendance-table__data-cell--total-value"
+            >
+              <strong>{{ totalSelectedTransportCost() | ron }}</strong>
             </td>
           </tr>
-        }
-      </tbody>
-      <tfoot class="attendance-table__footer">
-        <tr class="attendance-table__total-row">
-          <td
-            colspan="5"
-            class="table-cell attendance-table__data-cell attendance-table__data-cell--total-label"
+          <tr
+            class="attendance-table__total-row attendance-table__total-row--grand"
           >
-            <strong>Total for the month (lunch and transport)</strong>
-          </td>
-          <td
-            class="table-cell attendance-table__data-cell attendance-table__data-cell--total-value"
-          >
-            <strong>{{ totalSelectedLunchCost() | ron }}</strong>
-          </td>
-          <td
-            class="table-cell attendance-table__data-cell attendance-table__data-cell--total-value"
-          >
-            <strong>{{ totalSelectedTransportCost() | ron }}</strong>
-          </td>
-        </tr>
-        <tr
-          class="attendance-table__total-row attendance-table__total-row--grand"
-        >
-          <td
-            colspan="5"
-            class="table-cell attendance-table__data-cell attendance-table__data-cell--total-label"
-          >
-            <strong>Grand total</strong>
-          </td>
-          <td
-            colspan="2"
-            class="table-cell attendance-table__data-cell attendance-table__data-cell--total-value"
-          >
-            <strong>{{ grandTotal() | ron }}</strong>
-          </td>
-        </tr>
-      </tfoot>
-    </table>
+            <td
+              colspan="5"
+              class="table-cell attendance-table__data-cell attendance-table__data-cell--total-label"
+            >
+              <strong>Grand total</strong>
+            </td>
+            <td
+              colspan="2"
+              class="table-cell attendance-table__data-cell attendance-table__data-cell--total-value"
+            >
+              <strong>{{ grandTotal() | ron }}</strong>
+            </td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
 
     @if (saveError(); as error) {
       <div class="app-alert no-print" role="alert">{{ error }}</div>

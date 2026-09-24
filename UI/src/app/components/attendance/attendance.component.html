@@ -54,7 +54,12 @@
     </button>
   </div>
 
-  <div class="attendance-grid__scroll">
+  <div
+    class="table-scroll"
+    role="region"
+    aria-label="Attendance table"
+    tabindex="0"
+  >
     <table class="app-table attendance-grid">
       <thead>
         <tr>
@@ -68,10 +73,14 @@
       </thead>
       <tbody>
         @for (row of rows(); track row.scholarId) {
-          <tr class="table-row">
+          <tr
+            class="table-row"
+            animate.enter="row-enter"
+            [style.--row-index]="$index"
+          >
             <td class="table-cell attendance-grid__name-cell">
               <a
-                class="attendance-grid__name-link"
+                class="table-link"
                 [routerLink]="['/attendance', row.scholarId]"
               >
                 {{ row.scholarName }}

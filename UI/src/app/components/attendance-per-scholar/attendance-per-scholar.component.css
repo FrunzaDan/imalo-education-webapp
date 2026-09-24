@@ -53,7 +53,7 @@
 /* Table chrome (.app-table / .table-header / .table-row / .table-cell) comes
    from the global stylesheet, so this table matches the other data tables.
    Only what is specific to the attendance grid lives here. */
-.attendance-container .attendance-table {
+.attendance-container .table-scroll {
   margin-top: var(--space-4);
   box-shadow: none; /* already inside a card */
 }

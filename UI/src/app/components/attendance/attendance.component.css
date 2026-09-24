@@ -29,13 +29,9 @@
   gap: var(--space-1);
 }
 
-/* Table chrome (.app-table / .table-header / .table-row / .table-cell) comes
-   from the global stylesheet; the wrapper only adds horizontal scrolling for
-   months with many weekday columns. */
-.attendance-grid__scroll {
-  overflow-x: auto;
-}
-
+/* Table chrome (.table-scroll / .app-table / .table-header / .table-row /
+   .table-cell / .table-link) comes from the global stylesheet; .table-scroll
+   also scrolls the grid sideways for months with many weekday columns. */
 .attendance-grid__name-header,
 .attendance-grid__name-cell {
   white-space: nowrap;
@@ -55,15 +51,6 @@
 .attendance-grid__day-header {
   font-size: 0.8rem;
   border-left-color: rgba(var(--light-main-color-for-alpha), 0.25);
-}
-
-.attendance-grid__name-link {
-  color: inherit;
-  text-decoration: none;
-}
-
-.attendance-grid__name-link:hover {
-  text-decoration: underline;
 }
 
 .attendance-cell {

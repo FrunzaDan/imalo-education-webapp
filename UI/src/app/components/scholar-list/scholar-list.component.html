@@ -42,131 +42,162 @@
 } @else if (loadError(); as error) {
   <div class="app-alert" role="alert">{{ error }}</div>
 } @else {
-  <table class="app-table">
-    <caption class="visually-hidden">
-      {{
-        tableCaption()
-      }}
-    </caption>
-    <thead>
-      <tr>
-        <th scope="col" class="table-header">
-          <input
-            type="checkbox"
-            aria-label="Select all scholars"
-            [checked]="allSelected()"
-            (change)="toggleSelectAll($any($event.target).checked)"
-          />
-        </th>
-        <th
-          scope="col"
-          class="table-header"
-          [attr.aria-sort]="ariaSort('name')"
-        >
-          <button type="button" class="sort-button" (click)="setSort('name')">
-            Student name
-            @if (sortColumn() === 'name') {
-              <span aria-hidden="true">{{
-                sortDirection() === 'asc' ? '▲' : '▼'
-              }}</span>
-            }
-          </button>
-        </th>
-        <th
-          scope="col"
-          class="table-header"
-          [attr.aria-sort]="ariaSort('schoolName')"
-        >
-          <button
-            type="button"
-            class="sort-button"
-            (click)="setSort('schoolName')"
-          >
-            School
-            @if (sortColumn() === 'schoolName') {
-              <span aria-hidden="true">{{
-                sortDirection() === 'asc' ? '▲' : '▼'
-              }}</span>
-            }
-          </button>
-        </th>
-        <th
-          scope="col"
-          class="table-header"
-          [attr.aria-sort]="ariaSort('grade')"
-        >
-          <button type="button" class="sort-button" (click)="setSort('grade')">
-            Grade
-            @if (sortColumn() === 'grade') {
-              <span aria-hidden="true">{{
-                sortDirection() === 'asc' ? '▲' : '▼'
-              }}</span>
-            }
-          </button>
-        </th>
-        <th
-          scope="col"
-          class="table-header"
-          [attr.aria-sort]="ariaSort('birthDate')"
-        >
-          <button
-            type="button"
-            class="sort-button"
-            (click)="setSort('birthDate')"
-          >
-            Birth date
-            @if (sortColumn() === 'birthDate') {
-              <span aria-hidden="true">{{
-                sortDirection() === 'asc' ? '▲' : '▼'
-              }}</span>
-            }
-          </button>
-        </th>
-      </tr>
-    </thead>
-    <tbody>
-      @for (scholar of displayedScholarData(); track scholar.scholarId) {
-        <tr class="table-row">
-          <td class="table-cell">
+  <div
+    class="table-scroll"
+    role="region"
+    aria-label="Scholars table"
+    tabindex="0"
+  >
+    <table class="app-table">
+      <caption class="visually-hidden">
+        {{
+          tableCaption()
+        }}
+      </caption>
+      <thead>
+        <tr>
+          <th scope="col" class="table-header">
             <input
               type="checkbox"
-              [attr.aria-label]="'Select ' + scholar.name"
-              [checked]="isSelected(scholar.scholarId)"
-              (change)="
-                toggleSelection(scholar.scholarId, $any($event.target).checked)
-              "
+              aria-label="Select all scholars"
+              [checked]="allSelected()"
+              (change)="toggleSelectAll($any($event.target).checked)"
             />
-          </td>
-          <td class="table-cell">
-            <a
-              class="scholar-list-link"
-              [routerLink]="['/scholars', scholar.scholarId]"
-              >{{ scholar.name }}</a
-            >
-          </td>
-          <td
-            class="table-cell"
-            [ngStyle]="{
-              'background-color': scholar.schoolColor,
-              color: scholar.textColor,
-            }"
+          </th>
+          <th
+            scope="col"
+            class="table-header"
+            [attr.aria-sort]="ariaSort('name')"
           >
-            {{ scholar.schoolName }}
-          </td>
-          <td class="table-cell">{{ scholar.grade }}</td>
-          <td class="table-cell">{{ scholar.birthDateLabel }}</td>
+            <button type="button" class="sort-button" (click)="setSort('name')">
+              Student name
+              @if (sortColumn() === 'name') {
+                <span
+                  class="sort-indicator"
+                  [class.sort-indicator--desc]="sortDirection() === 'desc'"
+                  aria-hidden="true"
+                  >▲</span
+                >
+              }
+            </button>
+          </th>
+          <th
+            scope="col"
+            class="table-header"
+            [attr.aria-sort]="ariaSort('schoolName')"
+          >
+            <button
+              type="button"
+              class="sort-button"
+              (click)="setSort('schoolName')"
+            >
+              School
+              @if (sortColumn() === 'schoolName') {
+                <span
+                  class="sort-indicator"
+                  [class.sort-indicator--desc]="sortDirection() === 'desc'"
+                  aria-hidden="true"
+                  >▲</span
+                >
+              }
+            </button>
+          </th>
+          <th
+            scope="col"
+            class="table-header"
+            [attr.aria-sort]="ariaSort('grade')"
+          >
+            <button
+              type="button"
+              class="sort-button"
+              (click)="setSort('grade')"
+            >
+              Grade
+              @if (sortColumn() === 'grade') {
+                <span
+                  class="sort-indicator"
+                  [class.sort-indicator--desc]="sortDirection() === 'desc'"
+                  aria-hidden="true"
+                  >▲</span
+                >
+              }
+            </button>
+          </th>
+          <th
+            scope="col"
+            class="table-header"
+            [attr.aria-sort]="ariaSort('birthDate')"
+          >
+            <button
+              type="button"
+              class="sort-button"
+              (click)="setSort('birthDate')"
+            >
+              Birth date
+              @if (sortColumn() === 'birthDate') {
+                <span
+                  class="sort-indicator"
+                  [class.sort-indicator--desc]="sortDirection() === 'desc'"
+                  aria-hidden="true"
+                  >▲</span
+                >
+              }
+            </button>
+          </th>
         </tr>
-      } @empty {
-        <tr class="table-row">
-          <td colspan="5" class="table-cell table-cell--empty">
-            @if (searchTerm()) {
-              No scholars match "{{ searchTerm() }}".
-            } @else {
-              No scholars yet.
-            }
-          </td>
-        </tr>
-      }
-    </tbody>
-  </table>
+      </thead>
+      <tbody>
+        @for (scholar of displayedScholarData(); track scholar.scholarId) {
+          <tr
+            class="table-row"
+            animate.enter="row-enter"
+            [style.--row-index]="$index"
+            [class.is-selected]="isSelected(scholar.scholarId)"
+          >
+            <td class="table-cell">
+              <input
+                type="checkbox"
+                [attr.aria-label]="'Select ' + scholar.name"
+                [checked]="isSelected(scholar.scholarId)"
+                (change)="
+                  toggleSelection(
+                    scholar.scholarId,
+                    $any($event.target).checked
+                  )
+                "
+              />
+            </td>
+            <td class="table-cell">
+              <a
+                class="table-link"
+                [routerLink]="['/scholars', scholar.scholarId]"
+                >{{ scholar.name }}</a
+              >
+            </td>
+            <td
+              class="table-cell"
+              [ngStyle]="{
+                'background-color': scholar.schoolColor,
+                color: scholar.textColor,
+              }"
+            >
+              {{ scholar.schoolName }}
+            </td>
+            <td class="table-cell">{{ scholar.grade }}</td>
+            <td class="table-cell">{{ scholar.birthDateLabel }}</td>
+          </tr>
+        } @empty {
+          <tr class="table-row">
+            <td colspan="5" class="table-cell table-cell--empty">
+              @if (searchTerm()) {
+                No scholars match "{{ searchTerm() }}".
+              } @else {
+                No scholars yet.
+              }
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
 }

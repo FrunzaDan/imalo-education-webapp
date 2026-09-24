@@ -44,6 +44,7 @@
   /* Motion: one set of durations and curves for every transition/animation. */
   --duration-fast: 0.15s;
   --duration-base: 0.25s;
+  --duration-slow: 0.35s;
   --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
   --ease-in: cubic-bezier(0.55, 0, 1, 0.45);
   --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
@@ -95,6 +96,11 @@ input[type='checkbox'] {
   accent-color: var(--cyan-dark-color);
   cursor: pointer;
   vertical-align: middle;
+  transition: transform var(--duration-fast) var(--ease-out);
+}
+
+input[type='checkbox']:active:not(:disabled) {
+  transform: scale(0.85);
 }
 
 input[type='checkbox']:disabled {
@@ -304,6 +310,31 @@ select.app-input {
   margin: var(--space-1) 0 0;
 }
 
+/* Every .app-table sits in one of these. On a narrow screen the table
+   scrolls sideways instead of squeezing its columns; vertical scrolling stays
+   with the page (overflow-y: hidden, or the browser makes the box a vertical
+   scroller too and it captures the mouse wheel). The shadow lives here, not on
+   the table, so the scroll box does not clip it. Keyboard users need to reach
+   it to scroll: role="region" aria-label="…" tabindex="0". */
+.table-scroll {
+  overflow-x: auto;
+  overflow-y: hidden;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--card-shadow);
+  animation: card-in var(--duration-slow) var(--ease-out) backwards;
+}
+
+.table-scroll:focus-visible {
+  outline: var(--border-width-thick) solid
+    rgba(var(--cyan-light-color-for-alpha), 0.7);
+  outline-offset: 2px;
+}
+
+.table-scroll > .app-table {
+  min-width: 36rem;
+  box-shadow: none;
+}
+
 /* Shared data table, used by scholar-list (sortable) and the attendance grid */
 .app-table {
   width: 100%;
@@ -337,8 +368,27 @@ select.app-input {
   cursor: pointer;
 }
 
+.sort-button {
+  transition: transform var(--duration-fast) var(--ease-out);
+}
+
 .sort-button:hover {
   text-decoration: underline;
+}
+
+.sort-button:active {
+  transform: scale(0.96);
+}
+
+/* One ▲ that turns over for descending, so flipping the direction animates. */
+.sort-indicator {
+  display: inline-block;
+  animation: sort-indicator-in var(--duration-base) var(--ease-spring);
+  transition: rotate var(--duration-base) var(--ease-spring);
+}
+
+.sort-indicator--desc {
+  rotate: 180deg;
 }
 
 .sort-button:focus-visible {
@@ -376,6 +426,67 @@ select.app-input {
   background-color: rgba(var(--cyan-main-color-for-alpha), 0.08);
 }
 
+/* Rows ticked for a bulk action; after :hover, so they keep their color
+   under the pointer. */
+.table-row.is-selected {
+  background-color: rgba(var(--cyan-main-color-for-alpha), 0.14);
+}
+
+/* Hovered and selected body rows get an accent bar on their left edge. */
+tbody > .table-row > td:first-child:not(.table-cell--empty) {
+  box-shadow: inset 0 0 0 var(--cyan-darker-color);
+  transition: box-shadow var(--duration-fast) ease;
+}
+
+tbody > .table-row.is-selected > td:first-child {
+  box-shadow: inset 4px 0 0 var(--cyan-darker-color);
+}
+
+@media (hover: hover) {
+  tbody > .table-row:hover > td:first-child:not(.table-cell--empty) {
+    box-shadow: inset 4px 0 0 var(--cyan-darker-color);
+  }
+}
+
+/* A link to a scholar from a table cell. It grows a little under the pointer
+   (from its left edge, as the cells are left-aligned) and presses in on click. */
+.table-link {
+  display: inline-block;
+  color: var(--cyan-dark-color);
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+  transform-origin: left center;
+  transition:
+    transform var(--duration-base) var(--ease-out),
+    text-underline-offset var(--duration-fast) ease,
+    text-decoration-thickness var(--duration-fast) ease;
+}
+
+.table-link:hover {
+  text-decoration-thickness: 2px;
+  text-underline-offset: 0.3em;
+}
+
+/* Only where a real pointer hovers: on a touch screen :hover sticks after a
+   tap and would leave the link enlarged. */
+@media (hover: hover) {
+  .table-link:hover {
+    transform: scale(1.06);
+  }
+}
+
+.table-link:active {
+  transform: scale(0.96);
+  transition-duration: var(--duration-fast);
+}
+
+.table-link:focus-visible {
+  outline: var(--border-width-thick) solid
+    rgba(var(--cyan-light-color-for-alpha), 0.7);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
 @media screen and (max-width: 600px) {
   .app-table {
     width: 100%;
@@ -398,6 +509,70 @@ select.app-input {
 /* ---------------------------------------------------------------------
    Motion
    --------------------------------------------------------------------- */
+
+/* Cards rise into place when they appear. Sibling cards follow one another a
+   beat apart. */
+.app-card {
+  animation: card-in var(--duration-slow) var(--ease-out) backwards;
+  animation-delay: calc(var(--stagger, 0) * 60ms);
+}
+
+.app-card:nth-child(2 of .app-card) {
+  --stagger: 1;
+}
+
+.app-card:nth-child(3 of .app-card) {
+  --stagger: 2;
+}
+
+.app-card:nth-child(4 of .app-card) {
+  --stagger: 3;
+}
+
+.app-card:nth-child(n + 5 of .app-card) {
+  --stagger: 4;
+}
+
+@keyframes card-in {
+  from {
+    opacity: 0;
+    transform: translateY(0.75rem);
+  }
+}
+
+/* Loading messages wait a beat before fading in, so a fast load never
+   flashes one. */
+.loading-message {
+  animation: loading-in var(--duration-base) ease 0.2s backwards;
+}
+
+@keyframes loading-in {
+  from {
+    opacity: 0;
+  }
+}
+
+/* Table rows fade in one after another when they are added (first render, a
+   new page, new search results): animate.enter="row-enter" with
+   [style.--row-index]="$index" on the <tr>. A row that only moves (a re-sort)
+   is not re-created, so it stays still. The delay stops growing after 12 rows. */
+.row-enter {
+  animation: row-in var(--duration-base) var(--ease-out) backwards;
+  animation-delay: calc(min(var(--row-index, 0), 12) * 30ms);
+}
+
+@keyframes row-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes sort-indicator-in {
+  from {
+    opacity: 0;
+    transform: scale(0.4);
+  }
+}
 
 /* For content that opens and closes, with Angular's animate.enter /
    animate.leave: animate.enter="reveal-enter" animate.leave="reveal-leave". */
@@ -473,6 +648,10 @@ header {
     box-shadow: none;
     border: none;
   }
+  .table-scroll {
+    overflow: visible;
+    box-shadow: none;
+  }
 }
 
 /* Programmatic focus target after route changes — not an interactive control. */
@@ -520,12 +699,17 @@ main [tabindex='-1']:focus {
   *::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
+    animation-delay: 0s !important;
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
 
   .app-button:hover:not(:disabled),
-  .app-button:active:not(:disabled) {
+  .app-button:active:not(:disabled),
+  .table-link:hover,
+  .table-link:active,
+  .sort-button:active,
+  input[type='checkbox']:active {
     transform: none;
   }
 

@@ -21,46 +21,57 @@
 } @else if (entries().length === 0) {
   <p class="audit-log-empty">No recorded actions yet.</p>
 } @else {
-  <table class="app-table">
-    <caption class="visually-hidden">
-      Audit log, page
-      {{
-        currentPage()
-      }}
-      of
-      {{
-        totalPages()
-      }}, newest first
-    </caption>
-    <thead>
-      <tr>
-        <th scope="col" class="table-header">Date</th>
-        <th scope="col" class="table-header">Scholar</th>
-        <th scope="col" class="table-header">Action</th>
-        <th scope="col" class="table-header">Details</th>
-      </tr>
-    </thead>
-    <tbody>
-      @for (entry of entries(); track entry.scholarAuditLogId) {
-        <tr class="table-row">
-          <td class="table-cell">{{ entry.occurredAt | date: 'medium' }}</td>
-          <td class="table-cell">
-            @if (entry.scholarFirstName || entry.scholarLastName) {
-              <a
-                class="audit-log-link"
-                [routerLink]="['/scholars', entry.scholarId]"
-                >{{ scholarLabel(entry) }}</a
-              >
-            } @else {
-              <span class="audit-log-deleted">{{ scholarLabel(entry) }}</span>
-            }
-          </td>
-          <td class="table-cell">{{ auditActionLabel(entry.actionType) }}</td>
-          <td class="table-cell">{{ entry.details }}</td>
+  <div
+    class="table-scroll"
+    role="region"
+    aria-label="Audit log table"
+    tabindex="0"
+  >
+    <table class="app-table">
+      <caption class="visually-hidden">
+        Audit log, page
+        {{
+          currentPage()
+        }}
+        of
+        {{
+          totalPages()
+        }}, newest first
+      </caption>
+      <thead>
+        <tr>
+          <th scope="col" class="table-header">Date</th>
+          <th scope="col" class="table-header">Scholar</th>
+          <th scope="col" class="table-header">Action</th>
+          <th scope="col" class="table-header">Details</th>
         </tr>
-      }
-    </tbody>
-  </table>
+      </thead>
+      <tbody>
+        @for (entry of entries(); track entry.scholarAuditLogId) {
+          <tr
+            class="table-row"
+            animate.enter="row-enter"
+            [style.--row-index]="$index"
+          >
+            <td class="table-cell">{{ entry.occurredAt | date: 'medium' }}</td>
+            <td class="table-cell">
+              @if (entry.scholarFirstName || entry.scholarLastName) {
+                <a
+                  class="table-link"
+                  [routerLink]="['/scholars', entry.scholarId]"
+                  >{{ scholarLabel(entry) }}</a
+                >
+              } @else {
+                <span class="audit-log-deleted">{{ scholarLabel(entry) }}</span>
+              }
+            </td>
+            <td class="table-cell">{{ auditActionLabel(entry.actionType) }}</td>
+            <td class="table-cell">{{ entry.details }}</td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
 
   @if (totalPages() > 1) {
     <nav class="audit-log-pagination" aria-label="Audit log pages">
