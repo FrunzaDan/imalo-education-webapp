@@ -58,7 +58,7 @@ public partial class ScholarDataAccess : IScholarDataAccess
         await using var insertScholarCmd = new SqlCommand(insertScholarSql, connection, transaction);
         AddParam(insertScholarCmd, "@FirstName", SqlDbType.NVarChar, scholar.FirstName, 100);
         AddParam(insertScholarCmd, "@LastName", SqlDbType.NVarChar, scholar.LastName ?? string.Empty, 100);
-        AddParam(insertScholarCmd, "@BirthDate", SqlDbType.Date, scholar.BirthDate);
+        AddParam(insertScholarCmd, "@BirthDate", SqlDbType.Date, (object?)scholar.BirthDate ?? DBNull.Value);
         AddParam(insertScholarCmd, "@Grade", SqlDbType.TinyInt, (object?)scholar.Grade ?? DBNull.Value);
         AddParam(insertScholarCmd, "@SchoolId", SqlDbType.Int, (object?)scholar.SchoolId ?? DBNull.Value);
 
@@ -212,7 +212,7 @@ public partial class ScholarDataAccess : IScholarDataAccess
         AddParam(updateScholarCmd, "@ScholarId", SqlDbType.UniqueIdentifier, scholar.ScholarId);
         AddParam(updateScholarCmd, "@FirstName", SqlDbType.NVarChar, scholar.FirstName ?? string.Empty, 100);
         AddParam(updateScholarCmd, "@LastName", SqlDbType.NVarChar, scholar.LastName ?? string.Empty, 100);
-        AddParam(updateScholarCmd, "@BirthDate", SqlDbType.Date, scholar.BirthDate);
+        AddParam(updateScholarCmd, "@BirthDate", SqlDbType.Date, (object?)scholar.BirthDate ?? DBNull.Value);
         AddParam(updateScholarCmd, "@Grade", SqlDbType.TinyInt, (object?)scholar.Grade ?? DBNull.Value);
         AddParam(updateScholarCmd, "@SchoolId", SqlDbType.Int, (object?)scholar.SchoolId ?? DBNull.Value);
 
@@ -388,7 +388,7 @@ public partial class ScholarDataAccess : IScholarDataAccess
     {
         const string sql = """
                             INSERT INTO dbo.ScholarAuditLog (ScholarId, ActionType, Details)
-                            VALUES (@ScholarId, @ActionType, @Details); -- OccurredAt defaults to SYSUTCDATETIME()
+                            VALUES (@ScholarId, @ActionType, @Details);
                             """;
 
         try

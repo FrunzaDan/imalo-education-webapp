@@ -53,13 +53,16 @@ export const emptyScholarForm = (): ScholarFormModel => ({
 export const PHONE_PATTERN = new RegExp(environment.phoneNumberRegex);
 
 const NAME_MAX_LENGTH = 100;
+const NOT_BLANK = /\S/;
 
 export const scholarFormSchema = schema<ScholarFormModel>((p) => {
   required(p.firstName, { message: 'First name is required.' });
+  pattern(p.firstName, NOT_BLANK, { message: 'First name is required.' });
   maxLength(p.firstName, NAME_MAX_LENGTH, {
     message: `First name can't exceed ${NAME_MAX_LENGTH} characters.`,
   });
   required(p.lastName, { message: 'Last name is required.' });
+  pattern(p.lastName, NOT_BLANK, { message: 'Last name is required.' });
   maxLength(p.lastName, NAME_MAX_LENGTH, {
     message: `Last name can't exceed ${NAME_MAX_LENGTH} characters.`,
   });

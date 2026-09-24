@@ -91,7 +91,7 @@ The ASP.NET Core Web API (.NET 10), one project under `API/ImaloEducationApi/Ima
 - **`400`:** validation.
 - **`404`:** `Problem(statusCode: 404, detail: …)`.
 - **`404`/`405`/`415` from routing:** `UseStatusCodePages`.
-- **`500`:** anything thrown, handled by `GlobalExceptionHandler`. It is logged once, and `detail` is included in Development only.
+- **`500`:** anything thrown, handled by `GlobalExceptionHandler`. It is logged once, and `detail` is included in Development only. If the client has already aborted the request (a cancelled navigation or a superseded search), the handler logs at Debug and ends with `499` instead.
 - There's no try/catch in the controller or data access. The one exception is the best-effort audit write.
 
 ### Logging

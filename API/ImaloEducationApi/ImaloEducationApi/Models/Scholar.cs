@@ -24,7 +24,7 @@ public partial class Scholar
     [Required]
     [DataType(DataType.Date)]
     [CustomValidation(typeof(Scholar), nameof(ValidateBirthDate))]
-    public DateOnly BirthDate { get; set; }
+    public DateOnly? BirthDate { get; set; }
 
     public PickupSchedule? PickupSchedule { get; set; }
 
@@ -48,7 +48,7 @@ public partial class Scholar
     [CustomValidation(typeof(Scholar), nameof(ValidatePhoneNumber))]
     public string? FatherPhoneNumber { get; set; }
 
-    public static ValidationResult? ValidateBirthDate(DateOnly date, ValidationContext context)
+    public static ValidationResult? ValidateBirthDate(DateOnly? date, ValidationContext context)
     {
         return date > DateOnly.FromDateTime(DateTime.UtcNow)
             ? new ValidationResult("Birth date cannot be in the future.")

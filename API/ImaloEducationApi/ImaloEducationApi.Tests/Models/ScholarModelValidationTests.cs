@@ -84,6 +84,16 @@ public class ScholarModelValidationTests
     }
 
     [Fact]
+    public void MissingBirthDate_FailsValidation()
+    {
+        var scholar = ValidScholar();
+        scholar.BirthDate = null;
+
+        Assert.False(TryValidate(scholar, out var results));
+        Assert.Contains(results, r => r.MemberNames.Contains(nameof(Scholar.BirthDate)));
+    }
+
+    [Fact]
     public void InvalidMotherPhoneNumber_FailsValidation()
     {
         var scholar = ValidScholar();
