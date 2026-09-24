@@ -61,71 +61,65 @@ public class ScholarDataAccess : IScholarDataAccess
 
         await using var connection = new SqlConnection(_connectionString);
         await connection.OpenAsync(cancellationToken);
+        // No catch/rollback: anything thrown before CommitAsync propagates to GlobalExceptionHandler,
+        // and disposing an uncommitted SqlTransaction rolls it back (on every exit path, including
+        // a cancelled request).
         await using var transaction = (SqlTransaction)await connection.BeginTransactionAsync(cancellationToken);
 
-        try
+        await using var insertScholarCmd = new SqlCommand(insertScholarSql, connection, transaction);
+        AddParam(insertScholarCmd, "@FirstName", SqlDbType.NVarChar, scholar.FirstName, 100);
+        AddParam(insertScholarCmd, "@LastName", SqlDbType.NVarChar, scholar.LastName ?? string.Empty, 100);
+        AddParam(insertScholarCmd, "@BirthDate", SqlDbType.Date, scholar.BirthDate);
+        AddParam(insertScholarCmd, "@Grade", SqlDbType.TinyInt, (object?)scholar.Grade ?? DBNull.Value);
+        AddParam(insertScholarCmd, "@SchoolId", SqlDbType.Int, (object?)scholar.SchoolId ?? DBNull.Value);
+
+        var insertedIdObj = await insertScholarCmd.ExecuteScalarAsync(cancellationToken);
+        if (insertedIdObj is not Guid insertedId)
+            throw new InvalidOperationException("Scholar was inserted, but no ID was returned.");
+
+        scholar.ScholarId = insertedId;
+        _logger.LogInformation("Scholar created with ID: {ScholarId}", insertedId);
+
+        // Insert pickup schedule if provided
+        if (scholar.PickupSchedule != null)
         {
-            await using var insertScholarCmd = new SqlCommand(insertScholarSql, connection, transaction);
-            AddParam(insertScholarCmd, "@FirstName", SqlDbType.NVarChar, scholar.FirstName, 100);
-            AddParam(insertScholarCmd, "@LastName", SqlDbType.NVarChar, scholar.LastName ?? string.Empty, 100);
-            AddParam(insertScholarCmd, "@BirthDate", SqlDbType.Date, scholar.BirthDate);
-            AddParam(insertScholarCmd, "@Grade", SqlDbType.TinyInt, (object?)scholar.Grade ?? DBNull.Value);
-            AddParam(insertScholarCmd, "@SchoolId", SqlDbType.Int, (object?)scholar.SchoolId ?? DBNull.Value);
+            await using var insertScheduleCmd = new SqlCommand(insertScheduleSql, connection, transaction);
+            AddParam(insertScheduleCmd, "@ScholarId", SqlDbType.UniqueIdentifier, insertedId);
+            AddParam(insertScheduleCmd, "@ScheduleJson", SqlDbType.NVarChar,
+                JsonSerializer.Serialize(scholar.PickupSchedule, JsonOptions), -1);
 
-            var insertedIdObj = await insertScholarCmd.ExecuteScalarAsync(cancellationToken);
-            if (insertedIdObj is not Guid insertedId)
-                throw new InvalidOperationException("Scholar was inserted, but no ID was returned.");
-
-            scholar.ScholarId = insertedId;
-            _logger.LogInformation("Scholar created with ID: {ScholarId}", insertedId);
-
-            // Insert pickup schedule if provided
-            if (scholar.PickupSchedule != null)
-            {
-                await using var insertScheduleCmd = new SqlCommand(insertScheduleSql, connection, transaction);
-                AddParam(insertScheduleCmd, "@ScholarId", SqlDbType.UniqueIdentifier, insertedId);
-                AddParam(insertScheduleCmd, "@ScheduleJson", SqlDbType.NVarChar,
-                    JsonSerializer.Serialize(scholar.PickupSchedule, JsonOptions), -1);
-
-                await insertScheduleCmd.ExecuteNonQueryAsync(cancellationToken);
-                _logger.LogInformation("Pickup schedule inserted for scholar ID: {ScholarId}", insertedId);
-            }
-
-            // Insert parent rows for whichever of Mother/Father has at least one field
-            // set — every field of a parent is independently optional, so a row is only
-            // created once there's actually something to store.
-            foreach (var (role, firstName, lastName, phoneNumber) in new[]
-                     {
-                         ("Mother", scholar.MotherFirstName, scholar.MotherLastName, scholar.MotherPhoneNumber),
-                         ("Father", scholar.FatherFirstName, scholar.FatherLastName, scholar.FatherPhoneNumber),
-                     })
-            {
-                if (string.IsNullOrWhiteSpace(firstName) && string.IsNullOrWhiteSpace(lastName) &&
-                    string.IsNullOrWhiteSpace(phoneNumber)) continue;
-
-                await using var insertParentCmd = new SqlCommand(insertParentSql, connection, transaction);
-                AddParam(insertParentCmd, "@ScholarId", SqlDbType.UniqueIdentifier, insertedId);
-                AddParam(insertParentCmd, "@Role", SqlDbType.VarChar, role, 20);
-                AddParam(insertParentCmd, "@FirstName", SqlDbType.NVarChar, ToDbValue(firstName), 100);
-                AddParam(insertParentCmd, "@LastName", SqlDbType.NVarChar, ToDbValue(lastName), 100);
-                AddParam(insertParentCmd, "@PhoneNumber", SqlDbType.VarChar, ToDbValue(phoneNumber), 15);
-                await insertParentCmd.ExecuteNonQueryAsync(cancellationToken);
-            }
-
-            await transaction.CommitAsync(cancellationToken);
-
-            // Best-effort: runs after the transaction has committed, on its own
-            // connection, so a logging failure can never roll back a successful create.
-            await LogAuditAsync(insertedId, AuditAction.Created);
-
-            return scholar;
+            await insertScheduleCmd.ExecuteNonQueryAsync(cancellationToken);
+            _logger.LogInformation("Pickup schedule inserted for scholar ID: {ScholarId}", insertedId);
         }
-        catch
+
+        // Insert parent rows for whichever of Mother/Father has at least one field
+        // set — every field of a parent is independently optional, so a row is only
+        // created once there's actually something to store.
+        foreach (var (role, firstName, lastName, phoneNumber) in new[]
+                 {
+                     ("Mother", scholar.MotherFirstName, scholar.MotherLastName, scholar.MotherPhoneNumber),
+                     ("Father", scholar.FatherFirstName, scholar.FatherLastName, scholar.FatherPhoneNumber),
+                 })
         {
-            // CancellationToken.None: the rollback must run even when the request was cancelled.
-            await transaction.RollbackAsync(CancellationToken.None);
-            throw;
+            if (string.IsNullOrWhiteSpace(firstName) && string.IsNullOrWhiteSpace(lastName) &&
+                string.IsNullOrWhiteSpace(phoneNumber)) continue;
+
+            await using var insertParentCmd = new SqlCommand(insertParentSql, connection, transaction);
+            AddParam(insertParentCmd, "@ScholarId", SqlDbType.UniqueIdentifier, insertedId);
+            AddParam(insertParentCmd, "@Role", SqlDbType.VarChar, role, 20);
+            AddParam(insertParentCmd, "@FirstName", SqlDbType.NVarChar, ToDbValue(firstName), 100);
+            AddParam(insertParentCmd, "@LastName", SqlDbType.NVarChar, ToDbValue(lastName), 100);
+            AddParam(insertParentCmd, "@PhoneNumber", SqlDbType.VarChar, ToDbValue(phoneNumber), 15);
+            await insertParentCmd.ExecuteNonQueryAsync(cancellationToken);
         }
+
+        await transaction.CommitAsync(cancellationToken);
+
+        // Best-effort: runs after the transaction has committed, on its own
+        // connection, so a logging failure can never roll back a successful create.
+        await LogAuditAsync(insertedId, AuditAction.Created);
+
+        return scholar;
     }
 
     public async Task<IEnumerable<Scholar>> GetScholarsAsync(CancellationToken cancellationToken)
@@ -154,9 +148,7 @@ public class ScholarDataAccess : IScholarDataAccess
 
         while (await reader.ReadAsync(cancellationToken))
         {
-            var scholar = TryMapScholarFromReader(reader);
-            if (scholar != null)
-                scholars.Add(scholar);
+            scholars.Add(MapScholarFromReader(reader));
         }
 
         _logger.LogInformation("Fetched {Count} scholars.", scholars.Count);
@@ -204,7 +196,7 @@ public class ScholarDataAccess : IScholarDataAccess
         AddParam(command, "@ScholarId", SqlDbType.UniqueIdentifier, scholarId);
 
         await using var reader = await command.ExecuteReaderAsync(cancellationToken);
-        return await reader.ReadAsync(cancellationToken) ? TryMapScholarFromReader(reader) : null;
+        return await reader.ReadAsync(cancellationToken) ? MapScholarFromReader(reader) : null;
     }
 
     public async Task<Scholar?> UpdateScholarAsync(Scholar scholar, CancellationToken cancellationToken)
@@ -249,86 +241,76 @@ public class ScholarDataAccess : IScholarDataAccess
 
         await using var connection = new SqlConnection(_connectionString);
         await connection.OpenAsync(cancellationToken);
+        // Same as CreateScholarAsync: an uncommitted transaction rolls back when it's disposed.
         await using var transaction = (SqlTransaction)await connection.BeginTransactionAsync(cancellationToken);
 
-        try
+        // What's stored now, for the audit entry's "Updated: ..." details. Null when the
+        // scholar doesn't exist (the UPDATE below reports that).
+        var before = await ReadScholarAsync(connection, transaction, scholar.ScholarId, cancellationToken);
+
+        await using var updateScholarCmd = new SqlCommand(updateScholarSql, connection, transaction);
+        AddParam(updateScholarCmd, "@ScholarId", SqlDbType.UniqueIdentifier, scholar.ScholarId);
+        AddParam(updateScholarCmd, "@FirstName", SqlDbType.NVarChar, scholar.FirstName ?? string.Empty, 100);
+        AddParam(updateScholarCmd, "@LastName", SqlDbType.NVarChar, scholar.LastName ?? string.Empty, 100);
+        AddParam(updateScholarCmd, "@BirthDate", SqlDbType.Date, scholar.BirthDate);
+        AddParam(updateScholarCmd, "@Grade", SqlDbType.TinyInt, (object?)scholar.Grade ?? DBNull.Value);
+        AddParam(updateScholarCmd, "@SchoolId", SqlDbType.Int, (object?)scholar.SchoolId ?? DBNull.Value);
+
+        var rowsAffected = await updateScholarCmd.ExecuteNonQueryAsync(cancellationToken);
+        if (rowsAffected == 0)
         {
-            // What's stored now, for the audit entry's "Updated: ..." details. Null when the
-            // scholar doesn't exist (the UPDATE below reports that) or its stored schedule is
-            // unreadable — the update still goes ahead then, it just can't say what changed.
-            var before = await ReadScholarAsync(connection, transaction, scholar.ScholarId, cancellationToken);
-
-            await using var updateScholarCmd = new SqlCommand(updateScholarSql, connection, transaction);
-            AddParam(updateScholarCmd, "@ScholarId", SqlDbType.UniqueIdentifier, scholar.ScholarId);
-            AddParam(updateScholarCmd, "@FirstName", SqlDbType.NVarChar, scholar.FirstName ?? string.Empty, 100);
-            AddParam(updateScholarCmd, "@LastName", SqlDbType.NVarChar, scholar.LastName ?? string.Empty, 100);
-            AddParam(updateScholarCmd, "@BirthDate", SqlDbType.Date, scholar.BirthDate);
-            AddParam(updateScholarCmd, "@Grade", SqlDbType.TinyInt, (object?)scholar.Grade ?? DBNull.Value);
-            AddParam(updateScholarCmd, "@SchoolId", SqlDbType.Int, (object?)scholar.SchoolId ?? DBNull.Value);
-
-            var rowsAffected = await updateScholarCmd.ExecuteNonQueryAsync(cancellationToken);
-            if (rowsAffected == 0)
-            {
-                await transaction.RollbackAsync(cancellationToken);
-                _logger.LogWarning("No scholar found to update with ID: {ScholarId}", scholar.ScholarId);
-                return null; // Scholar not found
-            }
-
-            // Update or insert pickup schedule if provided
-            if (scholar.PickupSchedule != null)
-            {
-                await using var updateScheduleCmd = new SqlCommand(updateScheduleSql, connection, transaction);
-                AddParam(updateScheduleCmd, "@ScholarId", SqlDbType.UniqueIdentifier, scholar.ScholarId);
-                AddParam(updateScheduleCmd, "@ScheduleJson", SqlDbType.NVarChar,
-                    JsonSerializer.Serialize(scholar.PickupSchedule, JsonOptions), -1);
-                await updateScheduleCmd.ExecuteNonQueryAsync(cancellationToken);
-                _logger.LogInformation("Updated pickup schedule for scholar ID: {ScholarId}", scholar.ScholarId);
-            }
-
-            // Upsert whichever of Mother/Father has at least one field set, delete the row
-            // for whichever has none (clearing every field on the form removes that parent).
-            foreach (var (role, firstName, lastName, phoneNumber) in new[]
-                     {
-                         ("Mother", scholar.MotherFirstName, scholar.MotherLastName, scholar.MotherPhoneNumber),
-                         ("Father", scholar.FatherFirstName, scholar.FatherLastName, scholar.FatherPhoneNumber),
-                     })
-            {
-                var isEmpty = string.IsNullOrWhiteSpace(firstName) && string.IsNullOrWhiteSpace(lastName) &&
-                              string.IsNullOrWhiteSpace(phoneNumber);
-
-                if (isEmpty)
-                {
-                    await using var deleteParentCmd = new SqlCommand(deleteParentSql, connection, transaction);
-                    AddParam(deleteParentCmd, "@ScholarId", SqlDbType.UniqueIdentifier, scholar.ScholarId);
-                    AddParam(deleteParentCmd, "@Role", SqlDbType.VarChar, role, 20);
-                    await deleteParentCmd.ExecuteNonQueryAsync(cancellationToken);
-                }
-                else
-                {
-                    await using var upsertParentCmd = new SqlCommand(upsertParentSql, connection, transaction);
-                    AddParam(upsertParentCmd, "@ScholarId", SqlDbType.UniqueIdentifier, scholar.ScholarId);
-                    AddParam(upsertParentCmd, "@Role", SqlDbType.VarChar, role, 20);
-                    AddParam(upsertParentCmd, "@FirstName", SqlDbType.NVarChar, ToDbValue(firstName), 100);
-                    AddParam(upsertParentCmd, "@LastName", SqlDbType.NVarChar, ToDbValue(lastName), 100);
-                    AddParam(upsertParentCmd, "@PhoneNumber", SqlDbType.VarChar, ToDbValue(phoneNumber), 15);
-                    await upsertParentCmd.ExecuteNonQueryAsync(cancellationToken);
-                }
-            }
-
-            await transaction.CommitAsync(cancellationToken);
-
-            await LogAuditAsync(scholar.ScholarId, AuditAction.Edited,
-                before is null ? null : ScholarChanges.Describe(before, scholar));
-
-            _logger.LogInformation("Updated scholar with ID: {ScholarId}", scholar.ScholarId);
-            return scholar;
+            _logger.LogWarning("No scholar found to update with ID: {ScholarId}", scholar.ScholarId);
+            return null; // Scholar not found (nothing was written; disposing the transaction ends it)
         }
-        catch
+
+        // Update or insert pickup schedule if provided
+        if (scholar.PickupSchedule != null)
         {
-            // CancellationToken.None: the rollback must run even when the request was cancelled.
-            await transaction.RollbackAsync(CancellationToken.None);
-            throw;
+            await using var updateScheduleCmd = new SqlCommand(updateScheduleSql, connection, transaction);
+            AddParam(updateScheduleCmd, "@ScholarId", SqlDbType.UniqueIdentifier, scholar.ScholarId);
+            AddParam(updateScheduleCmd, "@ScheduleJson", SqlDbType.NVarChar,
+                JsonSerializer.Serialize(scholar.PickupSchedule, JsonOptions), -1);
+            await updateScheduleCmd.ExecuteNonQueryAsync(cancellationToken);
+            _logger.LogInformation("Updated pickup schedule for scholar ID: {ScholarId}", scholar.ScholarId);
         }
+
+        // Upsert whichever of Mother/Father has at least one field set, delete the row
+        // for whichever has none (clearing every field on the form removes that parent).
+        foreach (var (role, firstName, lastName, phoneNumber) in new[]
+                 {
+                     ("Mother", scholar.MotherFirstName, scholar.MotherLastName, scholar.MotherPhoneNumber),
+                     ("Father", scholar.FatherFirstName, scholar.FatherLastName, scholar.FatherPhoneNumber),
+                 })
+        {
+            var isEmpty = string.IsNullOrWhiteSpace(firstName) && string.IsNullOrWhiteSpace(lastName) &&
+                          string.IsNullOrWhiteSpace(phoneNumber);
+
+            if (isEmpty)
+            {
+                await using var deleteParentCmd = new SqlCommand(deleteParentSql, connection, transaction);
+                AddParam(deleteParentCmd, "@ScholarId", SqlDbType.UniqueIdentifier, scholar.ScholarId);
+                AddParam(deleteParentCmd, "@Role", SqlDbType.VarChar, role, 20);
+                await deleteParentCmd.ExecuteNonQueryAsync(cancellationToken);
+            }
+            else
+            {
+                await using var upsertParentCmd = new SqlCommand(upsertParentSql, connection, transaction);
+                AddParam(upsertParentCmd, "@ScholarId", SqlDbType.UniqueIdentifier, scholar.ScholarId);
+                AddParam(upsertParentCmd, "@Role", SqlDbType.VarChar, role, 20);
+                AddParam(upsertParentCmd, "@FirstName", SqlDbType.NVarChar, ToDbValue(firstName), 100);
+                AddParam(upsertParentCmd, "@LastName", SqlDbType.NVarChar, ToDbValue(lastName), 100);
+                AddParam(upsertParentCmd, "@PhoneNumber", SqlDbType.VarChar, ToDbValue(phoneNumber), 15);
+                await upsertParentCmd.ExecuteNonQueryAsync(cancellationToken);
+            }
+        }
+
+        await transaction.CommitAsync(cancellationToken);
+
+        await LogAuditAsync(scholar.ScholarId, AuditAction.Edited,
+            before is null ? null : ScholarChanges.Describe(before, scholar));
+
+        _logger.LogInformation("Updated scholar with ID: {ScholarId}", scholar.ScholarId);
+        return scholar;
     }
 
     public async Task<bool> DeleteScholarAsync(Guid scholarId, CancellationToken cancellationToken)
@@ -365,7 +347,8 @@ public class ScholarDataAccess : IScholarDataAccess
     // Attendance management methods
     // -----------------------------
 
-    public async Task CreateOrUpdateAttendanceAsync(Guid scholarId, List<AttendanceRecord> attendanceRecords,
+    // Returns false when the scholar doesn't exist (the controller answers 404).
+    public async Task<bool> CreateOrUpdateAttendanceAsync(Guid scholarId, List<AttendanceRecord> attendanceRecords,
         CancellationToken cancellationToken)
     {
         if (scholarId == Guid.Empty)
@@ -373,14 +356,25 @@ public class ScholarDataAccess : IScholarDataAccess
 
         ArgumentNullException.ThrowIfNull(attendanceRecords);
 
+        // The standard SQL Server upsert: UPDATE first, holding a key-range lock (UPDLOCK,
+        // SERIALIZABLE) so two concurrent saves for the same scholar can't both find no row and
+        // both INSERT (a primary-key violation); INSERT only if nothing was updated, and only for a
+        // scholar that exists (so an unknown ID is "0 rows", not a foreign-key error). XACT_ABORT
+        // rolls the whole batch back on any error.
         const string upsertAttendanceSql = """
-                                           IF EXISTS (SELECT 1 FROM dbo.ScholarAttendance WHERE ScholarId = @ScholarId)
-                                               UPDATE dbo.ScholarAttendance
-                                               SET AttendanceJson = @AttendanceJson
-                                               WHERE ScholarId = @ScholarId;
-                                           ELSE
+                                           SET XACT_ABORT ON;
+                                           BEGIN TRANSACTION;
+
+                                           UPDATE dbo.ScholarAttendance WITH (UPDLOCK, SERIALIZABLE)
+                                           SET AttendanceJson = @AttendanceJson
+                                           WHERE ScholarId = @ScholarId;
+
+                                           IF @@ROWCOUNT = 0
                                                INSERT INTO dbo.ScholarAttendance (ScholarId, AttendanceJson)
-                                               VALUES (@ScholarId, @AttendanceJson);
+                                               SELECT @ScholarId, @AttendanceJson
+                                               WHERE EXISTS (SELECT 1 FROM dbo.Scholar WHERE ScholarId = @ScholarId);
+
+                                           COMMIT TRANSACTION;
                                            """;
 
         await using var connection = new SqlConnection(_connectionString);
@@ -390,9 +384,17 @@ public class ScholarDataAccess : IScholarDataAccess
         AddParam(command, "@AttendanceJson", SqlDbType.NVarChar, JsonSerializer.Serialize(attendanceRecords, JsonOptions), -1);
 
         await connection.OpenAsync(cancellationToken);
-        await command.ExecuteNonQueryAsync(cancellationToken);
+        // The rows the UPDATE or the INSERT touched: 0 only when the scholar doesn't exist.
+        var rowsAffected = await command.ExecuteNonQueryAsync(cancellationToken);
+
+        if (rowsAffected == 0)
+        {
+            _logger.LogWarning("No scholar found to save attendance for with ID: {ScholarId}", scholarId);
+            return false;
+        }
 
         _logger.LogInformation("Attendance record upserted for scholar ID: {ScholarId}", scholarId);
+        return true;
     }
 
     public async Task<List<AttendanceRecord>> GetAttendanceByScholarIdAsync(Guid scholarId,
@@ -407,24 +409,16 @@ public class ScholarDataAccess : IScholarDataAccess
         await using var command = new SqlCommand(sql, connection);
         AddParam(command, "@ScholarId", SqlDbType.UniqueIdentifier, scholarId);
 
-        try
-        {
-            await connection.OpenAsync(cancellationToken);
-            var result = await command.ExecuteScalarAsync(cancellationToken);
+        await connection.OpenAsync(cancellationToken);
+        var result = await command.ExecuteScalarAsync(cancellationToken);
 
-            if (result == null || result == DBNull.Value)
-            {
-                _logger.LogInformation("No attendance found for scholar ID: {ScholarId}", scholarId);
-                return new List<AttendanceRecord>();
-            }
-
-            var json = result.ToString();
-            return JsonSerializer.Deserialize<List<AttendanceRecord>>(json!, JsonOptions) ?? new List<AttendanceRecord>();
-        }
-        catch (JsonException ex)
+        if (result is not string json)
         {
-            throw new InvalidOperationException($"Stored attendance for scholar {scholarId} is not valid JSON.", ex);
+            _logger.LogInformation("No attendance found for scholar ID: {ScholarId}", scholarId);
+            return new List<AttendanceRecord>();
         }
+
+        return JsonSerializer.Deserialize<List<AttendanceRecord>>(json, JsonOptions) ?? new List<AttendanceRecord>();
     }
 
     public async Task<List<ScholarAttendance>> GetAllAttendanceAsync(
@@ -445,15 +439,8 @@ public class ScholarDataAccess : IScholarDataAccess
             var scholarId = reader.GetGuid(reader.GetOrdinal("ScholarId"));
             var json = reader.GetString(reader.GetOrdinal("AttendanceJson"));
 
-            try
-            {
-                var records = JsonSerializer.Deserialize<List<AttendanceRecord>>(json, JsonOptions) ?? new List<AttendanceRecord>();
-                results.Add(new ScholarAttendance(scholarId, records));
-            }
-            catch (JsonException ex)
-            {
-                _logger.LogWarning(ex, "Failed to parse attendance JSON for scholar {ScholarId}", scholarId);
-            }
+            var records = JsonSerializer.Deserialize<List<AttendanceRecord>>(json, JsonOptions) ?? new List<AttendanceRecord>();
+            results.Add(new ScholarAttendance(scholarId, records));
         }
 
         _logger.LogInformation("Fetched attendance for {Count} scholars.", results.Count);
@@ -643,53 +630,47 @@ public class ScholarDataAccess : IScholarDataAccess
         _logger.LogInformation("Cleared the audit log ({Count} entries deleted).", rows);
     }
 
-    private Scholar? TryMapScholarFromReader(SqlDataReader reader)
+    // No catch for a JsonException: the API is the only writer, and ScheduleJson has a
+    // CHECK (ISJSON(...) = 1), so an unreadable schedule is a bug — it propagates to
+    // GlobalExceptionHandler (logged once, 500) instead of the scholar silently vanishing.
+    private static Scholar MapScholarFromReader(SqlDataReader reader)
     {
-        try
+        var scholar = new Scholar
         {
-            var scholar = new Scholar
-            {
-                ScholarId = reader.GetGuid(reader.GetOrdinal("ScholarId")),
-                FirstName = reader.GetString(reader.GetOrdinal("FirstName")),
-                LastName = reader.GetString(reader.GetOrdinal("LastName")),
-                BirthDate = reader.GetFieldValue<DateOnly>(reader.GetOrdinal("BirthDate")),
-                Grade =
-                    reader.IsDBNull(reader.GetOrdinal("Grade")) ? null : reader.GetByte(reader.GetOrdinal("Grade")),
-                SchoolId = reader.IsDBNull(reader.GetOrdinal("SchoolId"))
-                    ? null
-                    : reader.GetInt32(reader.GetOrdinal("SchoolId")),
-                MotherFirstName = reader.IsDBNull(reader.GetOrdinal("MotherFirstName"))
-                    ? null
-                    : reader.GetString(reader.GetOrdinal("MotherFirstName")),
-                MotherLastName = reader.IsDBNull(reader.GetOrdinal("MotherLastName"))
-                    ? null
-                    : reader.GetString(reader.GetOrdinal("MotherLastName")),
-                MotherPhoneNumber = reader.IsDBNull(reader.GetOrdinal("MotherPhoneNumber"))
-                    ? null
-                    : reader.GetString(reader.GetOrdinal("MotherPhoneNumber")),
-                FatherFirstName = reader.IsDBNull(reader.GetOrdinal("FatherFirstName"))
-                    ? null
-                    : reader.GetString(reader.GetOrdinal("FatherFirstName")),
-                FatherLastName = reader.IsDBNull(reader.GetOrdinal("FatherLastName"))
-                    ? null
-                    : reader.GetString(reader.GetOrdinal("FatherLastName")),
-                FatherPhoneNumber = reader.IsDBNull(reader.GetOrdinal("FatherPhoneNumber"))
-                    ? null
-                    : reader.GetString(reader.GetOrdinal("FatherPhoneNumber")),
-            };
+            ScholarId = reader.GetGuid(reader.GetOrdinal("ScholarId")),
+            FirstName = reader.GetString(reader.GetOrdinal("FirstName")),
+            LastName = reader.GetString(reader.GetOrdinal("LastName")),
+            BirthDate = reader.GetFieldValue<DateOnly>(reader.GetOrdinal("BirthDate")),
+            Grade =
+                reader.IsDBNull(reader.GetOrdinal("Grade")) ? null : reader.GetByte(reader.GetOrdinal("Grade")),
+            SchoolId = reader.IsDBNull(reader.GetOrdinal("SchoolId"))
+                ? null
+                : reader.GetInt32(reader.GetOrdinal("SchoolId")),
+            MotherFirstName = reader.IsDBNull(reader.GetOrdinal("MotherFirstName"))
+                ? null
+                : reader.GetString(reader.GetOrdinal("MotherFirstName")),
+            MotherLastName = reader.IsDBNull(reader.GetOrdinal("MotherLastName"))
+                ? null
+                : reader.GetString(reader.GetOrdinal("MotherLastName")),
+            MotherPhoneNumber = reader.IsDBNull(reader.GetOrdinal("MotherPhoneNumber"))
+                ? null
+                : reader.GetString(reader.GetOrdinal("MotherPhoneNumber")),
+            FatherFirstName = reader.IsDBNull(reader.GetOrdinal("FatherFirstName"))
+                ? null
+                : reader.GetString(reader.GetOrdinal("FatherFirstName")),
+            FatherLastName = reader.IsDBNull(reader.GetOrdinal("FatherLastName"))
+                ? null
+                : reader.GetString(reader.GetOrdinal("FatherLastName")),
+            FatherPhoneNumber = reader.IsDBNull(reader.GetOrdinal("FatherPhoneNumber"))
+                ? null
+                : reader.GetString(reader.GetOrdinal("FatherPhoneNumber")),
+        };
 
-            if (reader.IsDBNull(reader.GetOrdinal("ScheduleJson"))) return scholar;
+        if (reader.IsDBNull(reader.GetOrdinal("ScheduleJson"))) return scholar;
 
-            var json = reader.GetString(reader.GetOrdinal("ScheduleJson"));
-            scholar.PickupSchedule = JsonSerializer.Deserialize<PickupSchedule>(json, JsonOptions);
+        var json = reader.GetString(reader.GetOrdinal("ScheduleJson"));
+        scholar.PickupSchedule = JsonSerializer.Deserialize<PickupSchedule>(json, JsonOptions);
 
-            return scholar;
-        }
-        catch (JsonException ex)
-        {
-            // One scholar's unreadable schedule shouldn't take the whole list down.
-            _logger.LogWarning(ex, "Skipping scholar row with an unreadable pickup schedule.");
-            return null;
-        }
+        return scholar;
     }
 }

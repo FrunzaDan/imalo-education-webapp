@@ -11,7 +11,9 @@ namespace ImaloEducationApi.Controllers;
 //   ValidationProblemDetails ("errors" per field) for failed DataAnnotations, a malformed body
 //   or an out-of-range query parameter.
 // - Rules the attributes can't express (cross-record attendance checks, URL/body ID match) and
-//   "not found" are returned here as ValidationProblem()/Problem().
+//   "not found" are returned here as ValidationProblem()/Problem(). "title" is left to the
+//   ProblemDetailsFactory (the status's reason phrase, fixed per problem type, as RFC 9457 asks);
+//   the message for this occurrence goes in "detail", which is what the UI shows.
 // - Anything unexpected is not caught here: it propagates to GlobalExceptionHandler, which logs
 //   it once and answers 500.
 [ApiController]
@@ -126,8 +128,8 @@ public class ScholarsController(IScholarDataAccess scholarDataAccess) : Controll
 
         if (!ModelState.IsValid) return ValidationProblem();
 
-        await scholarDataAccess.CreateOrUpdateAttendanceAsync(scholarId, attendance, cancellationToken);
-        return NoContent();
+        var saved = await scholarDataAccess.CreateOrUpdateAttendanceAsync(scholarId, attendance, cancellationToken);
+        return saved ? NoContent() : ScholarNotFound(scholarId);
     }
 
     [HttpGet("{scholarId:guid}/attendance")]
@@ -149,7 +151,7 @@ public class ScholarsController(IScholarDataAccess scholarDataAccess) : Controll
         var deleted = await scholarDataAccess.DeleteAttendanceAsync(scholarId, cancellationToken);
         return deleted
             ? NoContent()
-            : Problem(statusCode: StatusCodes.Status404NotFound, title: "Attendance not found.",
+            : Problem(statusCode: StatusCodes.Status404NotFound,
                 detail: $"No attendance record found for scholar {scholarId}.");
     }
 
@@ -165,8 +167,7 @@ public class ScholarsController(IScholarDataAccess scholarDataAccess) : Controll
     }
 
     private ObjectResult ScholarNotFound(Guid scholarId) =>
-        Problem(statusCode: StatusCodes.Status404NotFound, title: "Scholar not found.",
-            detail: $"Scholar with ID {scholarId} not found.");
+        Problem(statusCode: StatusCodes.Status404NotFound, detail: $"Scholar with ID {scholarId} not found.");
 
     private static string FormatDates(IEnumerable<DateOnly> dates) =>
         string.Join(", ", dates.Select(date => date.ToString("yyyy-MM-dd")));

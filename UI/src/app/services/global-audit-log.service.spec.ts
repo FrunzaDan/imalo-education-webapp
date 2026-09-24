@@ -86,7 +86,7 @@ describe('GlobalAuditLogService', () => {
 
     expect(service.loading()).toBe(false);
     expect(service.error()).toBe(
-      'Could not reach the server. It may be offline.',
+      'Could not reach the server. It may be offline, or your browser may not trust its security certificate.',
     );
   });
 

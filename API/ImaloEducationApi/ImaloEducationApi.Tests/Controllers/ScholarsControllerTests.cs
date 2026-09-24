@@ -384,6 +384,9 @@ public class ScholarsControllerTests
             new() { Date = new DateOnly(2024, 3, 4), Present = false, LunchSelected = false, TransportSelected = false },
         };
 
+        dataAccess.Setup(d => d.CreateOrUpdateAttendanceAsync(id, records, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true);
+
         var result = await controller.CreateOrUpdateAttendance(id, records, TestContext.Current.CancellationToken);
 
         Assert.IsType<NoContentResult>(result);
@@ -397,10 +400,27 @@ public class ScholarsControllerTests
         var id = Guid.NewGuid();
         var records = new List<AttendanceRecord> { new() { Date = new DateOnly(2024, 3, 4), LunchCost = 10m } };
 
+        dataAccess.Setup(d => d.CreateOrUpdateAttendanceAsync(id, records, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true);
+
         var result = await controller.CreateOrUpdateAttendance(id, records, TestContext.Current.CancellationToken);
 
         Assert.IsType<NoContentResult>(result);
         dataAccess.Verify(d => d.CreateOrUpdateAttendanceAsync(id, records, It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task CreateOrUpdateAttendance_UnknownScholar_ReturnsNotFoundProblem()
+    {
+        var (controller, dataAccess) = MakeController();
+        var id = Guid.NewGuid();
+        var records = new List<AttendanceRecord> { new() { Date = new DateOnly(2024, 3, 4) } };
+        dataAccess.Setup(d => d.CreateOrUpdateAttendanceAsync(id, records, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(false);
+
+        var result = await controller.CreateOrUpdateAttendance(id, records, TestContext.Current.CancellationToken);
+
+        AssertNotFoundProblem(result);
     }
 
     [Fact]

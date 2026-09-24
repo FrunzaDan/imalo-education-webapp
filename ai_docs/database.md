@@ -8,8 +8,6 @@ SQL Server schema for the `ImaloEducation` database, defined as an SSDT database
 
 - `DB/ImaloEducation/ImaloEducation.sqlproj` — project file. `DSP` is `SqlAzureV12DatabaseSchemaProvider` (targets Azure SQL / SQL Server 2019-compatible surface — chosen because local dev runs against Azure SQL Edge, which reports as SQL Server 2019 and rejects a SQL2022-targeted DACPAC).
 - `DB/ImaloEducation/global.json` — pins this project's build to the .NET 8 SDK; see [[build-and-run]] for why.
-- `DB/ImaloEducation/Scripts/PreDeployment/PreDeployment.sql` — creates the `ImaloEducation` database itself if it doesn't exist, then `USE`s it. Runs before every table deploy.
-- `DB/ImaloEducation/Scripts/PostDeployment/PostDeployment.sql` — idempotent data fix-ups that run after every deploy. Currently: rewrites legacy attendance dates `"YYYY-MM-DDT00:00:00"` → `"YYYY-MM-DD"` (see `ScholarAttendance` below).
 - `DB/ImaloEducation/Tables/*.sql` — one file per table (below).
 
 ## Tables
@@ -27,7 +25,7 @@ SQL Server schema for the `ImaloEducation` database, defined as an SSDT database
 
 **`ScholarAttendance`** (`ScholarAttendance.sql`) — one row per scholar, JSON blob.
 - `ScholarId UNIQUEIDENTIFIER` PK and FK → `Scholar.ScholarId`, `ON DELETE CASCADE`
-- `AttendanceJson NVARCHAR(MAX)` NOT NULL, `CHECK (ISJSON(AttendanceJson) = 1)` — a `List<AttendanceRecord>` (`Date` as `"YYYY-MM-DD"`, `LunchCost`, `TransportCost`, `Present`, `LunchSelected`, `TransportSelected`) serialized as JSON. `Date` was a `DateTime` (`"…T00:00:00"`) until it became `DateOnly`; the post-deployment script rewrites any old-format date, since the `DateOnly` converter rejects a time part. A day is only present in the list if it's ever been touched in the UI; unchecking a day keeps its record with `…Selected: false` rather than removing it. `Present` gates `LunchSelected`/`TransportSelected` — the API rejects a save where either is `true` while `Present` is `false` (see [[api]]); all three default to `true` so records saved before `Present` existed still deserialize as present, matching the selections they already carried.
+- `AttendanceJson NVARCHAR(MAX)` NOT NULL, `CHECK (ISJSON(AttendanceJson) = 1)` — a `List<AttendanceRecord>` (`Date` as `"YYYY-MM-DD"`, `LunchCost`, `TransportCost`, `Present`, `LunchSelected`, `TransportSelected`) serialized as JSON. A day is only present in the list if it's ever been touched in the UI; unchecking a day keeps its record with `…Selected: false` rather than removing it. `Present` gates `LunchSelected`/`TransportSelected` — the API rejects a save where either is `true` while `Present` is `false` (see [[api]]); all three default to `true` so records saved before `Present` existed still deserialize as present, matching the selections they already carried.
 
 **`ScholarParent`** (`ScholarParent.sql`) — genuinely relational (unlike the two JSON-blob tables above), because it's a bounded one-to-few relationship, not a day-keyed collection.
 - `(ScholarId, Role)` clustered PK — natural key, no surrogate `ScholarParentId` (every query addresses a parent by scholar + role). Also *is* the "at most one Mother and one Father per scholar" rule, and covers the FK.
@@ -47,9 +45,17 @@ SQL Server schema for the `ImaloEducation` database, defined as an SSDT database
 ## How it works
 
 - Deploy path: `sqlpackage /Action:Publish` against a built `.dacpac`, with `/p:BlockOnPossibleDataLoss=false` (see [[build-and-run]]) — SSDT's default guard would otherwise block any table rebuild against a table with existing rows, which is routine on a disposable local dev DB.
-- No seed data, no migrations mechanism — schema state is whatever the current `.sqlproj` tables define; `sqlpackage` diffs and republishes.
+- No seed data, no migrations mechanism, and no pre- or post-deployment scripts — schema state is whatever the current `.sqlproj` tables define. On a fresh server, `sqlpackage` creates the `ImaloEducation` database itself (from the connection string's `Initial Catalog`) and every table in one publish; later publishes diff and update.
 - No indexes beyond the two on `ScholarAuditLog` and the clustered PKs — table volumes are small (learning project, not production scale).
 - All constraints (defaults included) are explicitly named, so `sqlpackage` diffs them by name instead of dropping/recreating system-named ones.
+
+## Error handling
+
+The same rules as the sibling apps' stored procedures, applied to the API's inline SQL in `ScholarDataAccess`:
+
+- **Multi-statement writes are atomic.** Creating/updating a scholar (scholar + schedule + parent rows) runs in one `SqlTransaction`; any error propagates, and disposing the uncommitted transaction rolls it back.
+- **The attendance save is one race-free batch**: `SET XACT_ABORT ON; BEGIN TRANSACTION; UPDATE … WITH (UPDLOCK, SERIALIZABLE) …; IF @@ROWCOUNT = 0 INSERT … WHERE EXISTS (the scholar); COMMIT TRANSACTION;` — two concurrent saves can't both insert (a primary-key violation), and an unknown scholar is "0 rows" (a `404`), not a foreign-key error.
+- **Expected outcomes are return values, not errors** (`null`/`false` → `404` Problem Details). Unexpected errors are never caught or rewrapped — they reach `GlobalExceptionHandler`, which logs them once and answers `500` (with the message only in Development). See [[api]], "Error handling".
 
 ## Naming conventions
 
@@ -62,7 +68,7 @@ Applied on 2026-09-23 to all three sibling projects (customer-management-system,
 - **Column suffixes**: `…At` = a UTC moment (`OccurredAt`); `…Date` = a calendar date (`DATE`: `BirthDate`); `…Json` = a JSON payload (`ScheduleJson`, `AttendanceJson`). Plain English over jargon/abbreviations, and no reserved words (`ActionType`, not `Action`).
 - **Constraints and indexes are always named**: `PK_<Table>`, `FK_<Child>_<Parent>`, `UQ_<Table>_<Column>`, `CK_<Table>_<Column>`, `DF_<Table>_<Column>`, `IX_<Table>_<KeyColumn1>_<KeyColumn2>…`.
 - **SQL in `ScholarDataAccess`**: tables are schema-qualified (`dbo.Scholar`), and every parameter is named exactly like the column it feeds or compares with (`@ScholarId`, `@BirthDate`, `@ActionType`). If stored procedures are ever introduced, name them `<Entity>_<Verb>` (`Scholar_Create`, `Scholar_Get`, `Scholar_List`, …) like the sibling projects.
-- **Files**: one object per file, named after the object (`Tables/ScholarParent.sql`); deployment scripts are `Scripts/PreDeployment/PreDeployment.sql` and `Scripts/PostDeployment/PostDeployment.sql`. The database (and `.sqlproj`) is `ImaloEducation`, no `DB` suffix.
+- **Files**: one object per file, named after the object (`Tables/ScholarParent.sql`); seeds, if ever needed, would be `Scripts/PostDeployment/Seed_<Table>.sql` pulled into one `PostDeployment.sql` like the sibling projects. The database (and `.sqlproj`) is `ImaloEducation`, no `DB` suffix.
 - **API and UI use the same names**: JSON/TypeScript properties are the camelCase column names — see "Data types" below.
 
 ## Data types

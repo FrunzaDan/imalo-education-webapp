@@ -190,7 +190,7 @@ describe('ScholarDetailsComponent', () => {
       fixture.detectChanges();
 
       expect(component.deleteError()).toBe(
-        'Could not reach the server. It may be offline.',
+        'Could not reach the server. It may be offline, or your browser may not trust its security certificate.',
       );
       expect(component.deleting()).toBe(false);
       expect(

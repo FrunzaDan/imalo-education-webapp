@@ -6,7 +6,7 @@ describe('extractErrorMessage', () => {
     const error = new HttpErrorResponse({ status: 0 });
 
     expect(extractErrorMessage(error)).toBe(
-      'Could not reach the server. It may be offline.',
+      'Could not reach the server. It may be offline, or your browser may not trust its security certificate.',
     );
   });
 
@@ -32,13 +32,13 @@ describe('extractErrorMessage', () => {
     const error = new HttpErrorResponse({
       status: 404,
       error: {
-        title: 'Scholar not found.',
+        title: 'Not Found',
         status: 404,
-        detail: 'Scholar with ID 123 not found.',
+        detail: 'Record not found.',
       },
     });
 
-    expect(extractErrorMessage(error)).toBe('Scholar with ID 123 not found.');
+    expect(extractErrorMessage(error)).toBe('Record not found.');
   });
 
   it("falls back to a problem's title when it has no detail", () => {
@@ -61,8 +61,8 @@ describe('extractErrorMessage', () => {
     expect(extractErrorMessage(error)).toBe(
       'Request failed (502). Please try again.',
     );
-    expect(extractErrorMessage(error, 'Failed to save attendance')).toBe(
-      'Failed to save attendance (502). Please try again.',
+    expect(extractErrorMessage(error, 'Failed to load the audit log')).toBe(
+      'Failed to load the audit log (502). Please try again.',
     );
   });
 });
