@@ -120,12 +120,56 @@ describe('ScholarListComponent', () => {
   it('sorts by a column, and reverses it when the same column is clicked again', async () => {
     const { component } = await setup();
 
-    component.sortData('grade', 'number');
+    component.setSort('grade');
     expect(component.scholarData().map((s) => s.grade)).toEqual([1, 3]);
 
-    component.sortData('grade', 'number');
+    component.setSort('grade');
     expect(component.scholarData().map((s) => s.grade)).toEqual([3, 1]);
-    expect(component.isAscending()).toBe(false);
+    expect(component.sortDirection()).toBe('desc');
+  });
+
+  it('sorts birth dates chronologically, not by their display text', async () => {
+    const { component } = await setup({
+      scholars: [
+        buildScholar({ scholarId: 'a', birthDate: '2017-12-01' }),
+        buildScholar({ scholarId: 'b', birthDate: '2018-02-01' }),
+      ],
+    });
+
+    component.setSort('birthDate');
+
+    // By display text "01 Dec 2017" would sort after "01 Feb 2018".
+    expect(component.scholarData().map((s) => s.scholarId)).toEqual(['a', 'b']);
+  });
+
+  it('sorts from a header button and reports the sort on the header', async () => {
+    const { fixture } = await setup();
+    const el: HTMLElement = fixture.nativeElement;
+    const gradeHeader = Array.from(el.querySelectorAll('th')).find((th) =>
+      th.textContent?.includes('Grade'),
+    )!;
+
+    expect(gradeHeader.getAttribute('aria-sort')).toBe('none');
+
+    gradeHeader.querySelector('button')!.click();
+    await fixture.whenStable();
+
+    expect(gradeHeader.getAttribute('aria-sort')).toBe('ascending');
+    expect(el.querySelector('caption')?.textContent).toContain(
+      'sorted by grade ascending',
+    );
+  });
+
+  it('links each scholar by name and announces the result count', async () => {
+    const { fixture } = await setup();
+    const el: HTMLElement = fixture.nativeElement;
+    const link = el.querySelector<HTMLAnchorElement>('tbody a')!;
+
+    expect(link.textContent?.trim()).toBe('Ana Popescu');
+    expect(link.getAttribute('href')).toBe('/scholars/scholar-1');
+    expect(el.querySelector('[role="status"]')?.textContent).toContain(
+      '2 scholars found',
+    );
   });
 
   it('filters the displayed rows by the search term', async () => {

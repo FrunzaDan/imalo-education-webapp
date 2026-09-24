@@ -16,9 +16,7 @@ CREATE TABLE [dbo].[ScholarAuditLog]
     -- browser with a trailing "Z" and be shown in the viewer's local time.
     [OccurredAt] DATETIME2 (3) NOT NULL
         CONSTRAINT [DF_ScholarAuditLog_OccurredAt] DEFAULT SYSUTCDATETIME(),
-
-    CONSTRAINT [PK_ScholarAuditLog] PRIMARY KEY CLUSTERED ([ScholarAuditLogId] ASC),
-
+    CONSTRAINT [PK_ScholarAuditLog] PRIMARY KEY CLUSTERED ([ScholarAuditLogId]),
     CONSTRAINT [CK_ScholarAuditLog_ActionType] CHECK ([ActionType] IN ('Created', 'Edited', 'Deleted'))
 );
 GO
@@ -34,4 +32,3 @@ GO
 -- audit log view doesn't have.
 CREATE INDEX [IX_ScholarAuditLog_OccurredAt_ScholarAuditLogId]
     ON [dbo].[ScholarAuditLog] ([OccurredAt] DESC, [ScholarAuditLogId] DESC);
-GO

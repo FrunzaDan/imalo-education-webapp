@@ -30,9 +30,27 @@ interface TransformedScholarData {
   schoolName: string;
   grade: number | null;
   schoolColor: string;
+  // The API's 'YYYY-MM-DD', which the sort uses; birthDateLabel is for display.
   birthDate: string;
+  birthDateLabel: string;
   textColor: string;
 }
+
+type SortColumn = 'name' | 'schoolName' | 'grade' | 'birthDate';
+
+const SORT_TYPES: Record<SortColumn, 'string' | 'number' | 'date'> = {
+  name: 'string',
+  schoolName: 'string',
+  grade: 'number',
+  birthDate: 'date',
+};
+
+const SORT_LABELS: Record<SortColumn, string> = {
+  name: 'student name',
+  schoolName: 'school',
+  grade: 'grade',
+  birthDate: 'birth date',
+};
 
 @Component({
   imports: [FormField, NgStyle, RouterModule],
@@ -76,20 +94,18 @@ export class ScholarListComponent {
       : [],
   );
 
-  readonly currentSortColumn = signal<keyof TransformedScholarData | ''>('');
-  private readonly currentSortType = signal<'string' | 'number' | 'date'>(
-    'string',
-  );
-  readonly isAscending = signal(true);
+  // null keeps the API's order until a header is clicked.
+  readonly sortColumn = signal<SortColumn | null>(null);
+  readonly sortDirection = signal<'asc' | 'desc'>('asc');
 
   readonly scholarData = computed(() => {
-    const column = this.currentSortColumn();
+    const column = this.sortColumn();
     return column
       ? this.sortingService.sort(
           this.rows(),
           column,
-          this.currentSortType(),
-          this.isAscending(),
+          SORT_TYPES[column],
+          this.sortDirection() === 'asc',
         )
       : this.rows();
   });
@@ -109,17 +125,19 @@ export class ScholarListComponent {
   });
   bulkDeleteInProgress = signal(false);
 
-  sortData(
-    column: keyof TransformedScholarData,
-    type: 'string' | 'number' | 'date',
-  ): void {
-    if (this.currentSortColumn() === column) {
-      this.isAscending.update((ascending) => !ascending);
+  setSort(column: SortColumn): void {
+    if (this.sortColumn() === column) {
+      this.sortDirection.set(this.sortDirection() === 'asc' ? 'desc' : 'asc');
     } else {
-      this.currentSortColumn.set(column);
-      this.currentSortType.set(type);
-      this.isAscending.set(true);
+      this.sortColumn.set(column);
+      this.sortDirection.set('asc');
     }
+  }
+
+  // Exposed on the <th> so assistive tech announces the current sort.
+  ariaSort(column: SortColumn): 'ascending' | 'descending' | 'none' {
+    if (this.sortColumn() !== column) return 'none';
+    return this.sortDirection() === 'asc' ? 'ascending' : 'descending';
   }
 
   // The full loaded/sorted list is client-side filtered by name for display —
@@ -131,6 +149,21 @@ export class ScholarListComponent {
     const scholarData = this.scholarData();
     if (!term) return scholarData;
     return scholarData.filter((s) => s.name.toLowerCase().includes(term));
+  });
+
+  // Spoken by the polite live region so a screen-reader user hears the outcome
+  // of a search without hunting for it.
+  readonly resultsAnnouncement = computed(() => {
+    if (this.loading()) return 'Loading scholars';
+    const total = this.displayedScholarData().length;
+    return `${total} ${total === 1 ? 'scholar' : 'scholars'} found`;
+  });
+
+  readonly tableCaption = computed(() => {
+    const column = this.sortColumn();
+    return column
+      ? `Scholars, sorted by ${SORT_LABELS[column]} ${this.sortDirection() === 'asc' ? 'ascending' : 'descending'}`
+      : 'Scholars';
   });
 
   readonly allSelected = computed(
@@ -221,7 +254,7 @@ export class ScholarListComponent {
         { header: 'Grade', value: (s: TransformedScholarData) => s.grade },
         {
           header: 'Birth Date',
-          value: (s: TransformedScholarData) => s.birthDate,
+          value: (s: TransformedScholarData) => s.birthDateLabel,
         },
       ],
       this.displayedScholarData(),
@@ -247,11 +280,11 @@ function toRows(
       schoolName: school ? school.name : 'Unknown',
       grade: scholar.grade,
       schoolColor,
-      birthDate: parseDateOnly(scholar.birthDate).toLocaleDateString('en-GB', {
-        day: '2-digit',
-        month: 'short',
-        year: 'numeric',
-      }),
+      birthDate: scholar.birthDate,
+      birthDateLabel: parseDateOnly(scholar.birthDate).toLocaleDateString(
+        'en-GB',
+        { day: '2-digit', month: 'short', year: 'numeric' },
+      ),
       textColor: contrastTextColor(schoolColor),
     };
   });

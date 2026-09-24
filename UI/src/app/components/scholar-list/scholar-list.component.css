@@ -1,4 +1,4 @@
-/* Table styling (.app-table, .table-header, .table-row, .table-cell, .sort-icon)
+/* Table styling (.app-table, .table-header, .table-row, .table-cell, .sort-button)
    and the toolbar row (.page-toolbar) live in the global src/styles.css so they
    can be shared with the attendance dashboard and audit log. */
 
@@ -8,4 +8,16 @@
   width: auto;
   flex: 1 1 240px;
   max-width: 320px;
+}
+
+.scholar-list-link {
+  text-decoration: underline;
+  color: var(--cyan-dark-color);
+}
+
+.scholar-list-link:focus-visible {
+  outline: var(--border-width-thick) solid
+    rgba(var(--cyan-light-color-for-alpha), 0.7);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
 }

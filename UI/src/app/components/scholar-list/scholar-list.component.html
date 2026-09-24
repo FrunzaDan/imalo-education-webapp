@@ -1,10 +1,13 @@
 <h1 class="page-title">Scholars</h1>
 
+<!-- Announced politely to screen readers whenever the result set changes. -->
+<p class="visually-hidden" role="status">{{ resultsAnnouncement() }}</p>
+
 <div class="page-toolbar">
   <input
     type="search"
     class="app-input scholar-list-toolbar__search"
-    placeholder="Search by name..."
+    placeholder="Search by name…"
     [formField]="searchForm.term"
     aria-label="Search scholars by name"
   />
@@ -29,20 +32,25 @@
   >
     {{
       bulkDeleteInProgress()
-        ? 'Deleting...'
+        ? 'Deleting…'
         : 'Delete selected (' + selectedScholarIds().size + ')'
     }}
   </button>
 </div>
 @if (loading()) {
-  <div class="loading-message">Loading scholars...</div>
+  <div class="loading-message" role="status">Loading scholars…</div>
 } @else if (loadError(); as error) {
   <div class="app-alert" role="alert">{{ error }}</div>
 } @else {
   <table class="app-table">
+    <caption class="visually-hidden">
+      {{
+        tableCaption()
+      }}
+    </caption>
     <thead>
       <tr>
-        <th class="table-header">
+        <th scope="col" class="table-header">
           <input
             type="checkbox"
             aria-label="Select all scholars"
@@ -50,81 +58,76 @@
             (change)="toggleSelectAll($any($event.target).checked)"
           />
         </th>
-        <th class="table-header sortable" (click)="sortData('name', 'string')">
-          Student name
-          <span class="sort-icon">
-            <span
-              [class.active]="currentSortColumn() === 'name' && isAscending()"
-              >↑</span
-            >
-            <span
-              [class.active]="currentSortColumn() === 'name' && !isAscending()"
-              >↓</span
-            >
-          </span>
+        <th
+          scope="col"
+          class="table-header"
+          [attr.aria-sort]="ariaSort('name')"
+        >
+          <button type="button" class="sort-button" (click)="setSort('name')">
+            Student name
+            @if (sortColumn() === 'name') {
+              <span aria-hidden="true">{{
+                sortDirection() === 'asc' ? '▲' : '▼'
+              }}</span>
+            }
+          </button>
         </th>
         <th
-          class="table-header sortable"
-          (click)="sortData('schoolName', 'string')"
+          scope="col"
+          class="table-header"
+          [attr.aria-sort]="ariaSort('schoolName')"
         >
-          School
-          <span class="sort-icon">
-            <span
-              [class.active]="
-                currentSortColumn() === 'schoolName' && isAscending()
-              "
-              >↑</span
-            >
-            <span
-              [class.active]="
-                currentSortColumn() === 'schoolName' && !isAscending()
-              "
-              >↓</span
-            >
-          </span>
-        </th>
-        <th class="table-header sortable" (click)="sortData('grade', 'number')">
-          Grade
-          <span class="sort-icon">
-            <span
-              [class.active]="currentSortColumn() === 'grade' && isAscending()"
-              >↑</span
-            >
-            <span
-              [class.active]="currentSortColumn() === 'grade' && !isAscending()"
-              >↓</span
-            >
-          </span>
+          <button
+            type="button"
+            class="sort-button"
+            (click)="setSort('schoolName')"
+          >
+            School
+            @if (sortColumn() === 'schoolName') {
+              <span aria-hidden="true">{{
+                sortDirection() === 'asc' ? '▲' : '▼'
+              }}</span>
+            }
+          </button>
         </th>
         <th
-          class="table-header sortable"
-          (click)="sortData('birthDate', 'date')"
+          scope="col"
+          class="table-header"
+          [attr.aria-sort]="ariaSort('grade')"
         >
-          Birth date
-          <span class="sort-icon">
-            <span
-              [class.active]="
-                currentSortColumn() === 'birthDate' && isAscending()
-              "
-              >↑</span
-            >
-            <span
-              [class.active]="
-                currentSortColumn() === 'birthDate' && !isAscending()
-              "
-              >↓</span
-            >
-          </span>
+          <button type="button" class="sort-button" (click)="setSort('grade')">
+            Grade
+            @if (sortColumn() === 'grade') {
+              <span aria-hidden="true">{{
+                sortDirection() === 'asc' ? '▲' : '▼'
+              }}</span>
+            }
+          </button>
+        </th>
+        <th
+          scope="col"
+          class="table-header"
+          [attr.aria-sort]="ariaSort('birthDate')"
+        >
+          <button
+            type="button"
+            class="sort-button"
+            (click)="setSort('birthDate')"
+          >
+            Birth date
+            @if (sortColumn() === 'birthDate') {
+              <span aria-hidden="true">{{
+                sortDirection() === 'asc' ? '▲' : '▼'
+              }}</span>
+            }
+          </button>
         </th>
       </tr>
     </thead>
     <tbody>
       @for (scholar of displayedScholarData(); track scholar.scholarId) {
-        <tr
-          class="table-row table-row--link"
-          [routerLink]="['/scholars', scholar.scholarId]"
-        >
-          <td class="table-cell" (click)="$event.stopPropagation()">
+        <tr class="table-row">
+          <td class="table-cell">
             <input
               type="checkbox"
               [attr.aria-label]="'Select ' + scholar.name"
@@ -134,7 +137,13 @@
               "
             />
           </td>
-          <td class="table-cell">{{ scholar.name }}</td>
+          <td class="table-cell">
+            <a
+              class="scholar-list-link"
+              [routerLink]="['/scholars', scholar.scholarId]"
+              >{{ scholar.name }}</a
+            >
+          </td>
           <td
             class="table-cell"
             [ngStyle]="{
@@ -145,7 +154,7 @@
             {{ scholar.schoolName }}
           </td>
           <td class="table-cell">{{ scholar.grade }}</td>
-          <td class="table-cell">{{ scholar.birthDate }}</td>
+          <td class="table-cell">{{ scholar.birthDateLabel }}</td>
         </tr>
       } @empty {
         <tr class="table-row">

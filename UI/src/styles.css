@@ -328,33 +328,23 @@ select.app-input {
   line-height: 1.5;
 }
 
-.table-header.sortable {
+.sort-button {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
   cursor: pointer;
-  user-select: none;
-  transition: background-color var(--duration-fast) ease;
 }
 
-.table-header.sortable:hover {
-  background-color: var(--cyan-darker-color);
+.sort-button:hover {
+  text-decoration: underline;
 }
 
-.sort-icon {
-  display: inline-block;
-  vertical-align: middle;
-  margin-left: var(--space-2);
-  font-size: 0.8em;
-  color: var(--light-main-color);
-}
-
-.sort-icon span {
-  display: block;
-  line-height: 1;
-  opacity: 0.5;
-}
-
-.sort-icon span.active {
-  opacity: 1;
-  font-weight: bold;
+.sort-button:focus-visible {
+  outline: var(--border-width-thick) solid var(--light-main-color);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
 }
 
 .table-row {
@@ -384,11 +374,6 @@ select.app-input {
    used to lose to it on every even row. */
 .table-row:hover {
   background-color: rgba(var(--cyan-main-color-for-alpha), 0.08);
-}
-
-/* Whole row is a link to a detail page */
-.table-row--link {
-  cursor: pointer;
 }
 
 @media screen and (max-width: 600px) {
