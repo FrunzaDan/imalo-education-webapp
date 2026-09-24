@@ -15,7 +15,7 @@
     [routerLink]="['/create-scholar']"
     class="app-button app-button--accent"
   >
-    Create scholar
+    Add scholar
   </button>
   <button
     type="button"
@@ -27,11 +27,11 @@
   <button
     type="button"
     class="app-button app-button--danger"
-    [disabled]="selectedScholarIds().size === 0 || bulkDeleteInProgress()"
+    [disabled]="selectedScholarIds().size === 0 || bulkActionInProgress()"
     (click)="bulkDeleteSelected()"
   >
     {{
-      bulkDeleteInProgress()
+      bulkActionInProgress()
         ? 'Deleting…'
         : 'Delete selected (' + selectedScholarIds().size + ')'
     }}
@@ -147,7 +147,7 @@
         </tr>
       </thead>
       <tbody>
-        @for (scholar of displayedScholarData(); track scholar.scholarId) {
+        @for (scholar of visibleRows(); track scholar.scholarId) {
           <tr
             class="table-row"
             animate.enter="row-enter"

@@ -10,7 +10,7 @@ import {
 import { rxResource, toSignal } from '@angular/core/rxjs-interop';
 import { FormField, FormRoot, form } from '@angular/forms/signals';
 import { HttpErrorResponse } from '@angular/common/http';
-import { Router, RouterModule } from '@angular/router';
+import { Router } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { WEEK_DAYS } from '../../constants/week-days';
 import { ScholarService } from '../../services/scholar.service';
@@ -31,7 +31,7 @@ import {
 // flows the same School dropdown and error handling.
 @Component({
   selector: 'app-scholar-form',
-  imports: [FormField, FormRoot, RouterModule, TitleCasePipe],
+  imports: [FormField, FormRoot, TitleCasePipe],
   templateUrl: './scholar-form.component.html',
   styleUrl: './scholar-form.component.css',
   // Refresh / closing the tab isn't a router navigation, so guard it here too.

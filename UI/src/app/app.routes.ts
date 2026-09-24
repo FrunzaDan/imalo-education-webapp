@@ -25,7 +25,7 @@ export const routes: Routes = [
   },
   {
     path: 'create-scholar',
-    title: 'Create scholar',
+    title: 'Add scholar',
     canDeactivate: [unsavedChangesGuard],
     loadComponent: () =>
       import('./components/scholar-form/scholar-form.component').then(
@@ -42,7 +42,7 @@ export const routes: Routes = [
   },
   {
     path: 'scholars/update/:scholarId',
-    title: 'Update scholar',
+    title: 'Edit scholar',
     canDeactivate: [unsavedChangesGuard],
     loadComponent: () =>
       import('./components/scholar-form/scholar-form.component').then(

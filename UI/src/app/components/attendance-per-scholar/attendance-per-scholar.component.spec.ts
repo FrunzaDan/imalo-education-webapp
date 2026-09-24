@@ -92,7 +92,7 @@ function setup(options: SetupOptions = {}) {
     options.saveResult === 'error' ? throwError(() => notFound) : of(undefined),
   );
   const attendanceService = {
-    getAttendanceByScholarId: vi.fn(() =>
+    getAttendance: vi.fn(() =>
       options.loadResult === 'attendance-error'
         ? throwError(() => new HttpErrorResponse({ status: 500 }))
         : of(options.attendance ?? [makeExistingRecord()]),
@@ -201,7 +201,7 @@ describe('AttendancePerScholarComponent', () => {
         'Scholar with ID scholar-1 not found.',
       );
       expect(el.querySelector('table')).toBeNull();
-      expect(attendanceService.getAttendanceByScholarId).not.toHaveBeenCalled();
+      expect(attendanceService.getAttendance).not.toHaveBeenCalled();
     });
 
     it('shows the load error, not an empty (saveable) month, when attendance cannot be loaded', () => {

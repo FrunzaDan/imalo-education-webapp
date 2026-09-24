@@ -22,7 +22,7 @@ export class GlobalAuditLogComponent implements OnInit {
 
   readonly entries = this.globalAuditLogService.entries;
   readonly loading = this.globalAuditLogService.loading;
-  readonly error = this.globalAuditLogService.error;
+  readonly loadError = this.globalAuditLogService.error;
   readonly totalItems = this.globalAuditLogService.totalItems;
 
   readonly pageSize = 50;

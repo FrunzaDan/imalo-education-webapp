@@ -12,18 +12,18 @@ import { NotificationService } from './notification.service';
 export class AttendanceService {
   private readonly http = inject(HttpClient);
   private readonly notificationService = inject(NotificationService);
-  private readonly API_URL = `${environment.apiUrl}/api/scholars`;
+  private readonly apiUrl = `${environment.apiUrl}/api/scholars`;
 
   // No caching here: this list is read by the attendance dashboard right after
   // per-scholar edits get saved elsewhere, so a stale cached copy would show
   // pre-edit data. It's a small local dataset — refetching is cheap.
-  getAllScholarAttendance(): Observable<ScholarAttendance[]> {
-    return this.http.get<ScholarAttendance[]>(`${this.API_URL}/attendance`);
+  getAllAttendance(): Observable<ScholarAttendance[]> {
+    return this.http.get<ScholarAttendance[]>(`${this.apiUrl}/attendance`);
   }
 
-  getAttendanceByScholarId(scholarId: string): Observable<AttendanceRecord[]> {
+  getAttendance(scholarId: string): Observable<AttendanceRecord[]> {
     return this.http.get<AttendanceRecord[]>(
-      `${this.API_URL}/${scholarId}/attendance`,
+      `${this.apiUrl}/${scholarId}/attendance`,
     );
   }
 
@@ -44,12 +44,12 @@ export class AttendanceService {
     attendance: AttendanceRecord[],
   ): Observable<void> {
     return this.http.post<void>(
-      `${this.API_URL}/${scholarId}/attendance`,
+      `${this.apiUrl}/${scholarId}/attendance`,
       attendance,
     );
   }
 
   deleteAttendance(scholarId: string): Observable<void> {
-    return this.http.delete<void>(`${this.API_URL}/${scholarId}/attendance`);
+    return this.http.delete<void>(`${this.apiUrl}/${scholarId}/attendance`);
   }
 }

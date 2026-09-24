@@ -1,6 +1,6 @@
 <div class="scholar-form-page app-card">
   <h1 class="page-title">
-    {{ isEditMode() ? 'Update scholar' : 'Create new scholar' }}
+    {{ isEditMode() ? 'Edit scholar' : 'Add scholar' }}
   </h1>
 
   @if (loadError(); as error) {
@@ -220,8 +220,8 @@
             scholarForm().submitting()
               ? 'Saving...'
               : isEditMode()
-                ? 'Update scholar'
-                : 'Create scholar'
+                ? 'Save changes'
+                : 'Add scholar'
           }}
         </button>
       </div>

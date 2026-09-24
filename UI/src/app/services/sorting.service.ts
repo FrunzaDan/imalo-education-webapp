@@ -1,62 +1,46 @@
 import { Injectable } from '@angular/core';
 
+export type SortType = 'string' | 'number' | 'date';
+export type SortDirection = 'asc' | 'desc';
+
+type Comparator = (a: unknown, b: unknown) => number;
+
+const COMPARATORS: Record<SortType, Comparator> = {
+  string: (a, b) =>
+    String(a).toLowerCase().localeCompare(String(b).toLowerCase()),
+  number: (a, b) => Number(a) - Number(b),
+  date: (a, b) => toTime(a) - toTime(b),
+};
+
+function toTime(value: unknown): number {
+  const time = new Date(value as string | number | Date).getTime();
+  return isNaN(time) ? 0 : time;
+}
+
 @Injectable({
   providedIn: 'root',
 })
 export class SortingService {
+  // Returns a sorted copy. Null and undefined values sort first when ascending
+  // and last when descending.
   sort<T>(
-    data: T[],
+    data: readonly T[],
     column: keyof T,
-    type: 'string' | 'number' | 'date',
-    isAscending: boolean,
+    type: SortType,
+    direction: SortDirection,
   ): T[] {
-    const sortedData = [...data];
+    const compare = COMPARATORS[type];
+    const sign = direction === 'asc' ? 1 : -1;
 
-    const compareFn = this.getComparator(type);
+    return [...data].sort((a, b) => {
+      const valueA = a[column];
+      const valueB = b[column];
 
-    sortedData.sort((a, b) => {
-      const valA = a[column];
-      const valB = b[column];
+      if (valueA == null && valueB == null) return 0;
+      if (valueA == null) return -sign;
+      if (valueB == null) return sign;
 
-      if (valA == null && valB == null) return 0;
-      if (valA == null) return isAscending ? -1 : 1;
-      if (valB == null) return isAscending ? 1 : -1;
-
-      const comparison = compareFn(valA, valB);
-      return isAscending ? comparison : -comparison;
+      return compare(valueA, valueB) * sign;
     });
-
-    return sortedData;
-  }
-
-  private getComparator(
-    type: 'string' | 'number' | 'date',
-  ): (a: any, b: any) => number {
-    const comparators: Record<string, (a: any, b: any) => number> = {
-      string: this.compareStrings.bind(this),
-      number: this.compareNumbers.bind(this),
-      date: this.compareDates.bind(this),
-    };
-
-    return comparators[type] || this.compareStrings.bind(this);
-  }
-
-  private compareStrings(a: any, b: any): number {
-    return String(a).toLowerCase().localeCompare(String(b).toLowerCase());
-  }
-
-  private compareNumbers(a: any, b: any): number {
-    return Number(a) - Number(b);
-  }
-
-  private compareDates(a: any, b: any): number {
-    const timeA = this.parseDate(a);
-    const timeB = this.parseDate(b);
-    return timeA - timeB;
-  }
-
-  private parseDate(value: any): number {
-    const date = new Date(value);
-    return isNaN(date.getTime()) ? 0 : date.getTime();
   }
 }

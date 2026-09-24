@@ -2,7 +2,7 @@ import { Component, OnInit, computed, inject } from '@angular/core';
 import { rxResource } from '@angular/core/rxjs-interop';
 import { HttpErrorResponse } from '@angular/common/http';
 import { forkJoin } from 'rxjs';
-import { RouterModule } from '@angular/router';
+import { RouterLink } from '@angular/router';
 import { DatePipe } from '@angular/common';
 import { ScholarService } from '../../services/scholar.service';
 import { SchoolService } from '../../services/school.service';
@@ -24,7 +24,7 @@ import { extractErrorMessage } from '../../utils/extract-error-message';
 
 @Component({
   selector: 'app-dashboard',
-  imports: [RouterModule, DatePipe, RonPipe],
+  imports: [RouterLink, DatePipe, RonPipe],
   templateUrl: './dashboard.component.html',
   styleUrl: './dashboard.component.css',
 })
@@ -41,7 +41,7 @@ export class DashboardComponent implements OnInit {
       forkJoin({
         scholars: this.scholarService.getScholars(),
         schools: this.schoolService.getSchools(),
-        allAttendance: this.attendanceService.getAllScholarAttendance(),
+        allAttendance: this.attendanceService.getAllAttendance(),
       }),
   });
   private readonly scholars = computed<Scholar[]>(() =>

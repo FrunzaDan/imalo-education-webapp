@@ -2,7 +2,7 @@ import { Component, computed, inject, signal } from '@angular/core';
 import { rxResource } from '@angular/core/rxjs-interop';
 import { HttpErrorResponse } from '@angular/common/http';
 import { DatePipe } from '@angular/common';
-import { RouterModule } from '@angular/router';
+import { RouterLink } from '@angular/router';
 import { FormField, form } from '@angular/forms/signals';
 import { forkJoin } from 'rxjs';
 import { ScholarService } from '../../services/scholar.service';
@@ -26,7 +26,7 @@ import { extractErrorMessage } from '../../utils/extract-error-message';
 
 @Component({
   selector: 'app-attendance',
-  imports: [DatePipe, RouterModule, FormField],
+  imports: [DatePipe, RouterLink, FormField],
   templateUrl: './attendance.component.html',
   styleUrl: './attendance.component.css',
 })
@@ -41,7 +41,7 @@ export class AttendanceComponent {
     stream: () =>
       forkJoin({
         scholars: this.scholarService.getScholars(),
-        allAttendance: this.attendanceService.getAllScholarAttendance(),
+        allAttendance: this.attendanceService.getAllAttendance(),
       }),
   });
   private readonly scholars = computed<Scholar[]>(() =>

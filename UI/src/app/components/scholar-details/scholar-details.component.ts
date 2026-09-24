@@ -10,7 +10,7 @@ import {
 import { rxResource } from '@angular/core/rxjs-interop';
 import { DatePipe, TitleCasePipe } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
-import { Router, RouterModule } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { ScholarService } from '../../services/scholar.service';
 import { SchoolService } from '../../services/school.service';
 import { ConfirmDialogService } from '../../services/confirm-dialog.service';
@@ -21,7 +21,7 @@ import { extractErrorMessage } from '../../utils/extract-error-message';
 
 @Component({
   selector: 'app-scholar-details',
-  imports: [DatePipe, TitleCasePipe, RouterModule],
+  imports: [DatePipe, TitleCasePipe, RouterLink],
   templateUrl: './scholar-details.component.html',
   styleUrl: './scholar-details.component.css',
 })

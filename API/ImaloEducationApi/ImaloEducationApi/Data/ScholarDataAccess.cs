@@ -23,9 +23,9 @@ public partial class ScholarDataAccess : IScholarDataAccess
     private static object ToDbValue(string? value) =>
         string.IsNullOrWhiteSpace(value) ? DBNull.Value : value;
 
-    private static void AddParam(SqlCommand cmd, string name, SqlDbType type, object value, int size = 0)
+    private static void AddParam(SqlCommand command, string name, SqlDbType type, object value, int size = 0)
     {
-        var param = size > 0 ? cmd.Parameters.Add(name, type, size) : cmd.Parameters.Add(name, type);
+        var param = size > 0 ? command.Parameters.Add(name, type, size) : command.Parameters.Add(name, type);
         param.Value = value;
     }
 
@@ -118,7 +118,7 @@ public partial class ScholarDataAccess : IScholarDataAccess
         return scholar;
     }
 
-    public async Task<IEnumerable<Scholar>> GetScholarsAsync(CancellationToken cancellationToken)
+    public async Task<IReadOnlyList<Scholar>> GetScholarsAsync(CancellationToken cancellationToken)
     {
         // ScholarParent is joined once per role, with the role in the ON clause. (ScholarId, Role)
         // is ScholarParent's primary key, so each join matches at most one row and the scholar
@@ -322,13 +322,13 @@ public partial class ScholarDataAccess : IScholarDataAccess
     // -----------------------------
 
     // Returns false when the scholar doesn't exist (the controller answers 404).
-    public async Task<bool> CreateOrUpdateAttendanceAsync(Guid scholarId, List<AttendanceRecord> attendanceRecords,
+    public async Task<bool> SaveAttendanceAsync(Guid scholarId, List<AttendanceRecord> attendance,
         CancellationToken cancellationToken)
     {
         if (scholarId == Guid.Empty)
             throw new ArgumentException("Scholar ID must not be empty.", nameof(scholarId));
 
-        ArgumentNullException.ThrowIfNull(attendanceRecords);
+        ArgumentNullException.ThrowIfNull(attendance);
 
         // The standard SQL Server upsert: UPDATE first, holding a key-range lock (UPDLOCK,
         // SERIALIZABLE) so two concurrent saves for the same scholar can't both find no row and
@@ -355,7 +355,7 @@ public partial class ScholarDataAccess : IScholarDataAccess
         await using var command = new SqlCommand(upsertAttendanceSql, connection);
 
         AddParam(command, "@ScholarId", SqlDbType.UniqueIdentifier, scholarId);
-        AddParam(command, "@AttendanceJson", SqlDbType.NVarChar, JsonSerializer.Serialize(attendanceRecords, JsonOptions), -1);
+        AddParam(command, "@AttendanceJson", SqlDbType.NVarChar, JsonSerializer.Serialize(attendance, JsonOptions), -1);
 
         // The rows the UPDATE or the INSERT touched: 0 only when the scholar doesn't exist.
         var rowsAffected = await command.ExecuteNonQueryAsync(cancellationToken);
@@ -366,7 +366,7 @@ public partial class ScholarDataAccess : IScholarDataAccess
         return true;
     }
 
-    public async Task<List<AttendanceRecord>> GetAttendanceByScholarIdAsync(Guid scholarId,
+    public async Task<IReadOnlyList<AttendanceRecord>> GetAttendanceAsync(Guid scholarId,
         CancellationToken cancellationToken)
     {
         if (scholarId == Guid.Empty)
@@ -386,7 +386,7 @@ public partial class ScholarDataAccess : IScholarDataAccess
         return JsonSerializer.Deserialize<List<AttendanceRecord>>(json, JsonOptions) ?? new List<AttendanceRecord>();
     }
 
-    public async Task<List<ScholarAttendance>> GetAllAttendanceAsync(
+    public async Task<IReadOnlyList<ScholarAttendance>> GetAllAttendanceAsync(
         CancellationToken cancellationToken)
     {
         const string sql = "SELECT ScholarId, AttendanceJson FROM dbo.ScholarAttendance;";
@@ -463,7 +463,7 @@ public partial class ScholarDataAccess : IScholarDataAccess
         }
     }
 
-    public async Task<List<AuditLogEntry>> GetAuditLogByScholarIdAsync(Guid scholarId, CancellationToken cancellationToken)
+    public async Task<IReadOnlyList<AuditLogEntry>> GetScholarAuditLogAsync(Guid scholarId, CancellationToken cancellationToken)
     {
         if (scholarId == Guid.Empty)
             throw new ArgumentException("Scholar ID must not be empty.", nameof(scholarId));

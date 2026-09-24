@@ -6,26 +6,26 @@ import { extractErrorMessage } from '../utils/extract-error-message';
 
 @Injectable({ providedIn: 'root' })
 export class AuditLogService {
-  private readonly API_URL = `${environment.apiUrl}/api/scholars`;
+  private readonly apiUrl = `${environment.apiUrl}/api/scholars`;
 
   private readonly scholarId = signal<string | undefined>(undefined);
 
   // Declarative fetch: the request is a function of `scholarId`, so a new
   // scholarId cancels the in-flight request and starts another, and no request is
   // made at all until a scholarId has been set (returning undefined idles it).
-  private readonly auditLog = httpResource<AuditLogEntry[]>(() => {
+  private readonly auditLogResource = httpResource<AuditLogEntry[]>(() => {
     const scholarId = this.scholarId();
     if (!scholarId) return undefined;
-    return `${this.API_URL}/${scholarId}/audit-log`;
+    return `${this.apiUrl}/${scholarId}/audit-log`;
   });
 
   // hasValue() guards the read: value() throws while the resource is in error.
   readonly entries = computed(() =>
-    this.auditLog.hasValue() ? this.auditLog.value() : [],
+    this.auditLogResource.hasValue() ? this.auditLogResource.value() : [],
   );
-  readonly loading = this.auditLog.isLoading;
+  readonly loading = this.auditLogResource.isLoading;
   readonly error = computed(() => {
-    const error = this.auditLog.error();
+    const error = this.auditLogResource.error();
     return error
       ? extractErrorMessage(
           error as HttpErrorResponse,
@@ -37,7 +37,7 @@ export class AuditLogService {
   loadAuditLog(scholarId: string): void {
     if (this.scholarId() === scholarId) {
       // Same scholar — the request itself hasn't changed, so ask for a fresh copy.
-      this.auditLog.reload();
+      this.auditLogResource.reload();
     } else {
       this.scholarId.set(scholarId);
     }

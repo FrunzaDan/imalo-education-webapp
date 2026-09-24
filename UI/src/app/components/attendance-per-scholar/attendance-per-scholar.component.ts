@@ -62,7 +62,7 @@ export class AttendancePerScholarComponent implements HasUnsavedChanges {
         .pipe(
           switchMap((scholar) =>
             this.attendanceService
-              .getAttendanceByScholarId(scholarId)
+              .getAttendance(scholarId)
               .pipe(map((records) => ({ scholar, records }))),
           ),
         ),

@@ -16,7 +16,7 @@
 }
 @if (loading()) {
   <div class="loading-message" role="status">Loading audit log…</div>
-} @else if (error(); as errorMessage) {
+} @else if (loadError(); as errorMessage) {
   <div class="app-alert" role="alert">{{ errorMessage }}</div>
 } @else if (entries().length === 0) {
   <p class="audit-log-empty">No recorded actions yet.</p>

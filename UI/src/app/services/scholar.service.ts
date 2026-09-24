@@ -13,10 +13,10 @@ import { NotificationService } from './notification.service';
 export class ScholarService {
   private readonly http = inject(HttpClient);
   private readonly notificationService = inject(NotificationService);
-  private readonly API_URL = `${environment.apiUrl}/api/scholars`;
+  private readonly apiUrl = `${environment.apiUrl}/api/scholars`;
 
   getScholars(): Observable<Scholar[]> {
-    return this.http.get<Scholar[]>(this.API_URL);
+    return this.http.get<Scholar[]>(this.apiUrl);
   }
 
   getScholar(scholarId: string): Observable<Scholar> {
@@ -25,12 +25,12 @@ export class ScholarService {
 
   createScholar(scholar: Scholar): Observable<Scholar> {
     return this.createScholarSilently(scholar).pipe(
-      tap(() => this.notificationService.show('Scholar created successfully.')),
+      tap(() => this.notificationService.show('Scholar added successfully.')),
     );
   }
 
   createScholarSilently(scholar: Scholar): Observable<Scholar> {
-    return this.http.post<Scholar>(this.API_URL, scholar);
+    return this.http.post<Scholar>(this.apiUrl, scholar);
   }
 
   updateScholar(scholar: Scholar): Observable<Scholar> {
@@ -54,6 +54,6 @@ export class ScholarService {
   }
 
   private urlWithId(scholarId: string): string {
-    return `${this.API_URL}/${scholarId}`;
+    return `${this.apiUrl}/${scholarId}`;
   }
 }

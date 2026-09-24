@@ -21,10 +21,10 @@ describe('SortingService', () => {
     ];
 
     expect(
-      service.sort(data, 'name', 'string', true).map((r) => r.name),
+      service.sort(data, 'name', 'string', 'asc').map((r) => r.name),
     ).toEqual(['Alice', 'bob', 'charlie']);
     expect(
-      service.sort(data, 'name', 'string', false).map((r) => r.name),
+      service.sort(data, 'name', 'string', 'desc').map((r) => r.name),
     ).toEqual(['charlie', 'bob', 'Alice']);
   });
 
@@ -35,11 +35,11 @@ describe('SortingService', () => {
       { name: '', age: 20, joined: null },
     ];
 
-    expect(service.sort(data, 'age', 'number', true).map((r) => r.age)).toEqual(
-      [10, 20, 30],
-    );
     expect(
-      service.sort(data, 'age', 'number', false).map((r) => r.age),
+      service.sort(data, 'age', 'number', 'asc').map((r) => r.age),
+    ).toEqual([10, 20, 30]);
+    expect(
+      service.sort(data, 'age', 'number', 'desc').map((r) => r.age),
     ).toEqual([30, 20, 10]);
   });
 
@@ -51,10 +51,10 @@ describe('SortingService', () => {
     ];
 
     expect(
-      service.sort(data, 'joined', 'date', true).map((r) => r.joined),
+      service.sort(data, 'joined', 'date', 'asc').map((r) => r.joined),
     ).toEqual(['2024-01-01', '2024-02-01', '2024-03-01']);
     expect(
-      service.sort(data, 'joined', 'date', false).map((r) => r.joined),
+      service.sort(data, 'joined', 'date', 'desc').map((r) => r.joined),
     ).toEqual(['2024-03-01', '2024-02-01', '2024-01-01']);
   });
 
@@ -65,7 +65,7 @@ describe('SortingService', () => {
     ];
     const original = [...data];
 
-    service.sort(data, 'name', 'string', true);
+    service.sort(data, 'name', 'string', 'asc');
 
     expect(data).toEqual(original);
   });
@@ -78,10 +78,10 @@ describe('SortingService', () => {
     ];
 
     expect(
-      service.sort(data, 'name', 'string', true).map((r) => r.name),
+      service.sort(data, 'name', 'string', 'asc').map((r) => r.name),
     ).toEqual([null, 'a', 'b']);
     expect(
-      service.sort(data, 'name', 'string', false).map((r) => r.name),
+      service.sort(data, 'name', 'string', 'desc').map((r) => r.name),
     ).toEqual(['b', 'a', null]);
   });
 
@@ -91,7 +91,7 @@ describe('SortingService', () => {
       { name: null, age: null, joined: null },
     ];
 
-    expect(() => service.sort(data, 'name', 'string', true)).not.toThrow();
-    expect(service.sort(data, 'name', 'string', true).length).toBe(2);
+    expect(() => service.sort(data, 'name', 'string', 'asc')).not.toThrow();
+    expect(service.sort(data, 'name', 'string', 'asc').length).toBe(2);
   });
 });

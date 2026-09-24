@@ -98,6 +98,14 @@ The Angular 22 app under `UI/`. It is zoneless, uses standalone components and s
   - "Both" is a plain checkbox that sets both fields.
 - **Unsaved changes:** `unsavedChangesGuard` plus `beforeunload` on the scholar form and on the per-scholar attendance page.
 
+### Naming (same in all three apps)
+
+- **Page state:** `loading` and `loadError` for the data the page itself loads. Actions get their own: `saveError`, `deleteError`, `loginError`.
+- **Service verbs:** `loadX()` starts a resource the service holds and returns nothing. `getX()` and `fetchX()` return an Observable. Writes are `createX`, `updateX` and `deleteX`, plus `…Silently` variants.
+- **Service fields:** private resources end in `Resource`, and the base URL field is `apiUrl`.
+- **Lists:** `sortColumn` and `sortDirection` (`'asc' | 'desc'`), with `SORT_LABELS` for the table caption. Bulk selection uses `selectedXIds`, `isSelected`, `toggleSelection`, `allSelected`, `toggleSelectAll` and `bulkActionInProgress`.
+- **Page titles and buttons:** "Add scholar" and "Edit scholar"; the edit form's button is "Save changes".
+
 ### User feedback (same in all three apps)
 
 - **Success:** a toast, fired by the service in `tap`. Bulk callers use the `…Silently` variants and show one summary toast.

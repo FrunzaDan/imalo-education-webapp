@@ -70,6 +70,7 @@ The ASP.NET Core Web API (.NET 10), one project under `API/ImaloEducationApi/Ima
   - For `Edited` entries, `ScholarChanges.Describe` lists the changed fields.
 - **JSON columns:** use one shared `JsonSerializerOptions`.
 - **SQL parameters:** every `SqlParameter` has an explicit `SqlDbType` and size. `AddWithValue` is never used.
+- **Naming** (as in the other two apps): every data-access method ends in `Async`, and is named after the controller action it backs (`SaveAttendanceAsync`, `GetScholarAuditLogAsync`). Collections are returned as `IReadOnlyList<T>`.
 
 ### Validation and types
 

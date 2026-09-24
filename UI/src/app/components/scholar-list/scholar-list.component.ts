@@ -10,7 +10,11 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { FormField, form } from '@angular/forms/signals';
 import { ScholarService } from '../../services/scholar.service';
 import { SchoolService } from '../../services/school.service';
-import { SortingService } from '../../services/sorting.service';
+import {
+  SortDirection,
+  SortType,
+  SortingService,
+} from '../../services/sorting.service';
 import { CsvExportService } from '../../services/csv-export.service';
 import { NotificationService } from '../../services/notification.service';
 import { ConfirmDialogService } from '../../services/confirm-dialog.service';
@@ -19,12 +23,12 @@ import { School } from '../../interfaces/school';
 import { NgStyle } from '@angular/common';
 import { forkJoin, from, of } from 'rxjs';
 import { catchError, concatMap, map, toArray } from 'rxjs/operators';
-import { RouterModule } from '@angular/router';
+import { RouterLink } from '@angular/router';
 import { contrastTextColor } from '../../utils/contrast-color';
 import { parseDateOnly } from '../../utils/weekday-dates';
 import { extractErrorMessage } from '../../utils/extract-error-message';
 
-interface TransformedScholarData {
+interface ScholarRow {
   scholarId: string;
   name: string;
   schoolName: string;
@@ -38,7 +42,7 @@ interface TransformedScholarData {
 
 type SortColumn = 'name' | 'schoolName' | 'grade' | 'birthDate';
 
-const SORT_TYPES: Record<SortColumn, 'string' | 'number' | 'date'> = {
+const SORT_TYPES: Record<SortColumn, SortType> = {
   name: 'string',
   schoolName: 'string',
   grade: 'number',
@@ -53,7 +57,7 @@ const SORT_LABELS: Record<SortColumn, string> = {
 };
 
 @Component({
-  imports: [FormField, NgStyle, RouterModule],
+  imports: [FormField, NgStyle, RouterLink],
   selector: 'app-scholar-list',
   templateUrl: './scholar-list.component.html',
   styleUrl: './scholar-list.component.css',
@@ -96,16 +100,16 @@ export class ScholarListComponent {
 
   // null keeps the API's order until a header is clicked.
   readonly sortColumn = signal<SortColumn | null>(null);
-  readonly sortDirection = signal<'asc' | 'desc'>('asc');
+  readonly sortDirection = signal<SortDirection>('asc');
 
-  readonly scholarData = computed(() => {
+  readonly sortedRows = computed(() => {
     const column = this.sortColumn();
     return column
       ? this.sortingService.sort(
           this.rows(),
           column,
           SORT_TYPES[column],
-          this.sortDirection() === 'asc',
+          this.sortDirection(),
         )
       : this.rows();
   });
@@ -116,14 +120,13 @@ export class ScholarListComponent {
 
   // Emptied whenever the rows reload: stale selections would otherwise
   // reference rows that may no longer exist.
-  readonly selectedScholarIds = linkedSignal<
-    TransformedScholarData[],
-    Set<string>
-  >({
-    source: this.rows,
-    computation: () => new Set(),
-  });
-  bulkDeleteInProgress = signal(false);
+  readonly selectedScholarIds = linkedSignal<ScholarRow[], ReadonlySet<string>>(
+    {
+      source: this.rows,
+      computation: () => new Set(),
+    },
+  );
+  readonly bulkActionInProgress = signal(false);
 
   setSort(column: SortColumn): void {
     if (this.sortColumn() === column) {
@@ -144,18 +147,18 @@ export class ScholarListComponent {
   // this dataset is small enough that a server round-trip per keystroke (the
   // pattern Customer_Management_System uses, justified there by server-side
   // pagination) would just be unnecessary latency here.
-  readonly displayedScholarData = computed(() => {
+  readonly visibleRows = computed(() => {
     const term = this.searchTerm().trim().toLowerCase();
-    const scholarData = this.scholarData();
-    if (!term) return scholarData;
-    return scholarData.filter((s) => s.name.toLowerCase().includes(term));
+    const sortedRows = this.sortedRows();
+    if (!term) return sortedRows;
+    return sortedRows.filter((s) => s.name.toLowerCase().includes(term));
   });
 
   // Spoken by the polite live region so a screen-reader user hears the outcome
   // of a search without hunting for it.
   readonly resultsAnnouncement = computed(() => {
     if (this.loading()) return 'Loading scholars';
-    const total = this.displayedScholarData().length;
+    const total = this.visibleRows().length;
     return `${total} ${total === 1 ? 'scholar' : 'scholars'} found`;
   });
 
@@ -168,8 +171,8 @@ export class ScholarListComponent {
 
   readonly allSelected = computed(
     () =>
-      this.displayedScholarData().length > 0 &&
-      this.displayedScholarData().every((s) =>
+      this.visibleRows().length > 0 &&
+      this.visibleRows().every((s) =>
         this.selectedScholarIds().has(s.scholarId),
       ),
   );
@@ -192,7 +195,7 @@ export class ScholarListComponent {
   // selections made under a different search term aren't silently touched.
   toggleSelectAll(checked: boolean): void {
     const next = new Set(this.selectedScholarIds());
-    for (const s of this.displayedScholarData()) {
+    for (const s of this.visibleRows()) {
       if (checked) {
         next.add(s.scholarId);
       } else {
@@ -203,7 +206,7 @@ export class ScholarListComponent {
   }
 
   async bulkDeleteSelected(): Promise<void> {
-    if (this.selectedScholarIds().size === 0 || this.bulkDeleteInProgress())
+    if (this.selectedScholarIds().size === 0 || this.bulkActionInProgress())
       return;
 
     const ids = Array.from(this.selectedScholarIds());
@@ -214,7 +217,7 @@ export class ScholarListComponent {
     );
     if (!confirmed) return;
 
-    this.bulkDeleteInProgress.set(true);
+    this.bulkActionInProgress.set(true);
 
     from(ids)
       .pipe(
@@ -227,7 +230,7 @@ export class ScholarListComponent {
         toArray(),
       )
       .subscribe((results) => {
-        this.bulkDeleteInProgress.set(false);
+        this.bulkActionInProgress.set(false);
         const succeeded = results.filter(Boolean).length;
         const failed = results.length - succeeded;
         this.notificationService.show(
@@ -246,26 +249,23 @@ export class ScholarListComponent {
     this.csvExportService.export(
       'scholars',
       [
-        { header: 'Name', value: (s: TransformedScholarData) => s.name },
+        { header: 'Name', value: (s: ScholarRow) => s.name },
         {
           header: 'School',
-          value: (s: TransformedScholarData) => s.schoolName,
+          value: (s: ScholarRow) => s.schoolName,
         },
-        { header: 'Grade', value: (s: TransformedScholarData) => s.grade },
+        { header: 'Grade', value: (s: ScholarRow) => s.grade },
         {
           header: 'Birth Date',
-          value: (s: TransformedScholarData) => s.birthDateLabel,
+          value: (s: ScholarRow) => s.birthDateLabel,
         },
       ],
-      this.displayedScholarData(),
+      this.visibleRows(),
     );
   }
 }
 
-function toRows(
-  scholars: Scholar[],
-  schools: School[],
-): TransformedScholarData[] {
+function toRows(scholars: Scholar[], schools: School[]): ScholarRow[] {
   const schoolsById = new Map(
     schools.map((school) => [school.schoolId.toString(), school]),
   );

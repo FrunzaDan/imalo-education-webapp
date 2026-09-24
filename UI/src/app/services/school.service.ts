@@ -9,21 +9,18 @@ import { School } from '../interfaces/school';
 })
 export class SchoolService {
   private readonly http = inject(HttpClient);
-  private schoolsUrl = '../../assets/schools.json';
+  private readonly schoolsUrl = '../../assets/schools.json';
 
-  // Cache the loaded schools
-  private schoolsCache$: Observable<School[]> | null = null;
+  // Fetched on the first subscribe, then shared: every later caller gets the
+  // cached list. Falls back to an empty list; apiLoggerInterceptor has already
+  // logged the failed request.
+  private readonly schools$ = this.http.get<School[]>(this.schoolsUrl).pipe(
+    shareReplay(1),
+    catchError(() => of([])),
+  );
 
   getSchools(): Observable<School[]> {
-    if (!this.schoolsCache$) {
-      this.schoolsCache$ = this.http.get<School[]>(this.schoolsUrl).pipe(
-        shareReplay(1), // caches the result for all subscribers
-        // Falls back to an empty list; apiLoggerInterceptor has already logged
-        // the failed request.
-        catchError(() => of([])),
-      );
-    }
-    return this.schoolsCache$;
+    return this.schools$;
   }
 
   getSchool(schoolId: number | string): Observable<School | null> {

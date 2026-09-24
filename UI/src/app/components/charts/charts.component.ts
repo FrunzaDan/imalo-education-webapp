@@ -51,7 +51,7 @@ export class ChartsComponent {
     stream: () =>
       forkJoin({
         scholars: this.scholarService.getScholars(),
-        allAttendance: this.attendanceService.getAllScholarAttendance(),
+        allAttendance: this.attendanceService.getAllAttendance(),
         schools: this.schoolService.getSchools(),
       }),
   });

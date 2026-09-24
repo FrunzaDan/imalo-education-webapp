@@ -29,7 +29,7 @@ public class ScholarsController(IScholarDataAccess scholarDataAccess) : Controll
     }
 
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<Scholar>>> GetScholars(CancellationToken cancellationToken) =>
+    public async Task<ActionResult<IReadOnlyList<Scholar>>> GetScholars(CancellationToken cancellationToken) =>
         Ok(await scholarDataAccess.GetScholarsAsync(cancellationToken));
 
     [HttpGet("{scholarId:guid}")]
@@ -72,12 +72,12 @@ public class ScholarsController(IScholarDataAccess scholarDataAccess) : Controll
     // ---------------------------------------
 
     [HttpGet("{scholarId:guid}/audit-log")]
-    public async Task<ActionResult<IEnumerable<AuditLogEntry>>> GetScholarAuditLog(Guid scholarId,
+    public async Task<ActionResult<IReadOnlyList<AuditLogEntry>>> GetScholarAuditLog(Guid scholarId,
         CancellationToken cancellationToken)
     {
         if (scholarId == Guid.Empty) return EmptyScholarId();
 
-        return Ok(await scholarDataAccess.GetAuditLogByScholarIdAsync(scholarId, cancellationToken));
+        return Ok(await scholarDataAccess.GetScholarAuditLogAsync(scholarId, cancellationToken));
     }
 
     [HttpGet("audit-log/all")]
@@ -101,7 +101,7 @@ public class ScholarsController(IScholarDataAccess scholarDataAccess) : Controll
     // ---------------------------------------
 
     [HttpPost("{scholarId:guid}/attendance")]
-    public async Task<IActionResult> CreateOrUpdateAttendance(Guid scholarId,
+    public async Task<IActionResult> SaveAttendance(Guid scholarId,
         [FromBody] List<AttendanceRecord> attendance, CancellationToken cancellationToken)
     {
         if (scholarId == Guid.Empty) return EmptyScholarId();
@@ -128,19 +128,19 @@ public class ScholarsController(IScholarDataAccess scholarDataAccess) : Controll
 
         if (!ModelState.IsValid) return ValidationProblem();
 
-        var saved = await scholarDataAccess.CreateOrUpdateAttendanceAsync(scholarId, attendance, cancellationToken);
+        var saved = await scholarDataAccess.SaveAttendanceAsync(scholarId, attendance, cancellationToken);
         return saved ? NoContent() : ScholarNotFound(scholarId);
     }
 
     [HttpGet("{scholarId:guid}/attendance")]
-    public async Task<ActionResult<IEnumerable<AttendanceRecord>>> GetAttendance(Guid scholarId,
+    public async Task<ActionResult<IReadOnlyList<AttendanceRecord>>> GetAttendance(Guid scholarId,
         CancellationToken cancellationToken)
     {
         if (scholarId == Guid.Empty) return EmptyScholarId();
 
         // No records yet is a normal state for a scholar (e.g. a brand-new one),
         // not an error — 200 with an empty list rather than 404.
-        return Ok(await scholarDataAccess.GetAttendanceByScholarIdAsync(scholarId, cancellationToken));
+        return Ok(await scholarDataAccess.GetAttendanceAsync(scholarId, cancellationToken));
     }
 
     [HttpDelete("{scholarId:guid}/attendance")]
@@ -156,7 +156,7 @@ public class ScholarsController(IScholarDataAccess scholarDataAccess) : Controll
     }
 
     [HttpGet("attendance")]
-    public async Task<ActionResult<List<ScholarAttendance>>> GetAllAttendance(CancellationToken cancellationToken) =>
+    public async Task<ActionResult<IReadOnlyList<ScholarAttendance>>> GetAllAttendance(CancellationToken cancellationToken) =>
         Ok(await scholarDataAccess.GetAllAttendanceAsync(cancellationToken));
 
     // The {scholarId:guid} route constraint accepts the all-zero GUID, which no row ever has.

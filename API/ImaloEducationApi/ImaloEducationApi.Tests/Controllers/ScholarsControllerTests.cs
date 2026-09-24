@@ -232,7 +232,7 @@ public class ScholarsControllerTests
                 OccurredAt = new DateTime(2026, 9, 23, 10, 0, 0, DateTimeKind.Utc)
             }
         };
-        dataAccess.Setup(d => d.GetAuditLogByScholarIdAsync(id, It.IsAny<CancellationToken>())).ReturnsAsync(entries);
+        dataAccess.Setup(d => d.GetScholarAuditLogAsync(id, It.IsAny<CancellationToken>())).ReturnsAsync(entries);
 
         var result = await controller.GetScholarAuditLog(id, TestContext.Current.CancellationToken);
 
@@ -270,22 +270,22 @@ public class ScholarsControllerTests
 
     private static void VerifyAttendanceNotSaved(Mock<IScholarDataAccess> dataAccess) =>
         dataAccess.Verify(
-            d => d.CreateOrUpdateAttendanceAsync(It.IsAny<Guid>(), It.IsAny<List<AttendanceRecord>>(),
+            d => d.SaveAttendanceAsync(It.IsAny<Guid>(), It.IsAny<List<AttendanceRecord>>(),
                 It.IsAny<CancellationToken>()), Times.Never);
 
     [Fact]
-    public async Task CreateOrUpdateAttendance_EmptyId_ReturnsValidationProblem()
+    public async Task SaveAttendance_EmptyId_ReturnsValidationProblem()
     {
         var (controller, dataAccess) = MakeController();
 
-        var result = await controller.CreateOrUpdateAttendance(Guid.Empty, [], TestContext.Current.CancellationToken);
+        var result = await controller.SaveAttendance(Guid.Empty, [], TestContext.Current.CancellationToken);
 
         AssertValidationProblem(result);
         VerifyAttendanceNotSaved(dataAccess);
     }
 
     [Fact]
-    public async Task CreateOrUpdateAttendance_AbsentButLunchSelected_ReturnsValidationProblemNamingTheDate()
+    public async Task SaveAttendance_AbsentButLunchSelected_ReturnsValidationProblemNamingTheDate()
     {
         var (controller, dataAccess) = MakeController();
         var records = new List<AttendanceRecord>
@@ -293,7 +293,7 @@ public class ScholarsControllerTests
             new() { Date = new DateOnly(2024, 3, 4), Present = false, LunchSelected = true },
         };
 
-        var result = await controller.CreateOrUpdateAttendance(Guid.NewGuid(), records,
+        var result = await controller.SaveAttendance(Guid.NewGuid(), records,
             TestContext.Current.CancellationToken);
 
         var message = Assert.Single(AssertValidationProblem(result).Errors["attendance"]);
@@ -303,7 +303,7 @@ public class ScholarsControllerTests
     }
 
     [Fact]
-    public async Task CreateOrUpdateAttendance_AbsentButTransportSelected_ReturnsValidationProblem()
+    public async Task SaveAttendance_AbsentButTransportSelected_ReturnsValidationProblem()
     {
         var (controller, dataAccess) = MakeController();
         var records = new List<AttendanceRecord>
@@ -311,7 +311,7 @@ public class ScholarsControllerTests
             new() { Date = new DateOnly(2024, 3, 4), Present = false, TransportSelected = true },
         };
 
-        var result = await controller.CreateOrUpdateAttendance(Guid.NewGuid(), records,
+        var result = await controller.SaveAttendance(Guid.NewGuid(), records,
             TestContext.Current.CancellationToken);
 
         AssertValidationProblem(result);
@@ -319,7 +319,7 @@ public class ScholarsControllerTests
     }
 
     [Fact]
-    public async Task CreateOrUpdateAttendance_MultipleOffendingRecords_ListsAllDates()
+    public async Task SaveAttendance_MultipleOffendingRecords_ListsAllDates()
     {
         var (controller, dataAccess) = MakeController();
         var records = new List<AttendanceRecord>
@@ -329,7 +329,7 @@ public class ScholarsControllerTests
             new() { Date = new DateOnly(2024, 3, 6), Present = false, TransportSelected = true },
         };
 
-        var result = await controller.CreateOrUpdateAttendance(Guid.NewGuid(), records,
+        var result = await controller.SaveAttendance(Guid.NewGuid(), records,
             TestContext.Current.CancellationToken);
 
         var message = Assert.Single(AssertValidationProblem(result).Errors["attendance"]);
@@ -338,7 +338,7 @@ public class ScholarsControllerTests
     }
 
     [Fact]
-    public async Task CreateOrUpdateAttendance_DuplicateDates_ListsThem()
+    public async Task SaveAttendance_DuplicateDates_ListsThem()
     {
         var (controller, dataAccess) = MakeController();
         var repeated = new DateOnly(2024, 3, 4);
@@ -349,7 +349,7 @@ public class ScholarsControllerTests
             new() { Date = repeated },
         };
 
-        var result = await controller.CreateOrUpdateAttendance(Guid.NewGuid(), records,
+        var result = await controller.SaveAttendance(Guid.NewGuid(), records,
             TestContext.Current.CancellationToken);
 
         var message = Assert.Single(AssertValidationProblem(result).Errors["attendance"]);
@@ -358,7 +358,7 @@ public class ScholarsControllerTests
     }
 
     [Fact]
-    public async Task CreateOrUpdateAttendance_BreakingBothRules_ReportsBoth()
+    public async Task SaveAttendance_BreakingBothRules_ReportsBoth()
     {
         var (controller, _) = MakeController();
         var date = new DateOnly(2024, 3, 4);
@@ -368,14 +368,14 @@ public class ScholarsControllerTests
             new() { Date = date },
         };
 
-        var result = await controller.CreateOrUpdateAttendance(Guid.NewGuid(), records,
+        var result = await controller.SaveAttendance(Guid.NewGuid(), records,
             TestContext.Current.CancellationToken);
 
         Assert.Equal(2, AssertValidationProblem(result).Errors["attendance"].Length);
     }
 
     [Fact]
-    public async Task CreateOrUpdateAttendance_AbsentAndNothingSelected_Saves()
+    public async Task SaveAttendance_AbsentAndNothingSelected_Saves()
     {
         var (controller, dataAccess) = MakeController();
         var id = Guid.NewGuid();
@@ -384,41 +384,41 @@ public class ScholarsControllerTests
             new() { Date = new DateOnly(2024, 3, 4), Present = false, LunchSelected = false, TransportSelected = false },
         };
 
-        dataAccess.Setup(d => d.CreateOrUpdateAttendanceAsync(id, records, It.IsAny<CancellationToken>()))
+        dataAccess.Setup(d => d.SaveAttendanceAsync(id, records, It.IsAny<CancellationToken>()))
             .ReturnsAsync(true);
 
-        var result = await controller.CreateOrUpdateAttendance(id, records, TestContext.Current.CancellationToken);
+        var result = await controller.SaveAttendance(id, records, TestContext.Current.CancellationToken);
 
         Assert.IsType<NoContentResult>(result);
-        dataAccess.Verify(d => d.CreateOrUpdateAttendanceAsync(id, records, It.IsAny<CancellationToken>()), Times.Once);
+        dataAccess.Verify(d => d.SaveAttendanceAsync(id, records, It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
-    public async Task CreateOrUpdateAttendance_Success_ReturnsNoContent()
+    public async Task SaveAttendance_Success_ReturnsNoContent()
     {
         var (controller, dataAccess) = MakeController();
         var id = Guid.NewGuid();
         var records = new List<AttendanceRecord> { new() { Date = new DateOnly(2024, 3, 4), LunchCost = 10m } };
 
-        dataAccess.Setup(d => d.CreateOrUpdateAttendanceAsync(id, records, It.IsAny<CancellationToken>()))
+        dataAccess.Setup(d => d.SaveAttendanceAsync(id, records, It.IsAny<CancellationToken>()))
             .ReturnsAsync(true);
 
-        var result = await controller.CreateOrUpdateAttendance(id, records, TestContext.Current.CancellationToken);
+        var result = await controller.SaveAttendance(id, records, TestContext.Current.CancellationToken);
 
         Assert.IsType<NoContentResult>(result);
-        dataAccess.Verify(d => d.CreateOrUpdateAttendanceAsync(id, records, It.IsAny<CancellationToken>()), Times.Once);
+        dataAccess.Verify(d => d.SaveAttendanceAsync(id, records, It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
-    public async Task CreateOrUpdateAttendance_UnknownScholar_ReturnsNotFoundProblem()
+    public async Task SaveAttendance_UnknownScholar_ReturnsNotFoundProblem()
     {
         var (controller, dataAccess) = MakeController();
         var id = Guid.NewGuid();
         var records = new List<AttendanceRecord> { new() { Date = new DateOnly(2024, 3, 4) } };
-        dataAccess.Setup(d => d.CreateOrUpdateAttendanceAsync(id, records, It.IsAny<CancellationToken>()))
+        dataAccess.Setup(d => d.SaveAttendanceAsync(id, records, It.IsAny<CancellationToken>()))
             .ReturnsAsync(false);
 
-        var result = await controller.CreateOrUpdateAttendance(id, records, TestContext.Current.CancellationToken);
+        var result = await controller.SaveAttendance(id, records, TestContext.Current.CancellationToken);
 
         AssertNotFoundProblem(result);
     }
@@ -438,7 +438,7 @@ public class ScholarsControllerTests
     {
         var (controller, dataAccess) = MakeController();
         var id = Guid.NewGuid();
-        dataAccess.Setup(d => d.GetAttendanceByScholarIdAsync(id, It.IsAny<CancellationToken>()))
+        dataAccess.Setup(d => d.GetAttendanceAsync(id, It.IsAny<CancellationToken>()))
             .ReturnsAsync([]);
 
         var result = await controller.GetAttendance(id, TestContext.Current.CancellationToken);

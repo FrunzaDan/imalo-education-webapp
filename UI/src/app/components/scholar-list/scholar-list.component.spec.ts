@@ -98,7 +98,7 @@ describe('ScholarListComponent', () => {
     const { component } = await setup();
 
     expect(component.loading()).toBe(false);
-    expect(component.scholarData().map((s) => [s.name, s.schoolName])).toEqual([
+    expect(component.sortedRows().map((s) => [s.name, s.schoolName])).toEqual([
       ['Ana Popescu', 'Scoala 1'],
       ['Bogdan Popescu', 'Unknown'],
     ]);
@@ -121,10 +121,10 @@ describe('ScholarListComponent', () => {
     const { component } = await setup();
 
     component.setSort('grade');
-    expect(component.scholarData().map((s) => s.grade)).toEqual([1, 3]);
+    expect(component.sortedRows().map((s) => s.grade)).toEqual([1, 3]);
 
     component.setSort('grade');
-    expect(component.scholarData().map((s) => s.grade)).toEqual([3, 1]);
+    expect(component.sortedRows().map((s) => s.grade)).toEqual([3, 1]);
     expect(component.sortDirection()).toBe('desc');
   });
 
@@ -139,7 +139,7 @@ describe('ScholarListComponent', () => {
     component.setSort('birthDate');
 
     // By display text "01 Dec 2017" would sort after "01 Feb 2018".
-    expect(component.scholarData().map((s) => s.scholarId)).toEqual(['a', 'b']);
+    expect(component.sortedRows().map((s) => s.scholarId)).toEqual(['a', 'b']);
   });
 
   it('sorts from a header button and reports the sort on the header', async () => {
@@ -177,7 +177,7 @@ describe('ScholarListComponent', () => {
 
     component.searchForm.term().value.set('bog');
 
-    expect(component.displayedScholarData().map((s) => s.name)).toEqual([
+    expect(component.visibleRows().map((s) => s.name)).toEqual([
       'Bogdan Popescu',
     ]);
   });
@@ -194,7 +194,7 @@ describe('ScholarListComponent', () => {
     expect(deleteScholarSilently).toHaveBeenCalledWith(ANA.scholarId);
     expect(show).toHaveBeenCalledWith('Deleted 1 scholar.', 'success');
     expect(getScholars).toHaveBeenCalledTimes(2);
-    expect(component.scholarData().map((s) => s.scholarId)).toEqual([
+    expect(component.sortedRows().map((s) => s.scholarId)).toEqual([
       BOGDAN.scholarId,
     ]);
     expect(component.selectedScholarIds().size).toBe(0);
