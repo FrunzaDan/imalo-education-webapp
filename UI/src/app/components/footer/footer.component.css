@@ -13,8 +13,6 @@
   overflow: hidden;
 }
 
-/* Sits on the footer's own top edge, tinted with the page background so it
-   reads as a torn/wave edge rather than a hard rectangle. */
 .app-footer__wave {
   position: absolute;
   top: 0;

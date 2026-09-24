@@ -11,9 +11,6 @@ export class SchoolService {
   private readonly http = inject(HttpClient);
   private readonly schoolsUrl = '../../assets/schools.json';
 
-  // Fetched on the first subscribe, then shared: every later caller gets the
-  // cached list. Falls back to an empty list; apiLoggerInterceptor has already
-  // logged the failed request.
   private readonly schools$ = this.http.get<School[]>(this.schoolsUrl).pipe(
     shareReplay(1),
     catchError(() => of([])),

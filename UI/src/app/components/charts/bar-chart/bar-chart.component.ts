@@ -5,7 +5,6 @@ export interface BarChartPoint {
   key: string;
   label: string;
   value: number;
-  // Present only for a two-series (stacked) chart.
   value2?: number;
 }
 
@@ -39,23 +38,12 @@ const BAR_WIDTH = 22;
 const PLOT_HEIGHT = 160;
 const TOP_PADDING = 28;
 const AXIS_HEIGHT = 24;
-// A label longer than this doesn't fit horizontally in one band at the
-// default width without colliding with its neighbors (e.g. school names) —
-// tip it on its side instead, like a normal chart's category axis.
 const ROTATE_LABEL_THRESHOLD = 10;
 const ROTATED_AXIS_HEIGHT = 64;
-// Left margin reserved for the y-axis tick labels ("0", "50", "1.2k", ...) so
-// the first bar — painted after them — doesn't cover them. Also wide enough
-// that a rotated x-axis label on the first bar (which trails up and to the
-// left from its tick) doesn't get clipped by the SVG's left edge.
 const LEFT_PADDING = 24;
 const SEGMENT_GAP = 2;
 const MIN_CHART_WIDTH = 320;
 
-// Bar / stacked-bar chart, rendered as inline SVG using the app's own design
-// tokens (cyan-main = series a, orange-text = series b — the only two colors
-// from styles.css that pass the dataviz categorical checks at full-size fill:
-// see the Charts feature note in ai_docs/angular-frontend.md).
 @Component({
   selector: 'app-bar-chart',
   imports: [],
@@ -128,7 +116,6 @@ export class BarChartComponent {
       const bandX = index * BAND_WIDTH + leftPadding;
       const x = bandX + (BAND_WIDTH - BAR_WIDTH) / 2;
 
-      // Fixed stack order, never swapped: series b (bottom) under series a (top).
       const raw = (
         [
           { value: point.value2 ?? 0, series: 'b' as const },

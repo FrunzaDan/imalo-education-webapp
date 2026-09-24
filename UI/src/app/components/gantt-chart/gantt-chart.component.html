@@ -9,7 +9,6 @@
     <section class="gantt-container">
       <h2 class="gantt-day-title">{{ formatDayTitle(day) }}</h2>
       <div class="gantt-chart">
-        <!-- Header -->
         <div class="gantt-header" [style.--slot-count]="timeSlots.length">
           <div class="name-cell">Name</div>
           @for (slot of timeSlots; track slot) {
@@ -18,7 +17,6 @@
             </div>
           }
         </div>
-        <!-- Rows -->
         @for (scholar of scholars(); track scholar) {
           <div class="gantt-row" [style.--slot-count]="timeSlots.length">
             <div class="name-cell">{{ scholar.firstName }}</div>

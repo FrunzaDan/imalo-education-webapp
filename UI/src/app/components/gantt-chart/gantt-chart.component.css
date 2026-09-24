@@ -25,10 +25,6 @@
   font-family: inherit;
 }
 
-/* --slot-count is set inline from timeSlots.length (see the component's
-   generateTimeSlots) rather than hardcoded here — a fixed column count
-   previously drifted out of sync with the actual number of slots rendered,
-   leaving unfilled grid tracks (dead space) to the right of the table. */
 .gantt-header {
   display: grid;
   grid-template-columns: 150px repeat(var(--slot-count), minmax(60px, 1fr));
@@ -56,7 +52,6 @@
   align-items: center;
 }
 
-/* Row separators run under the name column too, not just the time cells. */
 .gantt-row .name-cell {
   border-bottom: var(--border-width) solid
     rgba(var(--cyan-main-color-for-alpha), 0.15);
@@ -69,10 +64,6 @@
   text-align: center;
   font-size: 0.75rem;
   line-height: 1.25;
-  /* Default ink for empty cells; occupied cells override it inline with
-     black/white picked against the school color. No opacity here — it used to
-     wash the fill out, so the cell no longer matched the school color (or the
-     scholar table) and any contrast maths done on the raw color was wrong. */
   color: var(--dark-main-color);
   position: relative;
   background-color: #ffffff;

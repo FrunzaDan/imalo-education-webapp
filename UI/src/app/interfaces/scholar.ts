@@ -9,8 +9,6 @@ export interface Scholar {
   schoolId: number | null;
   grade: number | null;
   birthDate: IsoDate;
-  // A scholar may have a mother, a father, both, or neither — and each of a
-  // parent's fields can be null on its own.
   motherFirstName: string | null;
   motherLastName: string | null;
   motherPhoneNumber: string | null;

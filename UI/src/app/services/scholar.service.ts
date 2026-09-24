@@ -5,10 +5,6 @@ import { environment } from '../../environments/environment';
 import { Scholar } from '../interfaces/scholar';
 import { NotificationService } from './notification.service';
 
-// Failed requests surface as the HttpClient's own HttpErrorResponse; callers
-// turn that into a message with extractErrorMessage and show it inline.
-// A successful change confirms itself with a toast; the *Silently variants
-// skip it, for bulk callers that show one summary toast instead.
 @Injectable({ providedIn: 'root' })
 export class ScholarService {
   private readonly http = inject(HttpClient);

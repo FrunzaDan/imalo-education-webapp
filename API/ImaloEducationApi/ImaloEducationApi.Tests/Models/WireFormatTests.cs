@@ -4,13 +4,9 @@ using ImaloEducationApi.Models;
 
 namespace ImaloEducationApi.Tests.Models;
 
-// Pins the JSON shapes the Angular app depends on, using the same options ASP.NET
-// Core's input/output formatters use (camelCase, case-insensitive).
 public class WireFormatTests
 {
     private static readonly JsonSerializerOptions Web = JsonSerializerOptions.Web;
-
-    // ---- PickupSchedule ----
 
     [Fact]
     public void PickupSchedule_ReadsHourMinuteTimesAndNulls()
@@ -37,8 +33,6 @@ public class WireFormatTests
     [Fact]
     public void PickupSchedule_DayNamesAreCaseInsensitive()
     {
-        // Schedules stored before the typed class were a Dictionary with lowercase keys;
-        // the typed class itself is stored PascalCase. Both must read back.
         var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
 
         Assert.Equal(new TimeOnly(8, 0),
@@ -55,12 +49,12 @@ public class WireFormatTests
     }
 
     [Theory]
-    [InlineData("12")] // bare number — must not be read as a duration
-    [InlineData("99:00")] // hour out of range
+    [InlineData("12")]
+    [InlineData("99:00")]
     [InlineData("08:00 AM")]
     [InlineData("not-a-time")]
-    [InlineData("8:00")] // not zero-padded — strict HH:mm only
-    [InlineData("08:00:00")] // TimeOnly's default format, still not HH:mm
+    [InlineData("8:00")]
+    [InlineData("08:00:00")]
     public void PickupSchedule_RejectsNonStrictTimeFormats(string invalidTime)
     {
         var ex = Assert.Throws<JsonException>(() =>
@@ -77,8 +71,6 @@ public class WireFormatTests
         Assert.Null(schedule.Monday);
         Assert.Null(schedule.Tuesday);
     }
-
-    // ---- AttendanceRecord ----
 
     [Fact]
     public void AttendanceRecord_DateIsDateOnly()
@@ -100,8 +92,6 @@ public class WireFormatTests
         Assert.Equal(2, results.Count);
     }
 
-    // ---- Audit log ----
-
     [Fact]
     public void AuditLogEntry_ActionTypeByNameAndOccurredAtAsUtc()
     {
@@ -116,7 +106,6 @@ public class WireFormatTests
         var json = JsonSerializer.Serialize(entry, Web);
 
         Assert.Contains("\"actionType\":\"Edited\"", json);
-        // The trailing "Z" is what makes the browser convert it to local time.
         Assert.Contains("\"occurredAt\":\"2026-09-23T10:00:00Z\"", json);
     }
 }

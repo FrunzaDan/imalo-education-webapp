@@ -10,13 +10,10 @@ export interface TodayPickup {
   schoolColor: string;
 }
 
-// null on a weekend — there is no pickup-schedule day for it.
 export function todayWeekdayKey(today: Date): WeekDay | null {
-  // getDay(): 0 = Sunday … 6 = Saturday; WEEK_DAYS starts at Monday.
   return WEEK_DAYS[today.getDay() - 1] ?? null;
 }
 
-// Every scholar with a pickup time today, earliest first.
 export function todaysPickups(
   scholars: Scholar[],
   schools: School[],
@@ -50,16 +47,11 @@ export function todaysPickups(
 export interface UpcomingBirthday {
   scholarId: string;
   name: string;
-  date: string; // 'YYYY-MM-DD' of the next occurrence (this year or next)
+  date: string;
   turningAge: number;
-  daysUntil: number; // 0 = today
+  daysUntil: number;
 }
 
-// Scholars whose birthday falls within the next `withinDays` days (today
-// counts as 0 days away), soonest first. A birthday already passed this
-// calendar year is re-anchored onto next year before measuring the distance,
-// so late-December birthdays correctly roll into the new year instead of
-// reading as "364 days ago".
 export function upcomingBirthdays(
   scholars: Scholar[],
   today: Date,

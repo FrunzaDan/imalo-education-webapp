@@ -6,17 +6,12 @@ import { ScholarAttendance } from '../interfaces/scholar-attendance';
 import { environment } from '../../environments/environment';
 import { NotificationService } from './notification.service';
 
-// Same conventions as ScholarService: errors surface as HttpErrorResponse,
-// a successful save confirms itself with a toast (skipped by *Silently).
 @Injectable({ providedIn: 'root' })
 export class AttendanceService {
   private readonly http = inject(HttpClient);
   private readonly notificationService = inject(NotificationService);
   private readonly apiUrl = `${environment.apiUrl}/api/scholars`;
 
-  // No caching here: this list is read by the attendance dashboard right after
-  // per-scholar edits get saved elsewhere, so a stale cached copy would show
-  // pre-edit data. It's a small local dataset — refetching is cheap.
   getAllAttendance(): Observable<ScholarAttendance[]> {
     return this.http.get<ScholarAttendance[]>(`${this.apiUrl}/attendance`);
   }
@@ -27,7 +22,6 @@ export class AttendanceService {
     );
   }
 
-  // Replaces the scholar's whole attendance list (the API answers 204).
   saveAttendance(
     scholarId: string,
     attendance: AttendanceRecord[],

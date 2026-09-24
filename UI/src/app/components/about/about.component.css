@@ -48,13 +48,10 @@
   margin-top: var(--space-1);
 }
 
-/* Trailing element of a card needs no bottom margin — the card's own padding
-   already provides the space. */
 .about-card__body > :last-child {
   margin-bottom: 0;
 }
 
-/* Inline code / key names in prose */
 .about-card__body code,
 .about-card__body kbd {
   padding: 0.1em var(--space-1);
@@ -72,7 +69,6 @@
   font-size: 0.85rem;
 }
 
-/* Reset the inline-code chip inside a code block */
 .about-code code {
   padding: 0;
   background: none;

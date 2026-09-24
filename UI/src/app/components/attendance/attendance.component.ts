@@ -35,8 +35,6 @@ export class AttendanceComponent {
   private readonly attendanceService = inject(AttendanceService);
   private readonly csvExportService = inject(CsvExportService);
 
-  // Everything the page needs, fetched in parallel once per visit. hasValue()
-  // guards the reads: value() throws while the resource is in error.
   private readonly data = rxResource({
     stream: () =>
       forkJoin({
@@ -61,8 +59,6 @@ export class AttendanceComponent {
       : null;
   });
 
-  // 'YYYY-MM', the value format of <input type="month">, defaulting to
-  // DEFAULT_MONTH. The prev/next arrows write straight into it.
   readonly monthForm = form(signal({ month: DEFAULT_MONTH }));
   readonly selectedMonth = computed(() => this.monthForm.month().value());
 
@@ -75,8 +71,6 @@ export class AttendanceComponent {
     ),
   );
 
-  // Footer summary: one Present/Lunch/Transport count per day, plus the
-  // month's totals below that.
   readonly dailyCounts = computed(() =>
     countsByDay(this.rows(), this.weekdayDates().length),
   );

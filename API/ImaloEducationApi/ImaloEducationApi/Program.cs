@@ -7,33 +7,21 @@ using Microsoft.AspNetCore.Mvc.ApplicationModels;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Configuration, bound and validated at startup (ValidateOnStart): a missing or invalid value stops
-// the app with an OptionsValidationException naming the key, instead of failing on the first
-// request that needs it.
 builder.Services.AddOptions<DatabaseOptions>()
     .BindConfiguration(DatabaseOptions.SectionName)
     .ValidateDataAnnotations()
     .ValidateOnStart();
 
-// Routes are declared as "api/[controller]"; the transformer turns the PascalCase class name
-// into the lowercase, kebab-case URL segment (ScholarsController -> /api/scholars).
 builder.Services.AddControllers(options =>
     options.Conventions.Add(new RouteTokenTransformerConvention(new KebabCaseParameterTransformer())));
 
-// OpenAPI document from ASP.NET Core's built-in generator (/openapi/v1.json), shown by Swagger UI.
 builder.Services.AddOpenApi();
 
-// Custom Services
 builder.Services.AddSingleton<ISqlConnectionFactory, SqlConnectionFactory>();
 builder.Services.AddScoped<IScholarDataAccess, ScholarDataAccess>();
 
-// Health checks (liveness only — no DB probe)
 builder.Services.AddHealthChecks();
 
-// Access log: one structured line per request ("GET /api/... 200 12ms", CombineLogs), written at
-// Information by Microsoft.AspNetCore.HttpLogging. Headers and bodies stay out on purpose — they
-// carry bearer tokens, passwords and personal data. Outside Development the console writes JSON
-// with scopes, so every line carries the TraceId that a Problem Details body returns as traceId.
 builder.Services.AddHttpLogging(options =>
 {
     options.LoggingFields = HttpLoggingFields.RequestMethod | HttpLoggingFields.RequestPath |
@@ -41,13 +29,9 @@ builder.Services.AddHttpLogging(options =>
     options.CombineLogs = true;
 });
 
-// Every error response is RFC 9457 Problem Details (application/problem+json): validation
-// failures from [ApiController], Problem()/NotFound results, bare status codes (UseStatusCodePages)
-// and unhandled exceptions (GlobalExceptionHandler, which logs them once and answers 500).
 builder.Services.AddProblemDetails();
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 
-// Only the Angular app's own origins may call the API from a browser.
 var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? [];
 
 builder.Services.AddCors(options =>
@@ -60,18 +44,10 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
-// --------------------------------------------------
-// Configure Middleware
-// --------------------------------------------------
-
-// Outermost, so the logged status is the final one (a 500 written by the exception handler too).
 app.UseHttpLogging();
-// Next, so it catches exceptions from everything after it.
 app.UseExceptionHandler();
-// Gives an empty 4xx/5xx (unknown route, wrong method, unsupported media type) a Problem Details body.
 app.UseStatusCodePages();
 
-// Enable Swagger in development only
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
@@ -80,11 +56,6 @@ if (app.Environment.IsDevelopment())
 
 app.UseCors();
 
-// Every response here is live, frequently-mutated data (scholars/attendance),
-// never a fixed resource — without this, browsers apply heuristic caching to
-// a bare 200 OK with no Cache-Control/ETag/Last-Modified, which is exactly
-// what was making the Angular app (using HttpClient's withFetch() backend)
-// show stale data after a create/update/delete until a hard refresh.
 app.Use(async (context, next) =>
 {
     context.Response.Headers.CacheControl = "no-store";
@@ -92,10 +63,8 @@ app.Use(async (context, next) =>
 });
 
 app.MapHealthChecks("/health")
-    // Polled every 15 s by the UI; one access-log line per poll would drown the real traffic.
     .WithHttpLogging(HttpLoggingFields.None);
 
-// Map attribute-based controllers
 app.MapControllers();
 
 app.Run();

@@ -3,8 +3,6 @@ using ImaloEducationApi.Models;
 
 namespace ImaloEducationApi.Tests.Data;
 
-// The "Edited" audit entry's Details: which fields an update changed, in the customer and
-// employee apps' "Updated: first name, email" form.
 public class ScholarChangesTests
 {
     private static Scholar SampleScholar() => new()
@@ -78,7 +76,6 @@ public class ScholarChangesTests
     [Fact]
     public void Describe_BlankParentField_IsTheSameAsNone()
     {
-        // A blank field is stored as NULL, so sending "" for a field that's NULL changes nothing.
         var before = SampleScholar();
         var after = Copy(before);
         after.MotherLastName = "  ";
@@ -89,7 +86,6 @@ public class ScholarChangesTests
     [Fact]
     public void Describe_NoScheduleOnTheUpdate_LeavesTheScheduleUnchanged()
     {
-        // UpdateScholarAsync only writes the schedule when one is sent.
         var before = SampleScholar();
         var after = Copy(before);
         after.PickupSchedule = null;

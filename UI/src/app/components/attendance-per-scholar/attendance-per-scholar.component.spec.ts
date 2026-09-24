@@ -15,12 +15,6 @@ import type { Scholar } from '../../interfaces/scholar';
 import type { School } from '../../interfaces/school';
 import type { AttendanceRecord } from '../../interfaces/attendance-record';
 
-// TestBed spec for AttendancePerScholarComponent (see ai_docs/angular-frontend.md). Covers
-// the day-row/persistence/gating rules and the save flow. The rules are driven the way a
-// user drives them — real checkbox clicks, which fire `input` (what [formField] listens
-// to) and then `change` (what the rule handlers listen to) — so the template wiring is
-// under test too, not just the handlers.
-
 const SCHOLAR: Scholar = {
   scholarId: 'scholar-1',
   firstName: 'Ana',
@@ -45,14 +39,8 @@ const SCHOOL: School = {
   transportPrice: 10,
 };
 
-// A Monday — getWeekdayDatesInMonth always includes it, keeping the "existing
-// record" fixture independent of which weekdays March happens to start/end on.
 const EXISTING_DATE = '2024-03-04';
 
-// A factory, not a shared const: dayRows holds a direct reference into whatever
-// array setup() passes in, and several tests mutate that record in place (that's
-// the app's own real behavior — see allAttendanceRecords' doc comment). Sharing
-// one object across tests would leak mutations from one test into the next.
 function makeExistingRecord(): AttendanceRecord {
   return {
     date: EXISTING_DATE,
@@ -114,13 +102,12 @@ function setup(options: SetupOptions = {}) {
 
   const fixture: ComponentFixture<AttendancePerScholarComponent> =
     TestBed.createComponent(AttendancePerScholarComponent);
-  // The route's :scholarId reaches the component as an input (withComponentInputBinding()).
   const routeId =
     options.routeScholarId === undefined
       ? SCHOLAR.scholarId
       : options.routeScholarId;
   if (routeId !== null) fixture.componentRef.setInput('scholarId', routeId);
-  fixture.detectChanges(); // runs ngOnInit; every service call above is a synchronous `of`/`throwError`
+  fixture.detectChanges();
 
   return {
     fixture,
@@ -138,7 +125,6 @@ function dayRow(component: AttendancePerScholarComponent, date: string) {
   return row;
 }
 
-// A March 2024 weekday with no saved record.
 const UNTOUCHED_DATE = getWeekdayDatesInMonth(2024, 3).find(
   (d) => d !== EXISTING_DATE,
 )!;
@@ -162,7 +148,6 @@ function checkbox(
   ];
 }
 
-// A real user click: toggles the box, fires `input` then `change`, then re-renders.
 function click(ctx: Setup, date: string, box: Box): void {
   checkbox(ctx, date, box).click();
   ctx.fixture.detectChanges();
@@ -312,7 +297,7 @@ describe('AttendancePerScholarComponent', () => {
 
     it('unchecking Present clears an already-checked Lunch and Transport', () => {
       const ctx = setup();
-      click(ctx, EXISTING_DATE, 'transport'); // Lunch is already on from the fixture
+      click(ctx, EXISTING_DATE, 'transport');
 
       click(ctx, EXISTING_DATE, 'present');
 
@@ -376,7 +361,7 @@ describe('AttendancePerScholarComponent', () => {
 
     it('unchecking Lunch leaves an already-checked Transport untouched', () => {
       const ctx = setup();
-      click(ctx, EXISTING_DATE, 'transport'); // Lunch is on from the fixture
+      click(ctx, EXISTING_DATE, 'transport');
 
       click(ctx, EXISTING_DATE, 'lunch');
 
@@ -410,9 +395,9 @@ describe('AttendancePerScholarComponent', () => {
     });
 
     it('re-checking a day keeps its already-seeded cost instead of re-seeding it', () => {
-      const ctx = setup(); // the existing record has lunchCost 15, not the school price
-      click(ctx, EXISTING_DATE, 'lunch'); // off
-      click(ctx, EXISTING_DATE, 'lunch'); // on again
+      const ctx = setup();
+      click(ctx, EXISTING_DATE, 'lunch');
+      click(ctx, EXISTING_DATE, 'lunch');
 
       expect(dayRow(ctx.component, EXISTING_DATE).lunchCost).toBe(15);
     });
@@ -420,7 +405,7 @@ describe('AttendancePerScholarComponent', () => {
     it('the "Both" checkbox reflects true only once both are independently checked', () => {
       const ctx = setup();
 
-      expect(checkbox(ctx, EXISTING_DATE, 'both').checked).toBe(false); // Lunch only
+      expect(checkbox(ctx, EXISTING_DATE, 'both').checked).toBe(false);
 
       click(ctx, EXISTING_DATE, 'transport');
 
@@ -463,7 +448,7 @@ describe('AttendancePerScholarComponent', () => {
 
       click(ctx, UNTOUCHED_DATE, 'transport');
 
-      expect(ctx.component.totalSelectedLunchCost()).toBe(15); // from the existing record
+      expect(ctx.component.totalSelectedLunchCost()).toBe(15);
       expect(ctx.component.totalSelectedTransportCost()).toBe(
         SCHOOL.transportPrice,
       );

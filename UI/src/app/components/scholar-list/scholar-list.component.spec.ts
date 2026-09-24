@@ -11,9 +11,6 @@ import { NotificationService } from '../../services/notification.service';
 import type { Scholar } from '../../interfaces/scholar';
 import type { School } from '../../interfaces/school';
 
-// TestBed spec for ScholarListComponent: the scholars/schools resource, sorting and the
-// bulk delete that reloads it. Every service call is a synchronous `of`/`throwError`.
-
 const SCHOOL: School = {
   schoolId: 1,
   name: 'Scoala 1',
@@ -138,7 +135,6 @@ describe('ScholarListComponent', () => {
 
     component.setSort('birthDate');
 
-    // By display text "01 Dec 2017" would sort after "01 Feb 2018".
     expect(component.sortedRows().map((s) => s.scholarId)).toEqual(['a', 'b']);
   });
 

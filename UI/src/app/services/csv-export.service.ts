@@ -5,11 +5,6 @@ export interface CsvColumn<T> {
   value: (row: T) => string | number | null | undefined;
 }
 
-// Client-side CSV generation: unlike Customer_Management_System's
-// ExportCustomerService (which streams a CSV from the API because its list
-// is server-paginated/searched), every table in this app already holds its
-// full, already-loaded dataset in memory — so there's nothing to gain from a
-// round-trip, and no export endpoint needs to exist on the API.
 @Injectable({ providedIn: 'root' })
 export class CsvExportService {
   export<T>(filenamePrefix: string, columns: CsvColumn<T>[], rows: T[]): void {

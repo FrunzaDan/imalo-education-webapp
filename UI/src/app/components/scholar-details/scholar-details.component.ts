@@ -32,12 +32,8 @@ export class ScholarDetailsComponent {
   private readonly confirmDialogService = inject(ConfirmDialogService);
   private readonly auditLogService = inject(AuditLogService);
 
-  // Bound from the `:scholarId` route param by withComponentInputBinding() in
-  // app.config.ts — and, unlike route.snapshot, follows the param if it changes.
   readonly scholarId = input<string>();
 
-  // reading a resource's value() while it is in the error state throws, so
-  // scholar()/school() go through hasValue() and fall back to null.
   private readonly scholarResource = rxResource({
     params: () => this.scholarId(),
     stream: ({ params: scholarId }) =>
@@ -56,7 +52,6 @@ export class ScholarDetailsComponent {
       : null;
   });
 
-  // Idle (no request) until the scholar has loaded and has a school.
   private readonly schoolResource = rxResource({
     params: () => this.scholar()?.schoolId || undefined,
     stream: ({ params: schoolId }) => this.schoolService.getSchool(schoolId),
@@ -83,8 +78,6 @@ export class ScholarDetailsComponent {
     });
   }
 
-  // Composes whatever's actually present — a parent may have a name, a
-  // phone number, both, or (if this returns '') neither.
   formatParent(
     firstName?: string | null,
     lastName?: string | null,

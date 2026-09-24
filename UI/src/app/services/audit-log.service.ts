@@ -10,16 +10,12 @@ export class AuditLogService {
 
   private readonly scholarId = signal<string | undefined>(undefined);
 
-  // Declarative fetch: the request is a function of `scholarId`, so a new
-  // scholarId cancels the in-flight request and starts another, and no request is
-  // made at all until a scholarId has been set (returning undefined idles it).
   private readonly auditLogResource = httpResource<AuditLogEntry[]>(() => {
     const scholarId = this.scholarId();
     if (!scholarId) return undefined;
     return `${this.apiUrl}/${scholarId}/audit-log`;
   });
 
-  // hasValue() guards the read: value() throws while the resource is in error.
   readonly entries = computed(() =>
     this.auditLogResource.hasValue() ? this.auditLogResource.value() : [],
   );
@@ -36,7 +32,6 @@ export class AuditLogService {
 
   loadAuditLog(scholarId: string): void {
     if (this.scholarId() === scholarId) {
-      // Same scholar — the request itself hasn't changed, so ask for a fresh copy.
       this.auditLogResource.reload();
     } else {
       this.scholarId.set(scholarId);

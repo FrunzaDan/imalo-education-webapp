@@ -100,9 +100,6 @@ const LAST_NAMES = [
   'Müller',
 ];
 
-// Matches GanttChartComponent's own slot window (11:00-13:45, 15-minute
-// steps), so randomly-generated schedules actually land on a slot and show
-// up highlighted on the pickup-time chart instead of just sitting in data.
 const PICKUP_TIME_SLOTS = (() => {
   const slots: string[] = [];
   for (let hour = 11; hour < 14; hour++) {
@@ -123,8 +120,6 @@ function randomInt(min: number, max: number): number {
   return min + Math.floor(Math.random() * (max - min + 1));
 }
 
-// Every calendar month from (startYear, startMonth) to (endYear, endMonth),
-// inclusive on both ends.
 function monthsInRange(
   startYear: number,
   startMonth: number,
@@ -146,7 +141,6 @@ function monthsInRange(
   return months;
 }
 
-// 'YYYY-MM-DD' — matches Scholar.birthDate (the API's DateOnly).
 function randomBirthdate(): string {
   const now = new Date();
   const end = new Date(
@@ -164,13 +158,11 @@ function randomBirthdate(): string {
 }
 
 function randomPickupSchedule(): PickupSchedule {
-  // Every test scholar has a pickup time every weekday.
   return Object.fromEntries(
     WEEK_DAYS.map((day) => [day, pick(PICKUP_TIME_SLOTS)]),
   ) as PickupSchedule;
 }
 
-// A plausible-looking Romanian mobile number.
 function randomPhoneNumber(): string {
   const prefix = pick(['072', '073', '074', '075', '076', '077', '078']);
   let digits = '';
@@ -185,9 +177,6 @@ interface RandomParent {
   phoneNumber: string | null;
 }
 
-// A parent (name + phone), or all-null if this scholar has no parent
-// recorded for that role — both mother and father are independently
-// optional in the real data model too.
 function randomParent(chance: number): RandomParent {
   if (Math.random() >= chance) {
     return { firstName: null, lastName: null, phoneNumber: null };
@@ -287,8 +276,6 @@ export class AboutComponent {
   }
 
   private buildRandomScholar(schools: School[]): Scholar {
-    // Every test scholar has at least one parent with contact info; the
-    // other role is independently optional, same as the real data model.
     const mother = randomParent(1);
     const father = randomParent(0.5);
     return {
@@ -308,11 +295,6 @@ export class AboutComponent {
     };
   }
 
-  // Every month from July 2024 to September 2026 inclusive, most (not all)
-  // weekdays, so the attendance dashboard's Charts page has real month- and
-  // year-spanning trends to show right away instead of just the last couple
-  // of months. No scholar ever gets Transport in July or August — school
-  // holidays, no pickup runs.
   private buildRandomAttendance(
     school: School | undefined,
   ): AttendanceRecord[] {
@@ -322,13 +304,11 @@ export class AboutComponent {
 
     const records: AttendanceRecord[] = [];
     for (const { year, month } of months) {
-      const isSummerBreak = month === 7 || month === 8; // no transport in Jul/Aug
+      const isSummerBreak = month === 7 || month === 8;
 
       for (const date of getWeekdayDatesInMonth(year, month)) {
-        if (Math.random() >= 0.7) continue; // skip some days entirely
+        if (Math.random() >= 0.7) continue;
 
-        // Lunch/Transport can only be selected while present, mirroring the
-        // rule enforced in the UI and the API.
         const present = Math.random() < 0.9;
         const lunchSelected = present && Math.random() < 0.8;
         const transportSelected =

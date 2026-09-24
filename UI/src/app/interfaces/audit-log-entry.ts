@@ -1,6 +1,5 @@
 import { IsoDateTime } from './iso-date';
 
-// ScholarAuditLog.ActionType — serialized by the API by name.
 export type AuditAction = 'Created' | 'Edited' | 'Deleted';
 
 export interface AuditLogEntry {

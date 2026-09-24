@@ -50,7 +50,6 @@ function aggregate(
   return { present, lunchRevenue, transportRevenue };
 }
 
-// One point per weekday of `month`, aggregated across every scholar.
 export function buildDailyPoints(
   allAttendance: ScholarAttendance[],
   month: string,
@@ -71,10 +70,6 @@ export function buildDailyPoints(
   }));
 }
 
-// One point per calendar month of `year`, aggregated across every scholar.
-// Parses the year/month straight out of the 'YYYY-MM-DD' string rather than
-// via `new Date(...)`, so a UTC-midnight record never shifts into the
-// neighboring month/year under a negative timezone offset.
 export function buildMonthlyPoints(
   allAttendance: ScholarAttendance[],
   year: number,
@@ -101,8 +96,6 @@ export const totalOf = (
   field: keyof Omit<ChartPoint, 'key' | 'label'>,
 ): number => points.reduce((sum, p) => sum + p[field], 0);
 
-// The point with the highest `present` count, or null when every point is 0
-// (nothing to call out yet — e.g. a future month with no attendance data).
 export function busiestPoint(points: ChartPoint[]): ChartPoint | null {
   return points.reduce<ChartPoint | null>((best, p) => {
     if (p.present === 0) return best;
@@ -121,8 +114,6 @@ export interface CategoryCount {
   value: number;
 }
 
-// Scholar headcount per grade, ordered by grade (1..4 — an ordinal axis, not
-// sorted by count), with a trailing "Unassigned" bucket for a null grade.
 export function countByGrade(scholars: Scholar[]): CategoryCount[] {
   const counts = new Map<number, number>();
   let unassigned = 0;
@@ -148,9 +139,6 @@ export function countByGrade(scholars: Scholar[]): CategoryCount[] {
   return result;
 }
 
-// Scholar headcount per school, ranked highest first so the busiest school
-// reads straight off the chart, with a trailing "Unassigned" bucket for a
-// null schoolId.
 export function countBySchool(
   scholars: Scholar[],
   schools: School[],
@@ -177,7 +165,6 @@ export function countBySchool(
     .sort((a, b) => b.value - a.value);
 }
 
-// The highest-count entry, or null for an empty list.
 export function topCategory(counts: CategoryCount[]): CategoryCount | null {
   return counts.reduce<CategoryCount | null>(
     (best, c) => (!best || c.value > best.value ? c : best),

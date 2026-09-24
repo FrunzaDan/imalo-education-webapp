@@ -13,10 +13,6 @@ using Moq;
 
 namespace ImaloEducationApi.Tests.ErrorHandling;
 
-// Runs the real request pipeline in memory (WebApplicationFactory) with a mocked data layer, so
-// what's pinned here is what a client actually receives: every error is RFC 9457 Problem Details
-// (application/problem+json), whether it comes from model validation, a controller's Problem(),
-// an unmatched route or an unhandled exception.
 public class ErrorResponseTests
 {
     private static WebApplicationFactory<Program> CreateFactory(Mock<IScholarDataAccess> dataAccess,
@@ -24,7 +20,6 @@ public class ErrorResponseTests
         new WebApplicationFactory<Program>().WithWebHostBuilder(builder =>
         {
             builder.UseEnvironment(environment);
-            // Captures what the app logs, next to the console, for the logging assertions below.
             builder.ConfigureLogging(logging => logging.AddFakeLogging());
             builder.ConfigureTestServices(services => services.AddScoped(_ => dataAccess.Object));
         });
@@ -58,8 +53,6 @@ public class ErrorResponseTests
         Assert.Equal(exposesMessage, problem.TryGetProperty("detail", out var detail));
         if (exposesMessage) Assert.Equal("Login failed for user 'sa'.", detail.GetString());
 
-        // Logged exactly once, by GlobalExceptionHandler (ExceptionHandlerMiddleware doesn't log an
-        // exception an IExceptionHandler handled).
         var error = Assert.Single(factory.Services.GetFakeLogCollector().GetSnapshot(),
             record => record.Level >= LogLevel.Error);
         Assert.Equal(1, error.Id.Id);
@@ -147,7 +140,6 @@ public class ErrorResponseTests
     public async Task EveryRequest_WritesOneAccessLogLine_ExceptTheHealthPoll()
     {
         await using var factory = CreateFactory(new Mock<IScholarDataAccess>());
-        // https, so an HTTP-to-HTTPS redirect doesn't add a second request to the log.
         var client = factory.CreateClient(
             new WebApplicationFactoryClientOptions { BaseAddress = new Uri("https://localhost") });
 

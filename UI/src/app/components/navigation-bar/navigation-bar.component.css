@@ -32,7 +32,6 @@
   position: relative;
   display: inline-block;
   text-decoration: none;
-  /* Cream, not cyan-light: cyan-light on this teal is only ~3.9:1. */
   color: rgba(var(--light-main-color-for-alpha), 0.85);
   font-weight: 500;
   padding: var(--space-2) var(--space-3);
@@ -44,8 +43,6 @@
     transform var(--duration-fast) var(--ease-out);
 }
 
-/* Orange underline over the bottom border: grows from the centre on hover and
-   stays full width on the active page. */
 .nav-link::after {
   content: '';
   position: absolute;

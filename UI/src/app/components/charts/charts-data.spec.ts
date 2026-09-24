@@ -59,7 +59,6 @@ describe('buildDailyPoints', () => {
   it('returns one point per weekday of the month, labeled by day number', () => {
     const points = buildDailyPoints([], '2026-09');
 
-    // September 2026 has 22 weekdays; the 1st is a Tuesday.
     expect(points).toHaveLength(22);
     expect(points[0]).toEqual({
       key: '2026-09-01',

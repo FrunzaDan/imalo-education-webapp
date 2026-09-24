@@ -15,12 +15,6 @@ import {
 import type { Scholar } from '../../interfaces/scholar';
 import type { School } from '../../interfaces/school';
 
-// TestBed spec for the Signal Forms version of ScholarFormComponent. Follows the
-// pattern of attendance-per-scholar.component.spec.ts: standalone component,
-// zoneless, plain-object service fakes with synchronous observables. Business
-// rules go through the model signal; one test drives real DOM events to prove
-// the [formField] bindings (text / select / number / date / time) still wire up.
-
 const SCHOOLS: School[] = [
   {
     schoolId: 1,
@@ -115,11 +109,10 @@ async function setup(options: SetupOptions = {}) {
 
   const fixture: ComponentFixture<ScholarFormComponent> =
     TestBed.createComponent(ScholarFormComponent);
-  // The route's :scholarId reaches the component as an input (withComponentInputBinding()).
   if (options.routeId)
     fixture.componentRef.setInput('scholarId', options.routeId);
   fixture.detectChanges();
-  await fixture.whenStable(); // let the scholar rxResource load in edit mode
+  await fixture.whenStable();
   return {
     fixture,
     component: fixture.componentInstance,
@@ -240,9 +233,9 @@ describe('ScholarFormComponent', () => {
       const sent = (createScholar.mock.calls as unknown as Scholar[][])[0][0];
       expect(sent).toMatchObject({
         scholarId: '00000000-0000-0000-0000-000000000000',
-        schoolId: 1, // the <select>'s string, converted back to the API's number
+        schoolId: 1,
         grade: 3,
-        motherFirstName: null, // blank optional text becomes null
+        motherFirstName: null,
       });
       expect(navigate).toHaveBeenCalledWith(['/scholars', 'saved-id']);
     });
@@ -317,7 +310,6 @@ describe('ScholarFormComponent', () => {
       expect(createScholar).not.toHaveBeenCalled();
       const sent = (updateScholar.mock.calls as unknown as Scholar[][])[0][0];
       expect(sent.scholarId).toBe('scholar-1');
-      // Blank time inputs go out as null ("no pickup"), not ''.
       expect(sent.pickupSchedule).toEqual({
         monday: '12:00',
         tuesday: null,
@@ -395,8 +387,6 @@ describe('ScholarFormComponent', () => {
       const input = (id: string) =>
         el.querySelector<HTMLInputElement>(`#${id}`)!;
 
-      // Signal Forms listens for `input` on every native control, <select> included
-      // (browsers fire `input` on a select as well as `change`).
       const set = (
         control: HTMLInputElement | HTMLSelectElement,
         value: string,
@@ -414,7 +404,7 @@ describe('ScholarFormComponent', () => {
 
       expect(component.model()).toMatchObject({
         firstName: 'Ana',
-        grade: 3, // number input -> number, not "3"
+        grade: 3,
         birthDate: '2016-01-01',
         schoolId: '2',
         pickupSchedule: { monday: '12:30' },

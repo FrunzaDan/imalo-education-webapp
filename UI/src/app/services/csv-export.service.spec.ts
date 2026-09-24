@@ -7,8 +7,6 @@ describe('CsvExportService', () => {
     service = new CsvExportService();
   });
 
-  // escape() is private; accessed via bracket notation to unit-test the CSV
-  // quoting rules directly without going through the DOM-triggering export().
   const escape = (
     service: CsvExportService,
     value: string | number | null | undefined,

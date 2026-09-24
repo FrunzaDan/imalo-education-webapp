@@ -1,5 +1,4 @@
 :root {
-  /* Tidepool palette */
   --cyan-main-color: #00acb9;
   --cyan-main-color-for-alpha: 0, 172, 185;
   --cyan-darker-color: #1e817f;
@@ -11,37 +10,29 @@
   --orange-main-color-for-alpha: 255, 167, 38;
   --orange-light-color: #ffb347;
   --orange-light-color-for-alpha: 255, 179, 71;
-  /* #ffa726 is only ~2:1 against white — fine as a fill/border, unreadable
-     as text. Use this darker shade whenever the orange has to carry copy. */
   --orange-text-color: #a35a00;
   --light-main-color: #fdf1e8;
   --light-main-color-for-alpha: 253, 241, 232;
   --dark-main-color: #394546;
   --primary-font: 'Main', sans-serif;
 
-  /* Spacing scale (4px base) — every margin/padding/gap in the app should
-     reference one of these instead of a one-off px/rem value. */
-  --space-1: 0.25rem; /* 4px */
-  --space-2: 0.5rem; /* 8px */
-  --space-3: 0.75rem; /* 12px */
-  --space-4: 1rem; /* 16px */
-  --space-5: 1.5rem; /* 24px */
-  --space-6: 2rem; /* 32px */
-  --space-7: 3rem; /* 48px */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.5rem;
+  --space-6: 2rem;
+  --space-7: 3rem;
 
-  /* Border-radius scale */
-  --radius-sm: 0.375rem; /* 6px — small controls: pills, close buttons */
-  --radius-md: 0.5rem; /* 8px — buttons, inputs, nav links */
-  --radius-lg: 0.75rem; /* 12px — cards, tables, modals */
+  --radius-sm: 0.375rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
 
-  /* Shared border tokens, so every card/table/container draws the same
-     hairline instead of some using a border and others only a shadow. */
   --border-width: 1px;
   --border-width-thick: 2px;
   --border-color: rgba(var(--cyan-main-color-for-alpha), 0.2);
   --card-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
 
-  /* Motion: one set of durations and curves for every transition/animation. */
   --duration-fast: 0.15s;
   --duration-base: 0.25s;
   --duration-slow: 0.35s;
@@ -63,11 +54,6 @@ body {
   color: var(--dark-main-color);
 }
 
-/* Every routed page lives in the host element Angular inserts right after
-   <router-outlet>. Hosts are display:inline by default, so give them one shared
-   block wrapper: the same vertical rhythm under the navbar on every page, and
-   no page needs its own top/bottom margin. Horizontal edges stay flush with the
-   navbar's. */
 router-outlet + * {
   display: block;
   padding: var(--space-5) 0;
@@ -79,9 +65,6 @@ router-outlet + * {
   color: var(--cyan-dark-color);
 }
 
-/* Row of page-level actions (search, create, export...). Buttons carry no
-   margin of their own — spacing comes from this gap, so groups line up with
-   the content edge and centre/right-align correctly. */
 .page-toolbar {
   display: flex;
   flex-wrap: wrap;
@@ -107,9 +90,6 @@ input[type='checkbox']:disabled {
   cursor: not-allowed;
 }
 
-/* Shared card surface: white background, hairline border, consistent
-   radius + shadow. Every page-level container/card should build on this
-   instead of redeclaring its own border-radius/box-shadow combination. */
 .app-card {
   background-color: #ffffff;
   border: var(--border-width) solid var(--border-color);
@@ -117,45 +97,40 @@ input[type='checkbox']:disabled {
   box-shadow: var(--card-shadow);
 }
 
-/* General Button Style */
 .app-button {
-  display: inline-block; /* Allows padding and centers text */
+  display: inline-block;
   padding: var(--space-2) var(--space-4);
   background-color: var(--cyan-dark-color);
   color: var(--light-main-color);
-  border: var(--border-width-thick) solid var(--cyan-dark-color); /* Same-color border keeps sizing consistent with outlined variants */
-  border-radius: var(--radius-md); /* Rounded edges */
-  cursor: pointer; /* Indicate it's clickable */
+  border: var(--border-width-thick) solid var(--cyan-dark-color);
+  border-radius: var(--radius-md);
+  cursor: pointer;
   font-family: inherit;
   font-size: 16px;
   font-weight: 600;
   text-align: center;
-  text-decoration: none; /* Remove underline for routerLink buttons */
+  text-decoration: none;
   transition:
     filter var(--duration-fast) ease,
     transform var(--duration-fast) var(--ease-out),
     background-color var(--duration-fast) ease,
     color var(--duration-fast) ease,
-    box-shadow var(--duration-base) ease; /* Smooth transitions for effects */
-  -webkit-appearance: none; /* Remove default button styles for cross-browser consistency */
+    box-shadow var(--duration-base) ease;
+  -webkit-appearance: none;
   -moz-appearance: none;
   appearance: none;
 }
 
-/* Hover Effect (not while disabled — a disabled button must not react) */
 .app-button:hover:not(:disabled) {
-  filter: brightness(
-    0.88
-  ); /* Darken the current background a step, whatever it is */
-  transform: translateY(-2px); /* Lift button slightly */
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2); /* Soft shadow for depth */
+  filter: brightness(0.88);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
 }
 
-/* Active/Click Effect */
 .app-button:active:not(:disabled) {
-  filter: brightness(0.75); /* Darken further when clicked */
-  transform: translateY(0) scale(0.97); /* Press button down */
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); /* Smaller shadow when pressed */
+  filter: brightness(0.75);
+  transform: translateY(0) scale(0.97);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
 }
 
 .app-button:disabled {
@@ -165,7 +140,6 @@ input[type='checkbox']:disabled {
   box-shadow: none;
 }
 
-/* Accent variant: the one primary call-to-action per page (create, save) */
 .app-button--accent {
   background-color: var(--orange-main-color);
   border-color: var(--orange-main-color);
@@ -177,7 +151,6 @@ input[type='checkbox']:disabled {
   background-color: var(--orange-light-color);
 }
 
-/* Ghost variant: secondary utility actions (export, navigate) */
 .app-button--ghost {
   background-color: rgba(var(--cyan-main-color-for-alpha), 0.1);
   border-color: rgba(var(--cyan-main-color-for-alpha), 0.35);
@@ -190,8 +163,6 @@ input[type='checkbox']:disabled {
   box-shadow: none;
 }
 
-/* Danger variant: destructive actions. The palette has no red, so
-   destructive actions are told apart by shape (outline) rather than hue. */
 .app-button--danger {
   background-color: transparent;
   color: var(--dark-main-color);
@@ -209,8 +180,6 @@ input[type='checkbox']:disabled {
   color: rgba(var(--cyan-darker-color-for-alpha), 0.35);
 }
 
-/* Focus ring for keyboard navigation only (:focus-visible), declared after the
-   variants so a hovered-and-focused button still shows it. */
 .app-button:focus-visible {
   outline: none;
   box-shadow: 0 0 0 3px rgba(var(--cyan-light-color-for-alpha), 0.5);
@@ -220,7 +189,6 @@ input[type='checkbox']:disabled {
   box-shadow: 0 0 0 3px rgba(var(--orange-main-color-for-alpha), 0.4);
 }
 
-/* General Input Style */
 .app-input {
   width: 100%;
   padding: var(--space-2) var(--space-3);
@@ -229,7 +197,7 @@ input[type='checkbox']:disabled {
   color: var(--dark-main-color);
   background-color: var(--light-main-color);
   border: var(--border-width-thick) solid
-    rgba(var(--cyan-main-color-for-alpha), 0.5); /* Soft lagoon border */
+    rgba(var(--cyan-main-color-for-alpha), 0.5);
   border-radius: var(--radius-md);
   box-sizing: border-box;
   transition:
@@ -239,8 +207,6 @@ input[type='checkbox']:disabled {
   appearance: none;
 }
 
-/* appearance:none strips the native dropdown arrow, so a <select> would look
-   like a text box. Draw our own chevron. */
 select.app-input {
   padding-right: var(--space-6);
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5 6 6.5l5-5' fill='none' stroke='%23155b5a' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
@@ -250,34 +216,28 @@ select.app-input {
   cursor: pointer;
 }
 
-/* Placeholder text */
 .app-input::placeholder {
   color: rgba(var(--cyan-darker-color-for-alpha), 0.6);
   font-style: italic;
 }
 
-/* Focus State */
 .app-input:focus {
   outline: none;
   border-color: var(--cyan-main-color);
   box-shadow: 0 0 0 3px rgba(var(--cyan-main-color-for-alpha), 0.3);
 }
 
-/* Disabled State */
 .app-input:disabled {
   opacity: 0.55;
   cursor: not-allowed;
 }
 
-/* Error State: the palette has no red, so validation issues are told
-   apart with the warm orange accent instead of a semantic danger color. */
 .app-input.error {
   border-color: var(--orange-main-color);
   box-shadow: 0 0 5px 1px rgba(var(--orange-main-color-for-alpha), 0.5);
   background-color: rgba(var(--orange-main-color-for-alpha), 0.08);
 }
 
-/* Label Style */
 .app-label {
   display: block;
   margin-bottom: var(--space-2);
@@ -291,8 +251,6 @@ select.app-input {
   color: var(--orange-text-color);
 }
 
-/* Page-level error (a load or an action that failed), shown inline where the
-   user is looking. .app-error-message stays for field-level messages. */
 .app-alert {
   animation: reveal-in var(--duration-base) var(--ease-out);
   margin: 0 0 var(--space-4);
@@ -310,12 +268,6 @@ select.app-input {
   margin: var(--space-1) 0 0;
 }
 
-/* Every .app-table sits in one of these. On a narrow screen the table
-   scrolls sideways instead of squeezing its columns; vertical scrolling stays
-   with the page (overflow-y: hidden, or the browser makes the box a vertical
-   scroller too and it captures the mouse wheel). The shadow lives here, not on
-   the table, so the scroll box does not clip it. Keyboard users need to reach
-   it to scroll: role="region" aria-label="…" tabindex="0". */
 .table-scroll {
   overflow-x: auto;
   overflow-y: hidden;
@@ -335,7 +287,6 @@ select.app-input {
   box-shadow: none;
 }
 
-/* Shared data table, used by scholar-list (sortable) and the attendance grid */
 .app-table {
   width: 100%;
   border-collapse: collapse;
@@ -380,7 +331,6 @@ select.app-input {
   transform: scale(0.96);
 }
 
-/* One ▲ that turns over for descending, so flipping the direction animates. */
 .sort-indicator {
   display: inline-block;
   animation: sort-indicator-in var(--duration-base) var(--ease-spring);
@@ -420,19 +370,14 @@ select.app-input {
   background-color: var(--light-main-color);
 }
 
-/* After the zebra rule: at equal specificity the later rule wins, and hover
-   used to lose to it on every even row. */
 .table-row:hover {
   background-color: rgba(var(--cyan-main-color-for-alpha), 0.08);
 }
 
-/* Rows ticked for a bulk action; after :hover, so they keep their color
-   under the pointer. */
 .table-row.is-selected {
   background-color: rgba(var(--cyan-main-color-for-alpha), 0.14);
 }
 
-/* Hovered and selected body rows get an accent bar on their left edge. */
 tbody > .table-row > td:first-child:not(.table-cell--empty) {
   box-shadow: inset 0 0 0 var(--cyan-darker-color);
   transition: box-shadow var(--duration-fast) ease;
@@ -448,8 +393,6 @@ tbody > .table-row.is-selected > td:first-child {
   }
 }
 
-/* A link to a scholar from a table cell. It grows a little under the pointer
-   (from its left edge, as the cells are left-aligned) and presses in on click. */
 .table-link {
   display: inline-block;
   color: var(--cyan-dark-color);
@@ -467,8 +410,6 @@ tbody > .table-row.is-selected > td:first-child {
   text-underline-offset: 0.3em;
 }
 
-/* Only where a real pointer hovers: on a touch screen :hover sticks after a
-   tap and would leave the link enlarged. */
 @media (hover: hover) {
   .table-link:hover {
     transform: scale(1.06);
@@ -506,12 +447,6 @@ tbody > .table-row.is-selected > td:first-child {
   opacity: 0.65;
 }
 
-/* ---------------------------------------------------------------------
-   Motion
-   --------------------------------------------------------------------- */
-
-/* Cards rise into place when they appear. Sibling cards follow one another a
-   beat apart. */
 .app-card {
   animation: card-in var(--duration-slow) var(--ease-out) backwards;
   animation-delay: calc(var(--stagger, 0) * 60ms);
@@ -540,8 +475,6 @@ tbody > .table-row.is-selected > td:first-child {
   }
 }
 
-/* Loading messages wait a beat before fading in, so a fast load never
-   flashes one. */
 .loading-message {
   animation: loading-in var(--duration-base) ease 0.2s backwards;
 }
@@ -552,10 +485,6 @@ tbody > .table-row.is-selected > td:first-child {
   }
 }
 
-/* Table rows fade in one after another when they are added (first render, a
-   new page, new search results): animate.enter="row-enter" with
-   [style.--row-index]="$index" on the <tr>. A row that only moves (a re-sort)
-   is not re-created, so it stays still. The delay stops growing after 12 rows. */
 .row-enter {
   animation: row-in var(--duration-base) var(--ease-out) backwards;
   animation-delay: calc(min(var(--row-index, 0), 12) * 30ms);
@@ -574,8 +503,6 @@ tbody > .table-row.is-selected > td:first-child {
   }
 }
 
-/* For content that opens and closes, with Angular's animate.enter /
-   animate.leave: animate.enter="reveal-enter" animate.leave="reveal-leave". */
 .reveal-enter {
   animation: reveal-in var(--duration-base) var(--ease-out);
 }
@@ -598,8 +525,6 @@ tbody > .table-row.is-selected > td:first-child {
   }
 }
 
-/* Route changes cross-fade (the router's withViewTransitions). The header
-   gets its own name so it stays put instead of fading with the page. */
 header {
   view-transition-name: site-header;
 }
@@ -625,10 +550,6 @@ header {
   }
 }
 
-/* Print utilities: .no-print hides UI chrome (nav, buttons, toolbars) from a
-   printed page/PDF; .print-only is its inverse, for content (e.g. an invoice
-   header) that only makes sense once it's on paper. Global because both get
-   applied from inside routed page components as well as the app shell. */
 .print-only {
   display: none;
 }
@@ -654,13 +575,11 @@ header {
   }
 }
 
-/* Programmatic focus target after route changes — not an interactive control. */
 main:focus,
 main [tabindex='-1']:focus {
   outline: none;
 }
 
-/* Hidden on screen, still read by screen readers (e.g. a table's <caption>). */
 .visually-hidden {
   position: absolute;
   width: 1px;
@@ -673,7 +592,6 @@ main [tabindex='-1']:focus {
   border: 0;
 }
 
-/* Skip link: first tab stop on every page, hidden until focused (WCAG 2.4.1). */
 .skip-link {
   position: absolute;
   top: var(--space-2);
@@ -692,7 +610,6 @@ main [tabindex='-1']:focus {
   transform: translateY(0);
 }
 
-/* Respect the OS "reduce motion" setting (WCAG 2.3.3). */
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

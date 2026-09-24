@@ -37,18 +37,18 @@ public class ScholarValidationTests
 
     [Theory]
     [InlineData("0712345678")]
-    [InlineData("123456789")] // minimum length (9)
-    [InlineData("123456789012")] // maximum length (12)
+    [InlineData("123456789")]
+    [InlineData("123456789012")]
     public void ValidatePhoneNumber_AcceptsWellFormedNumbers(string phone)
     {
         Assert.Equal(ValidationResult.Success, ValidatePhone(phone));
     }
 
     [Theory]
-    [InlineData("12345678")] // too short (< 9)
-    [InlineData("abc-def-ghij")] // letters
-    [InlineData("+1 (415) 555-0132")] // formatting characters: digits only, same as the other apps
-    [InlineData("1234567890123")] // too long (> 12)
+    [InlineData("12345678")]
+    [InlineData("abc-def-ghij")]
+    [InlineData("+1 (415) 555-0132")]
+    [InlineData("1234567890123")]
     public void ValidatePhoneNumber_RejectsMalformedNumbers(string phone)
     {
         var result = ValidatePhone(phone);

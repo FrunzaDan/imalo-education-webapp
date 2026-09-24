@@ -21,8 +21,6 @@ function toTime(value: unknown): number {
   providedIn: 'root',
 })
 export class SortingService {
-  // Returns a sorted copy. Null and undefined values sort first when ascending
-  // and last when descending.
   sort<T>(
     data: readonly T[],
     column: keyof T,

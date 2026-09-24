@@ -12,17 +12,12 @@ import { WEEK_DAYS, WeekDay } from '../../constants/week-days';
 import { Scholar } from '../../interfaces/scholar';
 import { parseDateOnly } from '../../utils/weekday-dates';
 
-// The form's own shape, kept separate from the API's Scholar: native controls
-// only emit strings (or number | null for <input type="number">), so ids and
-// dates live here as strings and are converted at the edges (toFormModel /
-// toScholar). Optional values are '' rather than null — text inputs can't
-// hold null.
 export interface ScholarFormModel {
   firstName: string;
   lastName: string;
-  schoolId: string; // <select> emits strings; the API wants a number (see toScholar)
+  schoolId: string;
   grade: number | null;
-  birthDate: string; // 'YYYY-MM-DD', the value format of <input type="date">
+  birthDate: string;
   motherFirstName: string;
   motherLastName: string;
   motherPhoneNumber: string;
@@ -32,7 +27,6 @@ export interface ScholarFormModel {
   pickupSchedule: PickUpScheduleFormModel;
 }
 
-// '' for "no pickup" — a time input can't hold null (see toScholar).
 export type PickUpScheduleFormModel = Record<WeekDay, string>;
 
 export const emptyScholarForm = (): ScholarFormModel => ({
@@ -56,9 +50,6 @@ export const emptyScholarForm = (): ScholarFormModel => ({
   },
 });
 
-// Matches the backend's ValidatePhoneNumber: digits only, 9–12 of them — the same rule the
-// customer and employee apps use. pattern() skips empty values, so the phone fields stay
-// optional.
 export const PHONE_PATTERN = new RegExp(environment.phoneNumberRegex);
 
 const NAME_MAX_LENGTH = 100;
@@ -81,9 +72,7 @@ export const scholarFormSchema = schema<ScholarFormModel>((p) => {
 
   required(p.birthDate, { message: 'Birth date is required.' });
   validate(p.birthDate, ({ value }) => {
-    if (!value()) return undefined; // the required() rule above reports blanks
-    // parseDateOnly, not new Date(value()): the latter reads 'YYYY-MM-DD' as UTC
-    // midnight, so "today" could compare as the future (or past) by the UTC offset.
+    if (!value()) return undefined;
     const date = parseDateOnly(value());
     return isNaN(date.getTime()) || date > new Date()
       ? {
@@ -110,10 +99,6 @@ export const scholarFormSchema = schema<ScholarFormModel>((p) => {
   }
 });
 
-// True when the user has changed anything relative to `baseline` (the blank
-// form when creating, the loaded scholar when editing). Comparing values —
-// rather than trusting a "touched" flag — means typing something and then
-// putting it back doesn't count as an unsaved change.
 export function isScholarFormDirty(
   model: ScholarFormModel,
   baseline: ScholarFormModel,
@@ -146,8 +131,6 @@ export function toFormModel(scholar: Scholar): ScholarFormModel {
   };
 }
 
-// `scholarId` is the existing scholar's scholarId when editing; for a new one the server
-// assigns the real scholarId and this all-zero guid is just a placeholder.
 export function toScholar(
   model: ScholarFormModel,
   scholarId: string | null,

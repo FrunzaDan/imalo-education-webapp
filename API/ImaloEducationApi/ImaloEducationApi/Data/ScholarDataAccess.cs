@@ -7,8 +7,6 @@ namespace ImaloEducationApi.Data;
 
 public partial class ScholarDataAccess : IScholarDataAccess
 {
-    // One shared instance: JsonSerializerOptions caches per-type serialization
-    // metadata, so a new instance per call would rebuild that cache every time.
     private static readonly JsonSerializerOptions JsonOptions = new() { PropertyNameCaseInsensitive = true };
 
     private readonly ISqlConnectionFactory _connectionFactory;
@@ -29,10 +27,6 @@ public partial class ScholarDataAccess : IScholarDataAccess
         param.Value = value;
     }
 
-    // Every timestamp column is DATETIME2 written with SYSUTCDATETIME(), but DATETIME2 carries
-    // no offset, so the reader hands back DateTimeKind.Unspecified. Marking it Utc is what makes
-    // the JSON serializer append "Z" — without it a browser parses the value as its own local
-    // time and shows every timestamp off by the viewer's UTC offset.
     private static DateTime GetUtcDateTime(SqlDataReader reader, string column) =>
         DateTime.SpecifyKind(reader.GetDateTime(reader.GetOrdinal(column)), DateTimeKind.Utc);
 
@@ -59,9 +53,6 @@ public partial class ScholarDataAccess : IScholarDataAccess
                                         """;
 
         await using var connection = await _connectionFactory.OpenConnectionAsync(cancellationToken);
-        // No catch/rollback: anything thrown before CommitAsync propagates to GlobalExceptionHandler,
-        // and disposing an uncommitted SqlTransaction rolls it back (on every exit path, including
-        // a cancelled request).
         await using var transaction = (SqlTransaction)await connection.BeginTransactionAsync(cancellationToken);
 
         await using var insertScholarCmd = new SqlCommand(insertScholarSql, connection, transaction);
@@ -77,7 +68,6 @@ public partial class ScholarDataAccess : IScholarDataAccess
 
         scholar.ScholarId = insertedId;
 
-        // Insert pickup schedule if provided
         if (scholar.PickupSchedule != null)
         {
             await using var insertScheduleCmd = new SqlCommand(insertScheduleSql, connection, transaction);
@@ -88,9 +78,6 @@ public partial class ScholarDataAccess : IScholarDataAccess
             await insertScheduleCmd.ExecuteNonQueryAsync(cancellationToken);
         }
 
-        // Insert parent rows for whichever of Mother/Father has at least one field
-        // set — every field of a parent is independently optional, so a row is only
-        // created once there's actually something to store.
         foreach (var (role, firstName, lastName, phoneNumber) in new[]
                  {
                      ("Mother", scholar.MotherFirstName, scholar.MotherLastName, scholar.MotherPhoneNumber),
@@ -111,8 +98,6 @@ public partial class ScholarDataAccess : IScholarDataAccess
 
         await transaction.CommitAsync(cancellationToken);
 
-        // Best-effort: runs after the transaction has committed, on its own
-        // connection, so a logging failure can never roll back a successful create.
         await LogAuditAsync(insertedId, AuditAction.Created);
 
         return scholar;
@@ -120,9 +105,6 @@ public partial class ScholarDataAccess : IScholarDataAccess
 
     public async Task<IReadOnlyList<Scholar>> GetScholarsAsync(CancellationToken cancellationToken)
     {
-        // ScholarParent is joined once per role, with the role in the ON clause. (ScholarId, Role)
-        // is ScholarParent's primary key, so each join matches at most one row and the scholar
-        // row is never duplicated — and each join is a clustered-index seek.
         const string sql = """
 
                                            SELECT s.ScholarId, s.FirstName, s.LastName, s.BirthDate, s.Grade, s.SchoolId, ps.ScheduleJson,
@@ -159,9 +141,6 @@ public partial class ScholarDataAccess : IScholarDataAccess
         return await ReadScholarAsync(connection, null, scholarId, cancellationToken);
     }
 
-    // One scholar with its schedule and parents. Inside an update's transaction the Scholar row
-    // is read WITH (UPDLOCK), so no other update can change it between this read and the
-    // UPDATE — what the audit entry says changed is what this update changed.
     private async Task<Scholar?> ReadScholarAsync(SqlConnection connection, SqlTransaction? transaction,
         Guid scholarId, CancellationToken cancellationToken)
     {
@@ -225,11 +204,8 @@ public partial class ScholarDataAccess : IScholarDataAccess
         const string deleteParentSql = "DELETE FROM dbo.ScholarParent WHERE ScholarId = @ScholarId AND Role = @Role;";
 
         await using var connection = await _connectionFactory.OpenConnectionAsync(cancellationToken);
-        // Same as CreateScholarAsync: an uncommitted transaction rolls back when it's disposed.
         await using var transaction = (SqlTransaction)await connection.BeginTransactionAsync(cancellationToken);
 
-        // What's stored now, for the audit entry's "Updated: ..." details. Null when the
-        // scholar doesn't exist (the UPDATE below reports that).
         var before = await ReadScholarAsync(connection, transaction, scholar.ScholarId, cancellationToken);
 
         await using var updateScholarCmd = new SqlCommand(updateScholarSql, connection, transaction);
@@ -242,9 +218,8 @@ public partial class ScholarDataAccess : IScholarDataAccess
 
         var rowsAffected = await updateScholarCmd.ExecuteNonQueryAsync(cancellationToken);
         if (rowsAffected == 0)
-            return null; // Scholar not found (nothing was written; disposing the transaction ends it)
+            return null;
 
-        // Update or insert pickup schedule if provided
         if (scholar.PickupSchedule != null)
         {
             await using var updateScheduleCmd = new SqlCommand(updateScheduleSql, connection, transaction);
@@ -254,8 +229,6 @@ public partial class ScholarDataAccess : IScholarDataAccess
             await updateScheduleCmd.ExecuteNonQueryAsync(cancellationToken);
         }
 
-        // Upsert whichever of Mother/Father has at least one field set, delete the row
-        // for whichever has none (clearing every field on the form removes that parent).
         foreach (var (role, firstName, lastName, phoneNumber) in new[]
                  {
                      ("Mother", scholar.MotherFirstName, scholar.MotherLastName, scholar.MotherPhoneNumber),
@@ -297,31 +270,22 @@ public partial class ScholarDataAccess : IScholarDataAccess
         if (scholarId == Guid.Empty)
             throw new ArgumentException("Scholar ID must not be empty.", nameof(scholarId));
 
-        // ScholarPickupSchedule, ScholarAttendance and ScholarParent all have ON DELETE CASCADE
-        // back to Scholar (see their .sql table definitions), so deleting the Scholar row
-        // is enough on its own — no need to delete the child rows here first.
         const string deleteScholarSql = "DELETE FROM dbo.Scholar WHERE ScholarId = @ScholarId;";
 
         await using var connection = await _connectionFactory.OpenConnectionAsync(cancellationToken);
         await using var command = new SqlCommand(deleteScholarSql, connection);
         AddParam(command, "@ScholarId", SqlDbType.UniqueIdentifier, scholarId);
 
-
         var rowsAffected = await command.ExecuteNonQueryAsync(cancellationToken);
 
         if (rowsAffected == 0)
-            return false; // Scholar not found
+            return false;
 
         await LogAuditAsync(scholarId, AuditAction.Deleted);
 
         return true;
     }
 
-    // -----------------------------
-    // Attendance management methods
-    // -----------------------------
-
-    // Returns false when the scholar doesn't exist (the controller answers 404).
     public async Task<bool> SaveAttendanceAsync(Guid scholarId, List<AttendanceRecord> attendance,
         CancellationToken cancellationToken)
     {
@@ -330,11 +294,6 @@ public partial class ScholarDataAccess : IScholarDataAccess
 
         ArgumentNullException.ThrowIfNull(attendance);
 
-        // The standard SQL Server upsert: UPDATE first, holding a key-range lock (UPDLOCK,
-        // SERIALIZABLE) so two concurrent saves for the same scholar can't both find no row and
-        // both INSERT (a primary-key violation); INSERT only if nothing was updated, and only for a
-        // scholar that exists (so an unknown ID is "0 rows", not a foreign-key error). XACT_ABORT
-        // rolls the whole batch back on any error.
         const string upsertAttendanceSql = """
                                            SET XACT_ABORT ON;
                                            BEGIN TRANSACTION;
@@ -357,7 +316,6 @@ public partial class ScholarDataAccess : IScholarDataAccess
         AddParam(command, "@ScholarId", SqlDbType.UniqueIdentifier, scholarId);
         AddParam(command, "@AttendanceJson", SqlDbType.NVarChar, JsonSerializer.Serialize(attendance, JsonOptions), -1);
 
-        // The rows the UPDATE or the INSERT touched: 0 only when the scholar doesn't exist.
         var rowsAffected = await command.ExecuteNonQueryAsync(cancellationToken);
 
         if (rowsAffected == 0)
@@ -426,19 +384,6 @@ public partial class ScholarDataAccess : IScholarDataAccess
         return rows > 0;
     }
 
-    // ---------------------------
-    // Audit log
-    // ---------------------------
-
-    // Writing an audit entry is best-effort: it always runs after the scholar
-    // mutation it's recording has already succeeded (and, for Create/Update,
-    // after that mutation's own transaction has committed), so a DB hiccup
-    // while writing the log must never turn an otherwise-successful request
-    // into a 500 — it's swallowed and logged instead. Uses its own connection
-    // rather than sharing the caller's, for the same reason. Takes no
-    // CancellationToken on purpose: the change is already saved, so its entry
-    // is written even if the client that made it has since disconnected (the
-    // customer and employee apps' audit loggers do the same).
     private async Task LogAuditAsync(Guid scholarId, AuditAction action, string? details = null)
     {
         const string sql = """
@@ -503,10 +448,6 @@ public partial class ScholarDataAccess : IScholarDataAccess
     public async Task<PagedResponse<GlobalAuditLogEntry>> GetAllScholarAuditLogAsync(int pageNumber, int pageSize,
         CancellationToken cancellationToken)
     {
-        // LEFT JOIN, not INNER: ScholarAuditLog has no FK to Scholar (a deleted
-        // scholar's history must survive the delete — see ScholarAuditLog.sql), so
-        // ScholarFirstName/ScholarLastName come back NULL for a scholar that no longer exists
-        // rather than dropping that row.
         const string countSql = "SELECT COUNT(*) FROM dbo.ScholarAuditLog;";
 
         const string pageSql = """
@@ -524,12 +465,6 @@ public partial class ScholarDataAccess : IScholarDataAccess
 
         await using var connection = await _connectionFactory.OpenConnectionAsync(cancellationToken);
 
-
-        // Fetched independently of the page query below, so TotalItems is always
-        // correct even when the requested page itself has zero rows (past the
-        // last page, or the log was just cleared) — a COUNT(*) OVER() window
-        // column on the page query only reflects the total when at least one row
-        // comes back.
         await using (var countCmd = new SqlCommand(countSql, connection))
         {
             totalItems = (int)(await countCmd.ExecuteScalarAsync(cancellationToken))!;
@@ -574,9 +509,6 @@ public partial class ScholarDataAccess : IScholarDataAccess
         await command.ExecuteNonQueryAsync(cancellationToken);
     }
 
-    // No catch for a JsonException: the API is the only writer, and ScheduleJson has a
-    // CHECK (ISJSON(...) = 1), so an unreadable schedule is a bug — it propagates to
-    // GlobalExceptionHandler (logged once, 500) instead of the scholar silently vanishing.
     private static Scholar MapScholarFromReader(SqlDataReader reader)
     {
         var scholar = new Scholar

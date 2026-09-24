@@ -34,8 +34,6 @@ export class DashboardComponent implements OnInit {
   private readonly attendanceService = inject(AttendanceService);
   private readonly globalAuditLogService = inject(GlobalAuditLogService);
 
-  // Everything the page needs, fetched in parallel once per visit. hasValue()
-  // guards the reads: value() throws while the resource is in error.
   private readonly data = rxResource({
     stream: () =>
       forkJoin({
@@ -101,7 +99,6 @@ export class DashboardComponent implements OnInit {
     this.globalAuditLogService.loadAllAuditLog({ pageNumber: 1, pageSize: 5 });
   }
 
-  // A deleted scholar has no name to link to — see GlobalAuditLogEntry.
   scholarLabel(entry: GlobalAuditLogEntry): string {
     if (!entry.scholarFirstName && !entry.scholarLastName) {
       return `(deleted scholar ${entry.scholarId})`;

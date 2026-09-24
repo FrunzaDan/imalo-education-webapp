@@ -3,9 +3,6 @@ using ImaloEducationApi.Models;
 
 namespace ImaloEducationApi.Tests.Models;
 
-// Exercises Scholar through Validator.TryValidateObject — the same mechanism ASP.NET Core's
-// ModelState binding uses — so a dropped [Required]/[Range]/[CustomValidation] attribute is
-// caught here rather than only surfacing as a 400 the controller silently stops returning.
 public class ScholarModelValidationTests
 {
     private static Scholar ValidScholar() => new()
@@ -82,8 +79,6 @@ public class ScholarModelValidationTests
         var scholar = ValidScholar();
         scholar.BirthDate = DateOnly.FromDateTime(DateTime.UtcNow).AddDays(5);
 
-        // CustomValidationAttribute results don't carry MemberNames the way built-in
-        // attributes (Required/Range/...) do, so this asserts on message content instead.
         Assert.False(TryValidate(scholar, out var results));
         Assert.Contains(results, r => r.ErrorMessage == "Birth date cannot be in the future.");
     }

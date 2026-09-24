@@ -34,7 +34,6 @@
   color: var(--cyan-dark-color);
 }
 
-/* .app-input is width:100% by default; the month picker should hug its content. */
 .controls__month-input {
   width: auto;
 }
@@ -50,12 +49,9 @@
   line-height: 1;
 }
 
-/* Table chrome (.app-table / .table-header / .table-row / .table-cell) comes
-   from the global stylesheet, so this table matches the other data tables.
-   Only what is specific to the attendance grid lives here. */
 .attendance-container .table-scroll {
   margin-top: var(--space-4);
-  box-shadow: none; /* already inside a card */
+  box-shadow: none;
 }
 
 .attendance-table__muted {
@@ -67,7 +63,6 @@
   cursor: not-allowed;
 }
 
-/* Two classes deep so it outranks the shared zebra/hover row backgrounds. */
 .attendance-table .attendance-table__row--unsaved {
   background-color: rgba(var(--orange-main-color-for-alpha), 0.12);
 }
@@ -95,13 +90,12 @@
 }
 
 .attendance-container__unsaved-note {
-  display: inline-block; /* so its enter/leave slide (a transform) applies */
+  display: inline-block;
   color: var(--orange-text-color);
   font-style: italic;
   font-size: 0.9rem;
 }
 
-/* Only visible on paper — see the .print-only rule in the global stylesheet. */
 .invoice-header {
   margin-bottom: var(--space-4);
   padding-bottom: var(--space-3);

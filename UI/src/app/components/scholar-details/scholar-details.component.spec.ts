@@ -11,9 +11,6 @@ import { ConfirmDialogService } from '../../services/confirm-dialog.service';
 import type { Scholar } from '../../interfaces/scholar';
 import type { School } from '../../interfaces/school';
 
-// Covers the id-input + rxResource loading: scholar by id, then its school, plus the
-// audit-log load, and the failure / no-school paths.
-
 const SCHOLAR: Scholar = {
   scholarId: 'scholar-1',
   firstName: 'Ana',

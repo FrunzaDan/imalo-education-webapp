@@ -23,7 +23,6 @@
   pointer-events: auto;
 }
 
-/* The toast's text color, so the focus ring shows on both backgrounds. */
 .notification-toast :focus-visible {
   outline-color: currentColor;
 }
@@ -32,8 +31,6 @@
   background-color: var(--cyan-dark-color);
 }
 
-/* No red in the palette: an error toast uses the warm orange accent,
-   with ink text since orange is too light for light-colored text. */
 .notification-error {
   background-color: var(--orange-main-color);
   color: var(--dark-main-color);
@@ -58,8 +55,6 @@
   transform: rotate(90deg);
 }
 
-/* Toasts slide in from the right edge and slide back out when they go
-   (animate.enter / animate.leave on each toast). */
 .notification-enter {
   animation: notification-slide-in var(--duration-base) var(--ease-out);
 }

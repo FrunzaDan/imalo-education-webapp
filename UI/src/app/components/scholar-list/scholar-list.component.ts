@@ -34,7 +34,6 @@ interface ScholarRow {
   schoolName: string;
   grade: number | null;
   schoolColor: string;
-  // The API's 'YYYY-MM-DD', which the sort uses; birthDateLabel is for display.
   birthDate: string;
   birthDateLabel: string;
   textColor: string;
@@ -70,8 +69,6 @@ export class ScholarListComponent {
   private readonly notificationService = inject(NotificationService);
   private readonly confirmDialogService = inject(ConfirmDialogService);
 
-  // Scholars and schools, fetched in parallel; reload() after a bulk delete.
-  // hasValue() guards the read: value() throws while the resource is in error.
   private readonly data = rxResource({
     stream: () =>
       forkJoin({
@@ -79,8 +76,6 @@ export class ScholarListComponent {
         schools: this.schoolService.getSchools(),
       }),
   });
-  // The first load only: a reload (after a bulk delete) keeps the table on
-  // screen with the previous rows until the fresh ones arrive.
   readonly loading = computed(() => this.data.status() === 'loading');
   readonly loadError = computed(() => {
     const error = this.data.error();
@@ -98,7 +93,6 @@ export class ScholarListComponent {
       : [],
   );
 
-  // null keeps the API's order until a header is clicked.
   readonly sortColumn = signal<SortColumn | null>(null);
   readonly sortDirection = signal<SortDirection>('asc');
 
@@ -114,12 +108,9 @@ export class ScholarListComponent {
       : this.rows();
   });
 
-  // A one-field signal form for the search box; searchTerm is its value.
   readonly searchForm = form(signal({ term: '' }));
   readonly searchTerm = computed(() => this.searchForm.term().value());
 
-  // Emptied whenever the rows reload: stale selections would otherwise
-  // reference rows that may no longer exist.
   readonly selectedScholarIds = linkedSignal<ScholarRow[], ReadonlySet<string>>(
     {
       source: this.rows,
@@ -137,16 +128,11 @@ export class ScholarListComponent {
     }
   }
 
-  // Exposed on the <th> so assistive tech announces the current sort.
   ariaSort(column: SortColumn): 'ascending' | 'descending' | 'none' {
     if (this.sortColumn() !== column) return 'none';
     return this.sortDirection() === 'asc' ? 'ascending' : 'descending';
   }
 
-  // The full loaded/sorted list is client-side filtered by name for display —
-  // this dataset is small enough that a server round-trip per keystroke (the
-  // pattern Customer_Management_System uses, justified there by server-side
-  // pagination) would just be unnecessary latency here.
   readonly visibleRows = computed(() => {
     const term = this.searchTerm().trim().toLowerCase();
     const sortedRows = this.sortedRows();
@@ -154,8 +140,6 @@ export class ScholarListComponent {
     return sortedRows.filter((s) => s.name.toLowerCase().includes(term));
   });
 
-  // Spoken by the polite live region so a screen-reader user hears the outcome
-  // of a search without hunting for it.
   readonly resultsAnnouncement = computed(() => {
     if (this.loading()) return 'Loading scholars';
     const total = this.visibleRows().length;
@@ -191,8 +175,6 @@ export class ScholarListComponent {
     this.selectedScholarIds.set(next);
   }
 
-  // Scoped to whatever's currently visible (matching the search filter), so
-  // selections made under a different search term aren't silently touched.
   toggleSelectAll(checked: boolean): void {
     const next = new Set(this.selectedScholarIds());
     for (const s of this.visibleRows()) {
@@ -243,8 +225,6 @@ export class ScholarListComponent {
       });
   }
 
-  // Exports whatever is currently visible (matching the search filter), in
-  // the currently sorted order — not just the selected rows.
   exportCsv(): void {
     this.csvExportService.export(
       'scholars',

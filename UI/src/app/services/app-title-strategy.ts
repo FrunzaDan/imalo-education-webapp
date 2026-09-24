@@ -4,8 +4,6 @@ import { RouterStateSnapshot, TitleStrategy } from '@angular/router';
 
 const APP_NAME = 'Imalo Education Webapp';
 
-// "<page> · Imalo Education Webapp" — each route's `title` says where you
-// are, the suffix says which app (WCAG 2.4.2 Page Titled).
 @Injectable({ providedIn: 'root' })
 export class AppTitleStrategy extends TitleStrategy {
   private readonly title = inject(Title);

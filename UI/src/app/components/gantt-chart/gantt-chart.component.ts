@@ -27,8 +27,6 @@ export class GanttChartComponent implements OnInit {
   private readonly scholarService = inject(ScholarService);
   private readonly schoolService = inject(SchoolService);
 
-  // Scholars and schools, fetched in parallel once per visit. hasValue()
-  // guards the reads: value() throws while the resource is in error.
   private readonly data = rxResource({
     stream: () =>
       forkJoin({
@@ -39,7 +37,6 @@ export class GanttChartComponent implements OnInit {
   readonly scholars = computed<Scholar[]>(() =>
     this.data.hasValue() ? this.data.value().scholars : [],
   );
-  // Keyed by schoolId, for the per-cell lookup below.
   private readonly schools = computed(
     () =>
       new Map<string, School>(
@@ -64,10 +61,6 @@ export class GanttChartComponent implements OnInit {
   private static readonly EMPTY_STYLE: Record<string, string> = {};
   private static readonly UNKNOWN_SCHOOL_COLOR = '#a0a0a0';
 
-  // Built once per scholars() change instead of being recomputed per-cell on
-  // every change-detection pass (this grid is days × scholars × timeSlots
-  // cells, and each cell used to independently re-parse times and rebuild a
-  // style object).
   private readonly cellsByKey = computed(() => {
     const map = new Map<string, GanttCell>();
     const schools = this.schools();
@@ -93,9 +86,6 @@ export class GanttChartComponent implements OnInit {
         map.set(this.cellKey(scholar.scholarId, day, slot.start), {
           style: {
             backgroundColor,
-            // Black on bright fills, white on dark ones — school colors run
-            // from lime/amber to near-black brown, so a fixed text color is
-            // unreadable on one end or the other.
             color: contrastTextColor(backgroundColor),
             gridColumn: `span ${columnsSpan}`,
           },
@@ -114,7 +104,6 @@ export class GanttChartComponent implements OnInit {
   }
 
   private initializeTimeSlots(): void {
-    // Generate time slots from 11:00 to 14:00 with 15-minute intervals
     this.timeSlots = this.generateTimeSlots(11, 14, 15);
   }
 

@@ -5,17 +5,6 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace ImaloEducationApi.Controllers;
 
-// Error handling (see ai_docs/api.md, "Error handling"): every error response is an RFC 9457
-// Problem Details body (application/problem+json).
-// - Invalid input never reaches an action: [ApiController] answers 400 with a
-//   ValidationProblemDetails ("errors" per field) for failed DataAnnotations, a malformed body
-//   or an out-of-range query parameter.
-// - Rules the attributes can't express (cross-record attendance checks, URL/body ID match) and
-//   "not found" are returned here as ValidationProblem()/Problem(). "title" is left to the
-//   ProblemDetailsFactory (the status's reason phrase, fixed per problem type, as RFC 9457 asks);
-//   the message for this occurrence goes in "detail", which is what the UI shows.
-// - Anything unexpected is not caught here: it propagates to GlobalExceptionHandler, which logs
-//   it once and answers 500.
 [ApiController]
 [Route("api/[controller]")]
 public class ScholarsController(IScholarDataAccess scholarDataAccess) : ControllerBase
@@ -67,10 +56,6 @@ public class ScholarsController(IScholarDataAccess scholarDataAccess) : Controll
         return deleted ? NoContent() : ScholarNotFound(scholarId);
     }
 
-    // ---------------------------------------
-    // Audit log endpoints
-    // ---------------------------------------
-
     [HttpGet("{scholarId:guid}/audit-log")]
     public async Task<ActionResult<IReadOnlyList<AuditLogEntry>>> GetScholarAuditLog(Guid scholarId,
         CancellationToken cancellationToken)
@@ -96,18 +81,12 @@ public class ScholarsController(IScholarDataAccess scholarDataAccess) : Controll
         return NoContent();
     }
 
-    // ---------------------------------------
-    // Attendance endpoints for each Scholar
-    // ---------------------------------------
-
     [HttpPost("{scholarId:guid}/attendance")]
     public async Task<IActionResult> SaveAttendance(Guid scholarId,
         [FromBody] List<AttendanceRecord> attendance, CancellationToken cancellationToken)
     {
         if (scholarId == Guid.Empty) return EmptyScholarId();
 
-        // One record per day: the list is stored as-is, so a repeated date would
-        // leave two conflicting records for the same day.
         var duplicateDates = attendance
             .GroupBy(r => r.Date)
             .Where(g => g.Count() > 1)
@@ -138,8 +117,6 @@ public class ScholarsController(IScholarDataAccess scholarDataAccess) : Controll
     {
         if (scholarId == Guid.Empty) return EmptyScholarId();
 
-        // No records yet is a normal state for a scholar (e.g. a brand-new one),
-        // not an error — 200 with an empty list rather than 404.
         return Ok(await scholarDataAccess.GetAttendanceAsync(scholarId, cancellationToken));
     }
 
@@ -159,7 +136,6 @@ public class ScholarsController(IScholarDataAccess scholarDataAccess) : Controll
     public async Task<ActionResult<IReadOnlyList<ScholarAttendance>>> GetAllAttendance(CancellationToken cancellationToken) =>
         Ok(await scholarDataAccess.GetAllAttendanceAsync(cancellationToken));
 
-    // The {scholarId:guid} route constraint accepts the all-zero GUID, which no row ever has.
     private ActionResult EmptyScholarId()
     {
         ModelState.AddModelError("scholarId", "Scholar ID must not be empty.");

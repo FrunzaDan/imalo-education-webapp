@@ -45,8 +45,6 @@ export class ChartsComponent {
   private readonly schoolService = inject(SchoolService);
   private readonly ron = inject(RonPipe);
 
-  // Everything the page needs, fetched in parallel once per visit. hasValue()
-  // guards the reads: value() throws while the resource is in error.
   private readonly data = rxResource({
     stream: () =>
       forkJoin({

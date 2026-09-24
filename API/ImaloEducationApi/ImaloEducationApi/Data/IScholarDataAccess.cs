@@ -2,9 +2,6 @@ using ImaloEducationApi.Models;
 
 namespace ImaloEducationApi.Data;
 
-// Extracted purely so ScholarsController can be unit-tested against a mock —
-// see ImaloEducationApi.Tests/Controllers/ScholarsControllerTests.cs. No second
-// implementation exists or is planned; ScholarDataAccess remains the only one.
 public interface IScholarDataAccess
 {
     Task<Scholar> CreateScholarAsync(Scholar scholar, CancellationToken cancellationToken);

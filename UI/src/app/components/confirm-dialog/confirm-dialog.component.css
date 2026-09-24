@@ -50,9 +50,6 @@
   gap: var(--space-3);
 }
 
-/* Buttons are the shared .app-button (ghost for cancel). The palette has no
-   red, so the final, irreversible confirmation is told apart by switching the
-   fill to the ink color rather than a danger hue. */
 .confirm-button-danger {
   background-color: var(--dark-main-color);
   border-color: var(--dark-main-color);

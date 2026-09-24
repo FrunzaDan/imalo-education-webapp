@@ -14,7 +14,6 @@
         <div class="app-error-message" role="alert">{{ summary }}</div>
       }
 
-      <!-- First name -->
       @let firstName = scholarForm.firstName();
       @let firstNameError = firstName.touched() && firstName.invalid();
       <div class="scholar-form__field">
@@ -36,7 +35,6 @@
         }
       </div>
 
-      <!-- Last name -->
       @let lastName = scholarForm.lastName();
       @let lastNameError = lastName.touched() && lastName.invalid();
       <div class="scholar-form__field">
@@ -58,7 +56,6 @@
         }
       </div>
 
-      <!-- School -->
       @let school = scholarForm.schoolId();
       @let schoolError = school.touched() && school.invalid();
       <div class="scholar-form__field">
@@ -83,7 +80,6 @@
         }
       </div>
 
-      <!-- Grade -->
       @let grade = scholarForm.grade();
       @let gradeError = grade.touched() && grade.invalid();
       <div class="scholar-form__field">
@@ -105,7 +101,6 @@
         }
       </div>
 
-      <!-- Birth date -->
       @let birthDate = scholarForm.birthDate();
       @let birthDateError = birthDate.touched() && birthDate.invalid();
       <div class="scholar-form__field">
@@ -126,7 +121,6 @@
         }
       </div>
 
-      <!-- Parents -->
       <fieldset class="scholar-form__group">
         <legend class="app-label scholar-form__legend">
           Parents (Optional)
@@ -187,7 +181,6 @@
         </div>
       </fieldset>
 
-      <!-- Pick Up Schedule -->
       <fieldset class="scholar-form__group">
         <legend class="app-label scholar-form__legend">
           Pickup schedule (optional)
@@ -209,7 +202,6 @@
         </div>
       </fieldset>
 
-      <!-- Submit Button -->
       <div class="scholar-form__actions">
         <button
           type="submit"

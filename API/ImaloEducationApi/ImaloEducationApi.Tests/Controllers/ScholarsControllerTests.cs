@@ -8,14 +8,8 @@ using Moq;
 
 namespace ImaloEducationApi.Tests.Controllers;
 
-// Exercises ScholarsController against a mocked IScholarDataAccess — the controller's own
-// branching (success vs. not-found vs. the rules it checks itself), not ScholarDataAccess's SQL.
-// What happens before or after an action (model validation, unhandled exceptions, the Problem
-// Details shape on the wire) is covered by ErrorHandling/ErrorResponseTests.
 public class ScholarsControllerTests
 {
-    // Problem()/ValidationProblem() build their bodies with the ProblemDetailsFactory from the
-    // request's services, as they do in the running app.
     private static readonly IServiceProvider Services =
         new ServiceCollection().AddLogging().AddControllers().Services.BuildServiceProvider();
 
@@ -56,10 +50,6 @@ public class ScholarsControllerTests
         return problem;
     }
 
-    // ---------------------------------------
-    // CreateScholar
-    // ---------------------------------------
-
     [Fact]
     public async Task CreateScholar_Success_ReturnsCreatedAtActionWithScholar()
     {
@@ -82,14 +72,9 @@ public class ScholarsControllerTests
         dataAccess.Setup(d => d.CreateScholarAsync(It.IsAny<Scholar>(), It.IsAny<CancellationToken>()))
             .ThrowsAsync(new InvalidOperationException("boom"));
 
-        // Not caught here: GlobalExceptionHandler logs it and answers 500.
         await Assert.ThrowsAsync<InvalidOperationException>(() =>
             controller.CreateScholar(SampleScholar(), TestContext.Current.CancellationToken));
     }
-
-    // ---------------------------------------
-    // GetScholars / GetScholar
-    // ---------------------------------------
 
     [Fact]
     public async Task GetScholars_ReturnsOkWithList()
@@ -144,10 +129,6 @@ public class ScholarsControllerTests
         dataAccess.Verify(d => d.GetScholarAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
-    // ---------------------------------------
-    // UpdateScholar
-    // ---------------------------------------
-
     [Fact]
     public async Task UpdateScholar_UrlIdDoesNotMatchBodyId_ReturnsValidationProblem()
     {
@@ -187,10 +168,6 @@ public class ScholarsControllerTests
         Assert.Equal(scholar.ScholarId, ((Scholar)ok.Value!).ScholarId);
     }
 
-    // ---------------------------------------
-    // DeleteScholar
-    // ---------------------------------------
-
     [Fact]
     public async Task DeleteScholar_Success_ReturnsNoContent()
     {
@@ -214,10 +191,6 @@ public class ScholarsControllerTests
 
         AssertNotFoundProblem(result);
     }
-
-    // ---------------------------------------
-    // Audit log endpoints
-    // ---------------------------------------
 
     [Fact]
     public async Task GetScholarAuditLog_ReturnsOkWithEntries()
@@ -263,10 +236,6 @@ public class ScholarsControllerTests
 
         Assert.IsType<NoContentResult>(result);
     }
-
-    // ---------------------------------------
-    // Attendance endpoints
-    // ---------------------------------------
 
     private static void VerifyAttendanceNotSaved(Mock<IScholarDataAccess> dataAccess) =>
         dataAccess.Verify(

@@ -66,7 +66,7 @@ describe('GlobalAuditLogComponent', () => {
 
   describe('goToPage', () => {
     it('clamps above the last page down to totalPages', () => {
-      totalItems.set(120); // 120 items / 50 per page = 3 pages
+      totalItems.set(120);
       loadAllAuditLog.mockClear();
 
       component.goToPage(10);
@@ -103,7 +103,6 @@ describe('GlobalAuditLogComponent', () => {
     });
 
     it('labels a deleted scholar by GUID instead of a blank name', () => {
-      // A deleted scholar comes back with null names.
       const entry = buildEntry({
         scholarFirstName: null,
         scholarLastName: null,

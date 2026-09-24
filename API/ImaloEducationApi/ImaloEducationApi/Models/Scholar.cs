@@ -26,14 +26,8 @@ public partial class Scholar
     [CustomValidation(typeof(Scholar), nameof(ValidateBirthDate))]
     public DateOnly BirthDate { get; set; }
 
-    // Shape (weekdays only, strict HH:mm) is enforced by PickupSchedule's own
-    // deserialization, not by a validator here.
     public PickupSchedule? PickupSchedule { get; set; }
 
-    // Optional — a scholar may have a mother, a father, both, or neither, and each
-    // of a parent's own fields (name, phone) is independently optional too. Stored
-    // as separate rows (Role 'Mother'/'Father') in the ScholarParent table, not as
-    // columns on Scholar, so the two roles can be added/edited/removed independently.
     [StringLength(100)]
     public string? MotherFirstName { get; set; }
 
@@ -70,9 +64,6 @@ public partial class Scholar
             : new ValidationResult($"Invalid phone number: '{phoneNumber}'.");
     }
 
-    // Digits only, 9–12 of them — the same phone-number rule as the customer and employee apps,
-    // and what fits ScholarParent.PhoneNumber (VARCHAR(15)). \z, not $: $ would also accept a
-    // trailing newline. Source-generated: compiled once at build time instead of on first use.
     [GeneratedRegex(@"^[0-9]{9,12}\z")]
     private static partial Regex PhoneNumberRegex();
 }

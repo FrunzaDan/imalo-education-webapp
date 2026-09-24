@@ -1,5 +1,3 @@
-/* Actions and card share one centred column, so the buttons sit on the same
-   left edge as the card instead of hugging the viewport. */
 .scholar-details-page {
   max-width: 600px;
   margin: 0 auto;
@@ -7,7 +5,6 @@
 
 .scholar-details-container {
   padding: var(--space-5);
-  /* One gap between every section — no per-section margin to forget. */
   display: flex;
   flex-direction: column;
   gap: var(--space-5);
@@ -23,7 +20,6 @@
   font-size: 1.05rem;
 }
 
-/* Label / value pairs: a fixed label column so values line up. */
 .detail-list {
   display: grid;
   grid-template-columns: max-content 1fr;
@@ -48,7 +44,6 @@
   opacity: 0.65;
 }
 
-/* Pick-up schedule: same look as the app's other data tables. */
 .pickup-schedule {
   width: 100%;
   border-collapse: collapse;
