@@ -1,4 +1,5 @@
 import { Component, computed, input, signal } from '@angular/core';
+import { formatTick, niceMax } from '../../../utils/chart-scale';
 
 export interface BarChartPoint {
   key: string;
@@ -50,16 +51,6 @@ const ROTATED_AXIS_HEIGHT = 64;
 const LEFT_PADDING = 24;
 const SEGMENT_GAP = 2;
 const MIN_CHART_WIDTH = 320;
-
-// Smallest "nice" round number >= raw, for axis ticks (0 / 5 / 10 / 50 / 100 ...).
-function niceMax(raw: number): number {
-  if (raw <= 0) return 1;
-  const magnitude = Math.pow(10, Math.floor(Math.log10(raw)));
-  const residual = raw / magnitude;
-  const niceResidual =
-    residual <= 1 ? 1 : residual <= 2 ? 2 : residual <= 5 ? 5 : 10;
-  return niceResidual * magnitude;
-}
 
 // Bar / stacked-bar chart, rendered as inline SVG using the app's own design
 // tokens (cyan-main = series a, orange-text = series b — the only two colors
@@ -203,10 +194,4 @@ export class BarChartComponent {
 
   barWidth = BAR_WIDTH;
   bandWidth = BAND_WIDTH;
-}
-
-function formatTick(value: number): string {
-  return value >= 1000
-    ? `${(value / 1000).toFixed(value % 1000 === 0 ? 0 : 1)}k`
-    : String(Math.round(value * 100) / 100);
 }

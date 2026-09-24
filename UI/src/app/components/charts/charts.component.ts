@@ -35,6 +35,7 @@ import { extractErrorMessage } from '../../utils/extract-error-message';
 @Component({
   selector: 'app-charts',
   imports: [FormField, BarChartComponent, RonPipe],
+  providers: [RonPipe],
   templateUrl: './charts.component.html',
   styleUrl: './charts.component.css',
 })
@@ -42,6 +43,7 @@ export class ChartsComponent {
   private readonly scholarService = inject(ScholarService);
   private readonly attendanceService = inject(AttendanceService);
   private readonly schoolService = inject(SchoolService);
+  private readonly ron = inject(RonPipe);
 
   // Everything the page needs, fetched in parallel once per visit. hasValue()
   // guards the reads: value() throws while the resource is in error.
@@ -185,5 +187,5 @@ export class ChartsComponent {
   }
 
   formatCount = (value: number): string => String(value);
-  formatRon = (value: number): string => `${value.toFixed(0)} RON`;
+  formatRon = (value: number): string => this.ron.transform(value, '1.0-0');
 }

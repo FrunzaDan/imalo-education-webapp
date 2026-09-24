@@ -18,6 +18,7 @@ The Angular 22 app under `UI/`. It is zoneless, uses standalone components and s
   - `extract-error-message.ts`, `audit-action-label.ts`;
   - `weekday-dates.ts`, `contrast-color.ts`.
 - `src/app/constants/week-days.ts` — `WEEK_DAYS` and the `WeekDay` type.
+- `src/app/utils/chart-scale.ts` — chart axis math, shared with the customer app.
 - `src/app/pipes/ron.pipe.ts`, `src/styles.css`.
 - `public/assets/schools.json` — school data. `SchoolService` loads it once (`shareReplay`) and returns `[]` if it fails.
 
@@ -83,6 +84,7 @@ The Angular 22 app under `UI/`. It is zoneless, uses standalone components and s
 
   Each section also has stat tiles.
 - **Data:** one `rxResource` + `forkJoin` loads scholars, all attendance and schools. Only present days count, and a cost counts only when it is selected.
+- **Axis and labels:** the axis math comes from the shared `utils/chart-scale.ts`. Money labels are whole RON through the `ron` pipe (`ron.transform(value, '1.0-0')`), as in the customer charts.
 - **Hover and focus:** each bar band is focusable and shows a custom tooltip.
 - **Colors:** series a is `--cyan-main-color` and series b is `--orange-text-color`. They are the only two tokens that pass contrast as full-size fills.
 
@@ -138,4 +140,4 @@ The Angular 22 app under `UI/`. It is zoneless, uses standalone components and s
   - build API payloads field by field, because array items carry a hidden symbol-keyed property.
 - **SSR response size:** `app.config.server.ts` raises the SSR fetch limit to 10 MB. `GET /attendance` outgrew the default 1 MB.
 - **Gantt chart:** its `cellsByKey` must stay a `computed`, for performance.
-- **Shared files:** `notification`, `confirm-dialog`, `api-logger`, `extract-error-message`, `ron.pipe` and `audit-action-label` are identical in all three apps. Change them together.
+- **Shared files:** `notification`, `confirm-dialog`, `api-logger`, `extract-error-message`, `ron.pipe` and `audit-action-label` are identical in all three apps. Change them together. `utils/chart-scale.ts` (axis math: `niceMax`, `formatTick`) is identical in the customer and Imalo apps; the employee app has no charts.
