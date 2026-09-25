@@ -453,7 +453,7 @@ describe('AttendancePerScholarComponent', () => {
         SCHOOL.transportPrice,
       );
       expect(ctx.component.grandTotal()).toBe(15 + SCHOOL.transportPrice);
-      expect(ctx.fixture.nativeElement.textContent).toContain('25.00');
+      expect(ctx.fixture.nativeElement.textContent).toContain('25,00 RON');
     });
   });
 
