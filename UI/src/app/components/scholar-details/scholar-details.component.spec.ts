@@ -10,6 +10,7 @@ import { AuditLogService } from '../../services/audit-log.service';
 import { ConfirmDialogService } from '../../services/confirm-dialog.service';
 import type { Scholar } from '../../interfaces/scholar';
 import type { School } from '../../interfaces/school';
+import type { AuditLogEntry } from '../../interfaces/audit-log-entry';
 
 const SCHOLAR: Scholar = {
   scholarId: 'scholar-1',
@@ -40,6 +41,7 @@ async function setup(
     loadError?: boolean;
     deleteError?: boolean;
     confirmed?: boolean;
+    auditLog?: AuditLogEntry[];
   } = {},
 ) {
   const getScholar = vi.fn(() =>
@@ -76,7 +78,7 @@ async function setup(
       {
         provide: AuditLogService,
         useValue: {
-          entries: () => [],
+          entries: () => options.auditLog ?? [],
           loading: () => false,
           error: () => null,
           loadAuditLog,
@@ -194,6 +196,48 @@ describe('ScholarDetailsComponent', () => {
         fixture.nativeElement.querySelector('.app-alert')?.textContent,
       ).toContain('Could not reach the server');
       expect(navigate).not.toHaveBeenCalled();
+    });
+  });
+  describe('audit trail preview', () => {
+    const buildAuditLog = (count: number): AuditLogEntry[] =>
+      Array.from({ length: count }, (_, i) => ({
+        scholarAuditLogId: count - i,
+        scholarId: 'scholar-1',
+        actionType: 'Edited',
+        details: `change #${count - i}.`,
+        occurredAt: '2026-01-01T00:00:00Z',
+      }));
+
+    it('shows only the latest 10 actions followed by "…", which reveals the rest', async () => {
+      const { fixture } = await setup({ auditLog: buildAuditLog(12) });
+      const items = () =>
+        fixture.nativeElement.querySelectorAll('.audit-trail-list li');
+      const more = () =>
+        fixture.nativeElement.querySelector('.audit-trail-more');
+
+      expect(items().length).toBe(11);
+      expect(more().textContent.trim()).toBe('…');
+      expect(more().getAttribute('aria-label')).toBe('Show 2 older actions');
+      expect(fixture.nativeElement.textContent).toContain('change #3.');
+      expect(fixture.nativeElement.textContent).not.toContain('change #2.');
+
+      more().click();
+      await fixture.whenStable();
+
+      expect(items().length).toBe(12);
+      expect(more()).toBeNull();
+      expect(fixture.nativeElement.textContent).toContain('change #1.');
+    });
+
+    it('shows no "…" when there are 10 actions or fewer', async () => {
+      const { fixture } = await setup({ auditLog: buildAuditLog(10) });
+
+      expect(
+        fixture.nativeElement.querySelectorAll('.audit-trail-list li').length,
+      ).toBe(10);
+      expect(
+        fixture.nativeElement.querySelector('.audit-trail-more'),
+      ).toBeNull();
     });
   });
 });

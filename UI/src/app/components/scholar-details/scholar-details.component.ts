@@ -19,6 +19,8 @@ import { auditActionLabel } from '../../utils/audit-action-label';
 import { WEEK_DAYS } from '../../constants/week-days';
 import { extractErrorMessage } from '../../utils/extract-error-message';
 
+const AUDIT_LOG_PREVIEW_SIZE = 10;
+
 @Component({
   selector: 'app-scholar-details',
   imports: [DatePipe, TitleCasePipe, RouterLink],
@@ -64,6 +66,15 @@ export class ScholarDetailsComponent {
   readonly auditLog = this.auditLogService.entries;
   readonly auditLogLoading = this.auditLogService.loading;
   readonly auditLogError = this.auditLogService.error;
+  readonly showAllAuditLog = signal(false);
+  readonly visibleAuditLog = computed(() =>
+    this.showAllAuditLog()
+      ? this.auditLog()
+      : this.auditLog().slice(0, AUDIT_LOG_PREVIEW_SIZE),
+  );
+  readonly hiddenAuditLogCount = computed(
+    () => this.auditLog().length - this.visibleAuditLog().length,
+  );
 
   readonly daysOfWeek = WEEK_DAYS;
 
@@ -74,7 +85,10 @@ export class ScholarDetailsComponent {
     effect(() => {
       const scholarId = this.scholarId();
       if (scholarId)
-        untracked(() => this.auditLogService.loadAuditLog(scholarId));
+        untracked(() => {
+          this.showAllAuditLog.set(false);
+          this.auditLogService.loadAuditLog(scholarId);
+        });
     });
   }
 

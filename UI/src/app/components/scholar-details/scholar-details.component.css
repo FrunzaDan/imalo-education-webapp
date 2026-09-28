@@ -112,6 +112,22 @@
   border-bottom: none;
 }
 
+.audit-trail-more {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--cyan-darker-color);
+  font-size: 1.25rem;
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: 0.1em;
+}
+
+.audit-trail-more:hover,
+.audit-trail-more:focus-visible {
+  color: var(--cyan-main-color);
+}
+
 .audit-trail-details {
   margin-top: var(--space-1);
   font-size: 0.85rem;

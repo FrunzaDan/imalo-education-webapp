@@ -40,7 +40,7 @@ The Angular 22 app under `UI/`. It is zoneless, uses standalone components and s
 |---|---|
 | `/` → `/dashboard` | `dashboard` (KPIs, today's pickups, upcoming birthdays, recent activity) |
 | `/scholars` | `scholar-list` (client-side search, sort, bulk delete, CSV) |
-| `/scholars/:scholarId` | `scholar-details` (parents, schedule, audit trail, delete) |
+| `/scholars/:scholarId` | `scholar-details` (parents, schedule, delete, audit trail — latest 10, then "…" to show the rest) |
 | `/create-scholar`, `/scholars/update/:scholarId` | `scholar-form` (one component for add and edit) |
 | `/pickup-time` | `gantt-chart` (days × scholars × 15-min slots, colored by school) |
 | `/attendance` | `attendance` (monthly grid for every scholar) |

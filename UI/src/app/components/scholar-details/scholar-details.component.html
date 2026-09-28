@@ -125,13 +125,28 @@
           <p class="detail-muted">No recorded actions yet.</p>
         } @else {
           <ul class="audit-trail-list">
-            @for (entry of auditLog(); track entry.scholarAuditLogId) {
+            @for (entry of visibleAuditLog(); track entry.scholarAuditLogId) {
               <li>
                 <strong>{{ auditActionLabel(entry.actionType) }}</strong> on
                 {{ entry.occurredAt | date: 'medium' }}
                 @if (entry.details) {
                   <div class="audit-trail-details">{{ entry.details }}</div>
                 }
+              </li>
+            }
+            @if (hiddenAuditLogCount() > 0) {
+              <li>
+                <button
+                  type="button"
+                  class="audit-trail-more"
+                  [attr.aria-label]="
+                    'Show ' + hiddenAuditLogCount() + ' older actions'
+                  "
+                  [title]="'Show ' + hiddenAuditLogCount() + ' older actions'"
+                  (click)="showAllAuditLog.set(true)"
+                >
+                  …
+                </button>
               </li>
             }
           </ul>
