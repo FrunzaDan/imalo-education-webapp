@@ -39,6 +39,22 @@
   --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
   --ease-in: cubic-bezier(0.55, 0, 1, 0.45);
   --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  /* Chart palette. The shared chart components (identical in the sibling
+     apps) use the siblings' token names, so they are aliased here. */
+  --chartColor1: #0093a0;
+  --chartColor2: #c27a00;
+  --chartColor3: #4c6fd1;
+  --chartColor4: #e5566b;
+  --chartColor5: #1e817f;
+  --chartColor6: #8e6cc4;
+  --chartColor7: #d9773a;
+  --chartColor8: #5c7080;
+  --spectrumColor1: var(--cyan-dark-color);
+  --spectrumColor2: var(--cyan-darker-color);
+  --spectrumColor3: var(--cyan-main-color);
+  --spectrumColor4: #a8eef3;
+  --mutedText: #5f6b6c;
 }
 
 @font-face {
@@ -578,6 +594,76 @@ header {
 main:focus,
 main [tabindex='-1']:focus {
   outline: none;
+}
+
+.ranked-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.ranked-row {
+  display: grid;
+  grid-template-columns: 132px 1fr auto;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.ranked-label {
+  font-size: 0.85rem;
+  color: var(--spectrumColor1);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ranked-track {
+  display: block;
+  height: 10px;
+  border-radius: 999px;
+  background-color: rgba(19, 59, 54, 0.08);
+  overflow: hidden;
+}
+
+.ranked-fill {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(
+    90deg,
+    var(--ranked-color, var(--spectrumColor2)),
+    color-mix(in srgb, var(--ranked-color, var(--spectrumColor2)) 55%, #fff)
+  );
+  transform-origin: left center;
+  animation: ranked-fill-grow 0.9s var(--ease-out) backwards;
+  animation-delay: calc(min(var(--i, 0), 12) * 60ms + 100ms);
+}
+
+@keyframes ranked-fill-grow {
+  from {
+    transform: scaleX(0);
+  }
+}
+
+.ranked-value {
+  font-size: 0.82rem;
+  color: var(--mutedText);
+  text-align: right;
+  white-space: nowrap;
+}
+
+.ranked-empty {
+  color: var(--mutedText);
+  margin: 0;
+}
+
+@media (max-width: 480px) {
+  .ranked-row {
+    grid-template-columns: 92px 1fr auto;
+  }
 }
 
 .visually-hidden {

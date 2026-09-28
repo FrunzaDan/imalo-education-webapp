@@ -1,0 +1,48 @@
+@if (isEmpty()) {
+  <p class="ranked-empty">{{ emptyMessage() }}</p>
+} @else {
+  <div class="heatmap-scroll">
+    <div
+      class="heatmap"
+      [class.with-values]="showValues()"
+      [style.--columns]="data().columnLabels.length"
+      role="img"
+      [attr.aria-label]="ariaLabel()"
+    >
+      <span></span>
+      @for (label of data().columnLabels; track $index) {
+        <span class="column-label" aria-hidden="true">{{ label }}</span>
+      }
+      @for (row of rows(); track row.label) {
+        <span class="row-label" aria-hidden="true">{{ row.label }}</span>
+        @for (cell of row.cells; track $index) {
+          @if (cell) {
+            <span
+              [class]="'cell level-' + cell.level"
+              [class.active]="active() === cell.title"
+              [style.--c]="cell.column"
+              [attr.title]="cell.title"
+              aria-hidden="true"
+              (pointerenter)="setActive(cell.title)"
+              (pointerleave)="setActive(null)"
+              >{{ showValues() && cell.value > 0 ? cell.value : '' }}</span
+            >
+          } @else {
+            <span class="cell blank" aria-hidden="true"></span>
+          }
+        }
+      }
+    </div>
+  </div>
+
+  <div class="heatmap-footer">
+    <p class="heatmap-readout" aria-live="polite">{{ active() ?? hint() }}</p>
+    <span class="heatmap-legend" aria-hidden="true">
+      Less
+      @for (level of levels; track level) {
+        <span [class]="'swatch level-' + level"></span>
+      }
+      More
+    </span>
+  </div>
+}

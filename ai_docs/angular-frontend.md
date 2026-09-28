@@ -18,7 +18,7 @@ The Angular 22 app under `UI/`. It is zoneless, uses standalone components and s
   - `extract-error-message.ts`, `audit-action-label.ts`;
   - `weekday-dates.ts`, `contrast-color.ts`.
 - `src/app/constants/week-days.ts` — `WEEK_DAYS` and the `WeekDay` type.
-- `src/app/utils/chart-scale.ts` — chart axis math, shared with the customer app.
+- `src/app/utils/chart-scale.ts`, `chart-stats.ts`, `chart-geometry.ts` — chart axis math, data helpers and smooth curves, shared with the sibling apps.
 - `src/app/pipes/ron.pipe.ts`, `src/styles.css`.
 - `public/assets/schools.json` — school data. `SchoolService` loads it once (`shareReplay`) and returns `[]` if it fails.
 
@@ -45,7 +45,7 @@ The Angular 22 app under `UI/`. It is zoneless, uses standalone components and s
 | `/pickup-time` | `gantt-chart` (days × scholars × 15-min slots, colored by school) |
 | `/attendance` | `attendance` (monthly grid for every scholar) |
 | `/attendance/:scholarId` | `attendance-per-scholar` (editable month) |
-| `/charts` | `charts` (monthly, yearly and roster charts; inline SVG `bar-chart`) |
+| `/charts` | `charts` (KPI band, month, year and scholar charts) |
 | `/audit-log` | `global-audit-log` |
 | `/about` | `about` (API-logging toggle, 20-scholar test-data generator) |
 | `**` | `page-not-found` |
@@ -75,18 +75,21 @@ The Angular 22 app under `UI/`. It is zoneless, uses standalone components and s
 
 ### Charts (`/charts`)
 
-- The charts are hand-built inline SVG, with no chart library. The pure transforms live in `charts/charts-data.ts`, which has a spec.
-- **One component:** `bar-chart` draws plain bars, or stacked bars when points carry `value2` (Transport on top of Lunch), and then shows a legend.
+- The charts are hand-built inline SVG/HTML, with no chart library. The pure transforms live in `charts/charts-data.ts` and the shared `utils/chart-stats.ts`, both with specs.
+- **Components:** the shared `time-series-chart`, `donut-chart`, `kpi-tile` and `ranked-bar-chart` (identical in the sibling apps), plus Imalo's own `heatmap` (rows × columns of cells, shaded in 5 levels; `showValues` prints the numbers in wide cells).
 - **Sections:**
-  - **Monthly overview:** a month picker; present and revenue per weekday.
-  - **Yearly overview:** a year picker; present and revenue per month.
-  - **Scholars overview:** headcount by class (ordered by grade) and by school (ranked by count).
-
-  Each section also has stat tiles.
-- **Data:** one `rxResource` + `forkJoin` loads scholars, all attendance and schools. Only present days count, and a cost counts only when it is selected.
-- **Axis and labels:** the axis math comes from the shared `utils/chart-scale.ts`. Money labels are whole RON through the `ron` pipe (`ron.transform(value, '1.0-0')`), as in the customer charts.
-- **Hover and focus:** each bar band is focusable and shows a custom tooltip.
-- **Colors:** series a is `--cyan-main-color` and series b is `--orange-text-color`. They are the only two tokens that pass contrast as full-size fills.
+  - **At a glance:** a month picker and KPIs for that month: attendance rate (vs the month before), scholars per day and revenue (with 12-month sparklines), lunch take-up (and transport), scholars.
+  - **The month, day by day:** scholars present each day, the weekday pattern, what the days included (lunch and/or transport), revenue split, and the eight biggest bills.
+  - **The year:** a year picker; an attendance calendar heatmap, revenue by month (with the change on the same months of the year before) and scholars per day by month.
+  - **Scholars:** a weekday × pickup-time heatmap (rush hour), scholars by class and the top eight schools.
+- **Definitions:**
+  - Attendance rate is present days ÷ (scholars × weekdays so far): days still to come don't count (`elapsedWeekdays`). The dashboard uses the same rule.
+  - "Scholars per day" averages only the days anyone came, so holidays and short months compare fairly.
+  - Only present days count, and a cost counts only when it is selected. The year's charts stop at the current month instead of drawing zeros.
+- **Data:** one `rxResource` + `forkJoin` loads scholars, all attendance and schools.
+- **Money:** whole RON through the `ron` pipe (`ron.transform(value, '1.0-0')`), as in the sibling apps.
+- **Colors:** `--chartColor1..8` in `styles.css`; each is at least 3:1 against white. The shared components use the siblings' token names, so `styles.css` aliases `--spectrumColor1..4` and `--mutedText` to Imalo colors.
+- **Box sizing:** Imalo has no Bootstrap reset, so the shared components set `box-sizing: border-box` where a padded box is sized to 100%.
 
 ### Forms (Signal Forms)
 
@@ -156,4 +159,4 @@ The Angular 22 app under `UI/`. It is zoneless, uses standalone components and s
   - build API payloads field by field, because array items carry a hidden symbol-keyed property.
 - **SSR response size:** `app.config.server.ts` raises the SSR fetch limit to 10 MB. `GET /attendance` outgrew the default 1 MB.
 - **Gantt chart:** its `cellsByKey` must stay a `computed`, for performance.
-- **Shared files:** `notification`, `confirm-dialog`, `api-logger`, `extract-error-message`, `ron.pipe` and `audit-action-label` are identical in all three apps. Change them together. `utils/chart-scale.ts` (axis math: `niceMax`, `formatTick`) is identical in the customer and Imalo apps; the employee app has no charts.
+- **Shared files:** `notification`, `confirm-dialog`, `api-logger`, `extract-error-message`, `ron.pipe` and `audit-action-label` are identical in all three apps. Change them together. `utils/chart-scale.ts`, `chart-stats.ts`, `chart-geometry.ts`, the chart components `time-series-chart`, `donut-chart`, `kpi-tile` and `ranked-bar-chart`, and the `.ranked-*` rules in `styles.css` are identical in all three apps. Change them together.

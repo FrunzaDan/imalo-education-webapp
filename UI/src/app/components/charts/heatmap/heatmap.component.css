@@ -1,0 +1,155 @@
+:host {
+  display: block;
+}
+
+.heatmap-scroll {
+  overflow-x: auto;
+  padding-bottom: 0.25rem;
+}
+
+.heatmap {
+  --cell-min: 12px;
+  --cell-height: 14px;
+  display: grid;
+  grid-template-columns: 2.25rem repeat(
+      var(--columns),
+      minmax(var(--cell-min), 1fr)
+    );
+  gap: 3px;
+  min-width: calc(var(--columns) * 15px + 2.5rem);
+}
+
+.heatmap.with-values {
+  --cell-min: 2.75rem;
+  --cell-height: 2.25rem;
+  gap: 4px;
+}
+
+.column-label,
+.row-label {
+  color: var(--mutedText);
+  font-size: 0.7rem;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.column-label {
+  align-self: end;
+  padding-bottom: 0.25rem;
+  overflow: visible;
+}
+
+.with-values .column-label {
+  text-align: center;
+}
+
+.row-label {
+  align-self: center;
+}
+
+.cell {
+  display: grid;
+  place-items: center;
+  height: var(--cell-height);
+  border-radius: 3px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  cursor: default;
+  animation: cell-in 0.5s var(--ease-out) backwards;
+  animation-delay: calc(min(var(--c, 0), 60) * 12ms);
+  transition:
+    transform var(--duration-fast) var(--ease-spring),
+    box-shadow var(--duration-fast) ease;
+}
+
+.with-values .cell {
+  border-radius: 8px;
+}
+
+.cell.blank {
+  visibility: hidden;
+  animation: none;
+}
+
+.cell.active {
+  transform: scale(1.3);
+  box-shadow:
+    0 0 0 2px #fff,
+    0 0 0 4px var(--heat-color);
+  position: relative;
+  z-index: 1;
+}
+
+.with-values .cell.active {
+  transform: scale(1.08);
+}
+
+.level-0 {
+  background-color: rgba(19, 59, 54, 0.07);
+}
+
+.level-1 {
+  background-color: color-mix(in srgb, var(--heat-color) 25%, #fff);
+  color: var(--spectrumColor1);
+}
+
+.level-2 {
+  background-color: color-mix(in srgb, var(--heat-color) 50%, #fff);
+  color: var(--spectrumColor1);
+}
+
+.level-3 {
+  background-color: color-mix(in srgb, var(--heat-color) 78%, #fff);
+  color: #fff;
+}
+
+.level-4 {
+  background-color: var(--heat-color);
+  color: #fff;
+}
+
+.heatmap-footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem 1rem;
+  margin-top: 0.6rem;
+}
+
+.heatmap-readout {
+  margin: 0;
+  min-height: 1.3em;
+  color: var(--spectrumColor1);
+  font-size: 0.85rem;
+}
+
+.heatmap-legend {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  color: var(--mutedText);
+  font-size: 0.72rem;
+}
+
+.heatmap-legend .swatch {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+}
+
+.heatmap-legend .swatch:first-of-type {
+  margin-left: 0.25rem;
+}
+
+.heatmap-legend .swatch:last-of-type {
+  margin-right: 0.25rem;
+}
+
+@keyframes cell-in {
+  from {
+    opacity: 0;
+    transform: scale(0.4);
+  }
+}

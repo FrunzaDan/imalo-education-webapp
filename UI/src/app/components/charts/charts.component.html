@@ -5,207 +5,315 @@
   <div class="app-alert" role="alert">{{ error }}</div>
 } @else {
   <h1 class="page-title">Charts</h1>
+  <p class="page-subtitle">
+    How full the days are, what families order, and when scholars go home.
+  </p>
 
-  <section class="app-card charts-card">
-    <div class="charts-card__header">
-      <h2 class="charts-card__title">Monthly overview</h2>
-      <div class="month-nav">
-        <button
-          type="button"
-          class="app-button app-button--ghost month-nav__arrow"
-          (click)="previousMonth()"
-          aria-label="Previous month"
-        >
-          ‹
-        </button>
-        <input
-          id="chartsMonthPicker"
-          type="month"
-          [formField]="monthForm.month"
-          class="app-input month-nav__input"
+  @if (scholarCount() === 0) {
+    <p class="loading-message">
+      No scholars yet. Add some (or generate test scholars on the About page) to
+      see the charts come alive.
+    </p>
+  } @else {
+    <section class="insights-hero" aria-labelledby="hero-title">
+      <div class="hero-header">
+        <h2 id="hero-title" class="hero-title">
+          At a glance · {{ monthName() }}
+        </h2>
+        <div class="period-nav period-nav--on-dark">
+          <button
+            type="button"
+            class="period-nav__arrow"
+            (click)="previousMonthClicked()"
+            aria-label="Previous month"
+          >
+            ‹
+          </button>
+          <input
+            id="chartsMonthPicker"
+            type="month"
+            aria-label="Month"
+            [formField]="monthForm.month"
+            class="period-nav__input"
+          />
+          <button
+            type="button"
+            class="period-nav__arrow"
+            (click)="nextMonthClicked()"
+            aria-label="Next month"
+          >
+            ›
+          </button>
+        </div>
+      </div>
+      <div class="kpi-grid">
+        <app-kpi-tile
+          label="Attendance rate"
+          [value]="monthRate()"
+          [valueFormatter]="formatPercent"
+          [caption]="rateCaption()"
         />
-        <button
-          type="button"
-          class="app-button app-button--ghost month-nav__arrow"
-          (click)="nextMonth()"
-          aria-label="Next month"
-        >
-          ›
-        </button>
-      </div>
-    </div>
-
-    <div class="charts-card__stats">
-      <div class="stat-tile">
-        <span class="stat-tile__label">Present (scholar-days)</span>
-        <span class="stat-tile__value">{{ monthTotalPresent() }}</span>
-      </div>
-      <div class="stat-tile">
-        <span class="stat-tile__label">Total revenue</span>
-        <span class="stat-tile__value">{{ monthTotalRevenue() | ron }}</span>
-      </div>
-      <div class="stat-tile">
-        <span class="stat-tile__label">Lunch / Transport</span>
-        <span class="stat-tile__value stat-tile__value--split">
-          {{ monthTotalLunch() | ron }} / {{ monthTotalTransport() | ron }}
-        </span>
-      </div>
-      <div class="stat-tile">
-        <span class="stat-tile__label">Attendance rate</span>
-        <span class="stat-tile__value">{{ monthAttendanceRate() }}%</span>
-      </div>
-    </div>
-
-    <div class="charts-card__chart">
-      <h3 class="charts-card__chart-title">Scholars present per day</h3>
-      <app-bar-chart
-        [points]="dailyPresentBars()"
-        series1Label="Present"
-        [formatValue]="formatCount"
-        emptyMessage="No attendance recorded for this month."
-      />
-    </div>
-
-    <div class="charts-card__chart">
-      <h3 class="charts-card__chart-title">Revenue per day</h3>
-      <app-bar-chart
-        [points]="dailyRevenueBars()"
-        series1Label="Transport"
-        series2Label="Lunch"
-        [formatValue]="formatRon"
-        emptyMessage="No revenue recorded for this month."
-      />
-    </div>
-  </section>
-
-  <section class="app-card charts-card">
-    <div class="charts-card__header">
-      <h2 class="charts-card__title">Yearly overview</h2>
-      <div class="year-nav">
-        <button
-          type="button"
-          class="app-button app-button--ghost year-nav__arrow"
-          (click)="previousYear()"
-          aria-label="Previous year"
-        >
-          ‹
-        </button>
-        <input
-          id="chartsYearPicker"
-          type="number"
-          [formField]="yearForm.year"
-          class="app-input year-nav__input"
+        <app-kpi-tile
+          label="Scholars per day"
+          [value]="monthAverage()"
+          [valueFormatter]="formatAverage"
+          [trend]="averageTrend()"
+          [caption]="averageCaption()"
         />
-        <button
-          type="button"
-          class="app-button app-button--ghost year-nav__arrow"
-          (click)="nextYear()"
-          aria-label="Next year"
-        >
-          ›
-        </button>
+        <app-kpi-tile
+          label="Revenue"
+          [value]="monthRevenue()"
+          [valueFormatter]="formatRon"
+          [trend]="revenueTrend()"
+          [caption]="revenueCaption()"
+        />
+        <app-kpi-tile
+          label="Lunch take-up"
+          [value]="lunchTakeUp()"
+          [valueFormatter]="formatPercent"
+          [caption]="takeUpCaption()"
+        />
+        <app-kpi-tile
+          label="Scholars"
+          [value]="scholarCount()"
+          [caption]="scholarsCaption()"
+        />
       </div>
-    </div>
+    </section>
 
-    <div class="charts-card__stats">
-      <div class="stat-tile">
-        <span class="stat-tile__label">Present (scholar-days)</span>
-        <span class="stat-tile__value">{{ yearTotalPresent() }}</span>
-      </div>
-      <div class="stat-tile">
-        <span class="stat-tile__label">Total revenue</span>
-        <span class="stat-tile__value">{{ yearTotalRevenue() | ron }}</span>
-      </div>
-      <div class="stat-tile">
-        <span class="stat-tile__label">Avg revenue / active month</span>
-        <span class="stat-tile__value">{{
-          yearAvgMonthlyRevenue() | ron
-        }}</span>
-      </div>
-      <div class="stat-tile">
-        <span class="stat-tile__label">Busiest month</span>
-        <span class="stat-tile__value">
-          @if (busiestMonth(); as busiest) {
-            {{ busiest.label }} ({{ busiest.present }})
-          } @else {
-            —
+    <section class="charts-section">
+      <h2 class="section-title">{{ monthName() }}, day by day</h2>
+      <div class="chart-grid">
+        <article class="app-card chart-card chart-card--wide">
+          <h3 class="chart-title">Scholars present each day</h3>
+          <p class="chart-caption">Weekdays only. Hover a bar for the count.</p>
+          <app-time-series-chart
+            [points]="dailyPresent()"
+            variant="bar"
+            ariaLabel="Scholars present each day"
+            emptyMessage="No attendance recorded for this month."
+          />
+          @if (busiestDayOfMonth(); as busiest) {
+            <p class="chart-insight">
+              Busiest day: <strong>{{ busiest.label }}</strong
+              >, with {{ busiest.value }} scholars.
+            </p>
           }
-        </span>
-      </div>
-    </div>
+        </article>
 
-    <div class="charts-card__chart-row">
-      <div class="charts-card__chart">
-        <h3 class="charts-card__chart-title">Scholars present per month</h3>
-        <app-bar-chart
-          [points]="monthlyPresentBars()"
-          series1Label="Present"
-          [formatValue]="formatCount"
-          emptyMessage="No attendance recorded for this year."
-        />
-      </div>
-
-      <div class="charts-card__chart">
-        <h3 class="charts-card__chart-title">Revenue per month</h3>
-        <app-bar-chart
-          [points]="monthlyRevenueBars()"
-          series1Label="Transport"
-          series2Label="Lunch"
-          [formatValue]="formatRon"
-          emptyMessage="No revenue recorded for this year."
-        />
-      </div>
-    </div>
-  </section>
-
-  <section class="app-card charts-card">
-    <div class="charts-card__header">
-      <h2 class="charts-card__title">Scholars overview</h2>
-    </div>
-
-    <div class="charts-card__stats">
-      <div class="stat-tile">
-        <span class="stat-tile__label">Top class</span>
-        <span class="stat-tile__value">
-          @if (topClass(); as top) {
-            {{ top.label }} ({{ top.value }})
-          } @else {
-            —
+        <article class="app-card chart-card">
+          <h3 class="chart-title">Weekday pattern</h3>
+          <p class="chart-caption">
+            Average scholars present on each weekday (days nobody came, like
+            holidays, are left out).
+          </p>
+          <app-ranked-bar-chart
+            [items]="weekdays()"
+            [valueFormatter]="formatAverage"
+            ariaLabel="Average scholars present by weekday"
+            emptyMessage="No attendance recorded for this month."
+          />
+          @if (busiestWeekday(); as busiest) {
+            <p class="chart-insight">
+              Plan for <strong>{{ busiest.label }}s</strong>: about
+              {{ formatAverage(busiest.value) }} scholars.
+            </p>
           }
-        </span>
+        </article>
+
+        <article class="app-card chart-card">
+          <h3 class="chart-title">What the days included</h3>
+          <p class="chart-caption">
+            Days attended, by what was ordered with them.
+          </p>
+          <app-donut-chart
+            [slices]="services()"
+            centerCaption="days attended"
+            ariaLabel="Days attended by services ordered"
+            emptyMessage="No attendance recorded for this month."
+          />
+        </article>
+
+        <article class="app-card chart-card">
+          <h3 class="chart-title">Where the money comes from</h3>
+          <p class="chart-caption">
+            The month's revenue, lunch against transport.
+          </p>
+          <app-donut-chart
+            [slices]="revenueSplit()"
+            [valueFormatter]="formatRon"
+            centerCaption="revenue"
+            ariaLabel="Revenue by service"
+            emptyMessage="No revenue recorded for this month."
+          />
+        </article>
+
+        <article class="app-card chart-card">
+          <h3 class="chart-title">Biggest bills this month</h3>
+          <p class="chart-caption">
+            The eight families that owe the most for lunch and transport.
+          </p>
+          <app-ranked-bar-chart
+            [items]="charges()"
+            [valueFormatter]="formatRon"
+            color="var(--chartColor2)"
+            ariaLabel="Charges per scholar this month"
+            emptyMessage="Nothing to bill for this month."
+          />
+        </article>
       </div>
-      <div class="stat-tile">
-        <span class="stat-tile__label">Top school</span>
-        <span class="stat-tile__value">
-          @if (topSchool(); as top) {
-            {{ top.label }} ({{ top.value }})
-          } @else {
-            —
+    </section>
+
+    <section class="charts-section">
+      <div class="section-header">
+        <h2 class="section-title">The year {{ selectedYear() }}</h2>
+        <div class="period-nav">
+          <button
+            type="button"
+            class="period-nav__arrow"
+            (click)="previousYear()"
+            aria-label="Previous year"
+          >
+            ‹
+          </button>
+          <input
+            id="chartsYearPicker"
+            type="number"
+            aria-label="Year"
+            [formField]="yearForm.year"
+            class="period-nav__input period-nav__input--year"
+          />
+          <button
+            type="button"
+            class="period-nav__arrow"
+            (click)="nextYear()"
+            aria-label="Next year"
+          >
+            ›
+          </button>
+        </div>
+      </div>
+      <div class="chart-grid">
+        <article class="app-card chart-card chart-card--wide">
+          <h3 class="chart-title">Attendance calendar</h3>
+          <p class="chart-caption">
+            Every weekday of the year; the darker the square, the more scholars
+            came. Gaps show holidays at a glance.
+          </p>
+          <app-heatmap
+            [data]="calendar()"
+            [ariaLabel]="'Attendance calendar for ' + selectedYear()"
+            hint="Hover a day to see how many scholars came."
+            emptyMessage="No attendance recorded for this year."
+          />
+          @if (busiestDayOfYear(); as busiest) {
+            <p class="chart-insight">
+              Busiest day of the year: <strong>{{ busiest.label }}</strong
+              >, with {{ busiest.value }} scholars.
+            </p>
           }
-        </span>
-      </div>
-    </div>
+        </article>
 
-    <div class="charts-card__chart-row">
-      <div class="charts-card__chart">
-        <h3 class="charts-card__chart-title">Scholars by class</h3>
-        <app-bar-chart
-          [points]="classCounts()"
-          series1Label="Scholars"
-          [formatValue]="formatCount"
-          emptyMessage="No scholars found."
-        />
-      </div>
+        <article class="app-card chart-card">
+          <h3 class="chart-title">Revenue by month</h3>
+          <p class="chart-caption">Lunch and transport together.</p>
+          <app-time-series-chart
+            [points]="yearRevenue()"
+            variant="line"
+            color="var(--chartColor2)"
+            [viewWidth]="480"
+            [valueFormatter]="formatRon"
+            ariaLabel="Revenue by month"
+            emptyMessage="No revenue recorded for this year."
+          />
+          @if (yearComparison(); as comparison) {
+            <p class="chart-insight">
+              <strong
+                [class.trend-up]="comparison.up"
+                [class.trend-down]="!comparison.up"
+                >{{ comparison.change }}</strong
+              >
+              on {{ comparison.previousYear }}{{ comparison.period }}.
+            </p>
+          } @else if (yearRevenueTotal() > 0) {
+            <p class="chart-insight">
+              <strong>{{ formatRon(yearRevenueTotal()) }}</strong> so far.
+            </p>
+          }
+        </article>
 
-      <div class="charts-card__chart">
-        <h3 class="charts-card__chart-title">Scholars by school</h3>
-        <app-bar-chart
-          [points]="schoolCounts()"
-          series1Label="Scholars"
-          [formatValue]="formatCount"
-          emptyMessage="No scholars found."
-        />
+        <article class="app-card chart-card">
+          <h3 class="chart-title">Scholars per day, by month</h3>
+          <p class="chart-caption">
+            The average day, so short months and holidays compare fairly.
+          </p>
+          <app-time-series-chart
+            [points]="yearAverages()"
+            variant="bar"
+            color="var(--chartColor3)"
+            [viewWidth]="480"
+            [valueFormatter]="formatAverage"
+            ariaLabel="Average scholars present per day, by month"
+            emptyMessage="No attendance recorded for this year."
+          />
+          @if (busiestMonthOfYear(); as busiest) {
+            <p class="chart-insight">
+              Fullest month: <strong>{{ busiest.label }}</strong
+              >, about {{ formatAverage(busiest.value) }} a day.
+            </p>
+          }
+        </article>
       </div>
-    </div>
-  </section>
+    </section>
+
+    <section class="charts-section">
+      <h2 class="section-title">Scholars</h2>
+      <div class="chart-grid">
+        <article class="app-card chart-card chart-card--wide">
+          <h3 class="chart-title">When scholars are picked up</h3>
+          <p class="chart-caption">
+            Scholars per weekday and pickup time, from their weekly schedules.
+          </p>
+          <app-heatmap
+            [data]="pickups()"
+            [showValues]="true"
+            color="var(--chartColor5)"
+            ariaLabel="Scholars picked up per weekday and time"
+            hint="Hover a slot to see how many scholars leave then."
+            emptyMessage="No pickup schedules yet."
+          />
+          @if (busiestPickupSlot(); as busiest) {
+            <p class="chart-insight">
+              Rush hour: <strong>{{ busiest.day }} at {{ busiest.time }}</strong
+              >, with {{ busiest.value }} scholars.
+            </p>
+          }
+        </article>
+
+        <article class="app-card chart-card">
+          <h3 class="chart-title">Scholars by class</h3>
+          <p class="chart-caption">Every scholar, by school class.</p>
+          <app-donut-chart
+            [slices]="classes()"
+            centerCaption="scholars"
+            ariaLabel="Scholars by class"
+            emptyMessage="No scholars yet."
+          />
+        </article>
+
+        <article class="app-card chart-card">
+          <h3 class="chart-title">Scholars by school</h3>
+          <p class="chart-caption">
+            The eight schools most scholars come from.
+          </p>
+          <app-ranked-bar-chart
+            [items]="schoolRanking()"
+            color="var(--chartColor3)"
+            ariaLabel="Scholars by school"
+            emptyMessage="No scholars yet."
+          />
+        </article>
+      </div>
+    </section>
+  }
 }

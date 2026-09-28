@@ -12,9 +12,14 @@ import { Scholar } from '../../interfaces/scholar';
 import { School } from '../../interfaces/school';
 import { ScholarAttendance } from '../../interfaces/scholar-attendance';
 import { GlobalAuditLogEntry } from '../../interfaces/global-audit-log-entry';
-import { toMonthString, weekdaysOfMonth } from '../../utils/weekday-dates';
+import { toMonthString } from '../../utils/weekday-dates';
 import { RonPipe } from '../../pipes/ron.pipe';
-import { buildDailyPoints, totalOf } from '../charts/charts-data';
+import {
+  buildDailyPoints,
+  elapsedWeekdays,
+  revenueOf,
+  totalOf,
+} from '../charts/charts-data';
 import {
   todaysPickups as computeTodaysPickups,
   todayWeekdayKey,
@@ -74,13 +79,9 @@ export class DashboardComponent implements OnInit {
     buildDailyPoints(this.allAttendance(), this.currentMonth),
   );
   private readonly monthWeekdays = computed(() =>
-    weekdaysOfMonth(this.currentMonth),
+    elapsedWeekdays(this.currentMonth, this.today),
   );
-  readonly monthRevenue = computed(
-    () =>
-      totalOf(this.monthDailyPoints(), 'lunchRevenue') +
-      totalOf(this.monthDailyPoints(), 'transportRevenue'),
-  );
+  readonly monthRevenue = computed(() => revenueOf(this.monthDailyPoints()));
   readonly monthAttendanceRate = computed(() => {
     const capacity = this.scholars().length * this.monthWeekdays().length;
     const present = totalOf(this.monthDailyPoints(), 'present');
