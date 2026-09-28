@@ -34,11 +34,19 @@
   color: var(--cyan-dark-color);
 }
 
+/* Two fixed columns: with auto-fit, the full-width panel keeps every track
+   alive, so two panels would sit in quarter-width columns. */
 .dashboard-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(20rem, 1fr));
+  grid-template-columns: 1fr;
   align-items: start;
   gap: var(--space-4);
+}
+
+@media (min-width: 48rem) {
+  .dashboard-grid {
+    grid-template-columns: 1fr 1fr;
+  }
 }
 
 .dashboard-panel {

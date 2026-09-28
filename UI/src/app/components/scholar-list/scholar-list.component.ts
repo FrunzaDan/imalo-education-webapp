@@ -20,11 +20,9 @@ import { NotificationService } from '../../services/notification.service';
 import { ConfirmDialogService } from '../../services/confirm-dialog.service';
 import { Scholar } from '../../interfaces/scholar';
 import { School } from '../../interfaces/school';
-import { NgStyle } from '@angular/common';
 import { forkJoin, from, of } from 'rxjs';
 import { catchError, concatMap, map, toArray } from 'rxjs/operators';
 import { RouterLink } from '@angular/router';
-import { contrastTextColor } from '../../utils/contrast-color';
 import { parseDateOnly } from '../../utils/weekday-dates';
 import { extractErrorMessage } from '../../utils/extract-error-message';
 
@@ -36,7 +34,6 @@ interface ScholarRow {
   schoolColor: string;
   birthDate: string;
   birthDateLabel: string;
-  textColor: string;
 }
 
 type SortColumn = 'name' | 'schoolName' | 'grade' | 'birthDate';
@@ -56,7 +53,7 @@ const SORT_LABELS: Record<SortColumn, string> = {
 };
 
 @Component({
-  imports: [FormField, NgStyle, RouterLink],
+  imports: [FormField, RouterLink],
   selector: 'app-scholar-list',
   templateUrl: './scholar-list.component.html',
   styleUrl: './scholar-list.component.css',
@@ -265,7 +262,6 @@ function toRows(scholars: Scholar[], schools: School[]): ScholarRow[] {
         'en-GB',
         { day: '2-digit', month: 'short', year: 'numeric' },
       ),
-      textColor: contrastTextColor(schoolColor),
     };
   });
 }

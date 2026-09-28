@@ -56,12 +56,12 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 1.1rem;
-  height: 1.1rem;
+  min-width: 1.25rem;
+  height: 1.25rem;
   padding: 0 var(--space-1);
   border-radius: var(--radius-sm);
   border: var(--border-width) solid rgba(var(--cyan-main-color-for-alpha), 0.3);
-  font-size: 0.65rem;
+  font-size: 0.72rem;
   font-weight: 700;
   color: transparent;
   background-color: transparent;

@@ -173,14 +173,13 @@
                 >{{ scholar.name }}</a
               >
             </td>
-            <td
-              class="table-cell"
-              [ngStyle]="{
-                'background-color': scholar.schoolColor,
-                color: scholar.textColor,
-              }"
-            >
-              {{ scholar.schoolName }}
+            <td class="table-cell">
+              <span
+                class="school-swatch"
+                [style.background-color]="scholar.schoolColor"
+                aria-hidden="true"
+              ></span
+              >{{ scholar.schoolName }}
             </td>
             <td class="table-cell">{{ scholar.grade }}</td>
             <td class="table-cell">{{ scholar.birthDateLabel }}</td>

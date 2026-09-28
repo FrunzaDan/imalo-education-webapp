@@ -122,6 +122,7 @@ The Angular 22 app under `UI/`. It is zoneless, uses standalone components and s
 - Custom CSS only, with no Bootstrap or Tailwind. Tokens and the `.app-button`, `.app-input`, `.app-table`, `.app-card`, `.page-title`, `.page-toolbar` and `.app-alert` classes are in `styles.css`.
 - Spacing uses `gap` and `--space-*` tokens. Buttons and inputs have no margins.
 - Every `.app-table` sits in a `.table-scroll` wrapper (`role="region"`, `aria-label`, `tabindex="0"`): it scrolls sideways on narrow screens and carries the table's shadow. Links in table cells use `.table-link`.
+- Table alignment (all three apps): text columns left, counts and money right, actions right; only checkbox columns are centered. A school shows as a colored dot (`.school-swatch`) before its name, as on the dashboard, not as a colored cell.
 - Motion (same in all three apps; tokens `--duration-*` and `--ease-*`, rules in the Motion section of `styles.css`):
   - cards (`.app-card`) rise in on appearance; sibling cards follow a beat apart;
   - table body rows carry `animate.enter="row-enter"` and `[style.--row-index]="$index"`, so added rows fade in staggered and re-sorted rows keep still;
