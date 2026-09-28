@@ -319,7 +319,7 @@ select.app-input {
   background-color: var(--cyan-dark-color);
   color: var(--light-main-color);
   padding: var(--space-3) var(--space-4);
-  text-align: left;
+  text-align: center;
   font-weight: bold;
   position: relative;
   vertical-align: middle;
@@ -372,7 +372,7 @@ select.app-input {
 
 .table-cell {
   padding: var(--space-2) var(--space-4);
-  text-align: left;
+  text-align: center;
 }
 
 .table-cell--empty {

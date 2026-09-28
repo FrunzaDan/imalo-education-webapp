@@ -145,8 +145,10 @@ The Angular 22 app under `UI/`. It is zoneless, uses standalone components and s
 - **Components with specs:**
   - `scholar-list`, `scholar-details`, `scholar-form`;
   - `attendance-per-scholar`;
+  - `about` (the test-data generator);
   - `notification`, `confirm-dialog`.
-- **Audit services:** tested with `HttpTestingController`.
+- **Pure helpers with specs:** `attendance/attendance-grid.ts` and `dashboard/dashboard-data.ts`.
+- **Services:** the scholar, attendance, school and audit services are tested with `HttpTestingController`.
 
 ## Gotchas / conventions
 

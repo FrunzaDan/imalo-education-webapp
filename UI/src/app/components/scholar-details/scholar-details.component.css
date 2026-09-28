@@ -57,7 +57,7 @@
 .pickup-schedule th,
 .pickup-schedule td {
   padding: var(--space-2) var(--space-4);
-  text-align: left;
+  text-align: center;
 }
 
 .pickup-schedule th {
