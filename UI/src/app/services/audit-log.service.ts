@@ -8,10 +8,12 @@ import { extractErrorMessage } from '../utils/extract-error-message';
 export class AuditLogService {
   private readonly apiUrl = `${environment.apiUrl}/api/scholars`;
 
-  private readonly scholarId = signal<string | undefined>(undefined);
+  private readonly scholarId = signal<() => string | undefined>(
+    () => undefined,
+  );
 
   private readonly auditLogResource = httpResource<AuditLogEntry[]>(() => {
-    const scholarId = this.scholarId();
+    const scholarId = this.scholarId()();
     if (!scholarId) return undefined;
     return `${this.apiUrl}/${scholarId}/audit-log`;
   });
@@ -30,11 +32,13 @@ export class AuditLogService {
       : null;
   });
 
-  loadAuditLog(scholarId: string): void {
-    if (this.scholarId() === scholarId) {
-      this.auditLogResource.reload();
-    } else {
-      this.scholarId.set(scholarId);
-    }
+  // Follows the given scholar id: loads as soon as it's bound and again
+  // whenever the id changes.
+  bindAuditLog(scholarId: () => string | undefined): void {
+    this.scholarId.set(scholarId);
+  }
+
+  reloadAuditLog(): void {
+    this.auditLogResource.reload();
   }
 }

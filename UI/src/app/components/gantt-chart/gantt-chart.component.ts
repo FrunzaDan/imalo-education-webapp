@@ -1,5 +1,5 @@
 import { NgStyle } from '@angular/common';
-import { Component, OnInit, computed, inject } from '@angular/core';
+import { Component, computed, inject } from '@angular/core';
 import { rxResource } from '@angular/core/rxjs-interop';
 import { HttpErrorResponse } from '@angular/common/http';
 import { TimeSlot } from '../../interfaces/time-slot';
@@ -23,7 +23,7 @@ interface GanttCell {
   templateUrl: './gantt-chart.component.html',
   styleUrl: './gantt-chart.component.css',
 })
-export class GanttChartComponent implements OnInit {
+export class GanttChartComponent {
   private readonly scholarService = inject(ScholarService);
   private readonly schoolService = inject(SchoolService);
 
@@ -55,7 +55,7 @@ export class GanttChartComponent implements OnInit {
         )
       : null;
   });
-  timeSlots: TimeSlot[] = [];
+  readonly timeSlots: TimeSlot[] = this.generateTimeSlots(11, 14, 15);
   readonly weekDays = WEEK_DAYS;
   private readonly SLOT_DURATION = 10;
   private static readonly EMPTY_STYLE: Record<string, string> = {};
@@ -98,14 +98,6 @@ export class GanttChartComponent implements OnInit {
 
     return map;
   });
-
-  ngOnInit(): void {
-    this.initializeTimeSlots();
-  }
-
-  private initializeTimeSlots(): void {
-    this.timeSlots = this.generateTimeSlots(11, 14, 15);
-  }
 
   private generateTimeSlots(
     startHour: number,

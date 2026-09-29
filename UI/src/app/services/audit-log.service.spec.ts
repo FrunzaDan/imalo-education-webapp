@@ -40,13 +40,13 @@ describe('AuditLogService', () => {
   });
 
   const load = (scholarId: string) => {
-    service.loadAuditLog(scholarId);
+    service.bindAuditLog(() => scholarId);
     TestBed.tick();
   };
 
   const settle = () => TestBed.inject(ApplicationRef).whenStable();
 
-  it('makes no request until a scholar is loaded', async () => {
+  it('makes no request until a scholar id is bound', async () => {
     TestBed.tick();
 
     httpMock.expectNone(() => true);
@@ -104,12 +104,13 @@ describe('AuditLogService', () => {
     );
   });
 
-  it('re-requests when asked to load the same scholar again', async () => {
+  it('re-requests the same scholar on reloadAuditLog()', async () => {
     load('scholar-1');
     httpMock.expectOne(urlFor('scholar-1')).flush([]);
     await settle();
 
-    load('scholar-1');
+    service.reloadAuditLog();
+    TestBed.tick();
 
     httpMock.expectOne(urlFor('scholar-1')).flush([buildEntry()]);
     await settle();

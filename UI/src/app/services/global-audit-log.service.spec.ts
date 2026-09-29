@@ -44,7 +44,7 @@ describe('GlobalAuditLogService', () => {
   const settle = () => TestBed.inject(ApplicationRef).whenStable();
 
   const load = (pageNumber: number, pageSize = 20) => {
-    service.loadAllAuditLog({ pageNumber, pageSize });
+    service.bindAllAuditLog(() => ({ pageNumber, pageSize }));
     TestBed.tick();
   };
 
@@ -54,7 +54,7 @@ describe('GlobalAuditLogService', () => {
     totalItems = items.length,
   ) => ({ pageNumber, pageSize: 20, totalItems, items });
 
-  it('makes no request until loadAllAuditLog() is called', () => {
+  it('makes no request until params are bound', () => {
     TestBed.tick();
 
     httpMock.expectNone((r) => r.url === API_URL);

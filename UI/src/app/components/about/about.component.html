@@ -4,7 +4,8 @@
     Imalo Education Webapp is a small full-stack learning project: an Angular
     single-page frontend talking to an ASP.NET Core Web API, which persists data
     in SQL Server through raw ADO.NET calls — no ORM, no stored procedures, just
-    parameterized SQL commands.
+    parameterized SQL commands. It tracks scholars, their parents, their weekly
+    pickup times, and their daily attendance (lunch and transport).
   </p>
 
   <div class="about-card">
@@ -12,32 +13,85 @@
     <div class="about-card__body">
       <p>
         The database is a containerized SQL Server (Azure SQL Edge, which also
-        runs natively on Apple Silicon), started by hand as:
+        runs natively on Apple Silicon). Started by hand, that's:
       </p>
-      <pre class="about-code"><code>docker pull mcr.microsoft.com/azure-sql-edge
+      <pre
+        class="about-code"
+        role="region"
+        tabindex="0"
+        aria-label="Docker commands"
+      ><code>docker pull mcr.microsoft.com/azure-sql-edge
 
 docker run -e "ACCEPT_EULA=1" -e "MSSQL_SA_PASSWORD=MyStrongPassw0rd?" -p 1433:1433 --name sqlserver --platform linux/arm64 -d mcr.microsoft.com/azure-sql-edge</code></pre>
       <p>
-        Two scripts at the repository root wrap all of this so nothing needs to
-        be pieced together by hand:
+        On macOS and Linux the API always uses that container. On Windows it
+        uses the container if it answers within 3 seconds, and otherwise falls
+        back to a locally installed SQL Server (Windows authentication); the
+        choice is logged at startup.
+      </p>
+      <p>
+        Once the container is up and the schema is deployed (see
+        <em>Database</em> below), the two remaining pieces both need to be
+        started:
       </p>
       <ul>
         <li>
-          <code>./build.sh</code> — restores and builds the .NET API, builds the
-          SQL database project, then installs and builds the Angular app.
-          Doesn't start anything; just proves everything compiles.
+          <strong>API</strong> — the ASP.NET Core Web API project at
+          <code>http://localhost:5244</code>, run with <code>dotnet run</code>
+          (or from your IDE). It serves the REST endpoints and talks to SQL
+          Server over ADO.NET.
         </li>
         <li>
-          <code>./run.sh</code> — the actual local dev environment. Starts (or
-          reuses) the Azure SQL Edge container, deploys the database schema into
-          it, then launches the API in the background and the Angular dev server
-          in the foreground. <kbd>Ctrl+C</kbd> stops both.
+          <strong>Angular frontend</strong> — the SPA at
+          <code>http://localhost:4204</code>, run with <code>ng serve</code> /
+          <code>npm start</code>. It calls the API over plain HTTP for every
+          scholar and attendance operation.
         </li>
       </ul>
       <p>
-        Both the API and the Angular dev server must be running at the same time
-        — the UI has no data of its own; everything it shows comes live from the
-        API.
+        Both must be running at the same time — the UI has no data of its own
+        beyond forms, validation, and the static school list; everything else it
+        shows comes live from the API. If the API isn't reachable, the UI
+        notices within a few seconds (it polls a lightweight
+        <code>/health</code> endpoint) and shows a plain "API is not running"
+        message in place of the page, instead of failing silently or showing
+        stale data.
+      </p>
+    </div>
+  </div>
+
+  <div class="about-card">
+    <div class="about-card__header">Build &amp; run scripts</div>
+    <div class="about-card__body">
+      <p>
+        Two scripts at the repository root wrap all of the above so nothing
+        needs to be pieced together by hand:
+      </p>
+      <ul>
+        <li>
+          <code>./build.sh</code> — a CI-style, one-shot build: restores and
+          builds the .NET API, runs its test suite, builds the SQL database
+          project, then installs, format-checks, builds and tests the Angular
+          app. It doesn't start anything; it just proves everything compiles and
+          the tests pass.
+        </li>
+        <li>
+          <code>./run.sh</code> — the actual local dev environment. It makes
+          sure Docker is running (starting Docker Desktop on macOS if needed),
+          starts the Azure SQL Edge container if it isn't already up (pulling
+          and creating it on first run), builds the database project and
+          publishes its schema straight into that container, then launches the
+          API in the background and the Angular dev server in the foreground.
+          <kbd>Ctrl+C</kbd> stops both.
+        </li>
+      </ul>
+      <p>
+        <code>run.sh</code> is safe to re-run any time: an existing,
+        already-initialized database is simply left alone (schema deploys are a
+        diff, not a wipe-and-recreate — so any scholars you've added through the
+        UI survive a re-run), and a stopped container is restarted rather than
+        recreated. The container is shared with the sibling apps; each app uses
+        its own database.
       </p>
     </div>
   </div>
@@ -47,27 +101,53 @@ docker run -e "ACCEPT_EULA=1" -e "MSSQL_SA_PASSWORD=MyStrongPassw0rd?" -p 1433:1
     <div class="about-card__body">
       <p>
         The schema lives in its own SQL Server Database Project (a
-        <code>.sqlproj</code>), not migration scripts. It has three tables:
+        <code>.sqlproj</code>), not in migration scripts run by the API.
+        <code>run.sh</code> builds that project into a <code>.dacpac</code> and
+        deploys it with <code>sqlpackage</code>, retrying automatically until
+        the freshly-started container starts accepting connections. On a fresh
+        server that one publish creates the database and everything in it. This
+        deploy is a diff against the container's current state, so it's
+        idempotent — running it again against an already-initialized database
+        changes nothing — and it's allowed to rebuild already-populated tables
+        when a schema change requires it, since this is disposable local dev
+        data, not a production database that needs that guardrail.
       </p>
+      <p>The schema has five tables:</p>
       <ul>
         <li>
           <code>Scholar</code> — one row per scholar: name, school, grade, and
           birth date, keyed by a server-generated <code>ScholarId</code> (GUID).
         </li>
         <li>
+          <code>ScholarParent</code> — up to two rows per scholar, one for the
+          mother and one for the father: name and phone number, each optional
+          but at least one of them set.
+        </li>
+        <li>
           <code>ScholarPickupSchedule</code> — one row per scholar, storing
-          their Monday&ndash;Friday pickup times as a JSON blob.
+          their Monday&ndash;Friday pickup times as a JSON document.
         </li>
         <li>
           <code>ScholarAttendance</code> — one row per scholar, storing every
-          recorded day's lunch/transport cost and selection state as a JSON
-          blob.
+          recorded day's presence, lunch/transport selection, and cost as a JSON
+          document.
+        </li>
+        <li>
+          <code>ScholarAuditLog</code> — one row per change to a scholar
+          (created, edited, deleted). It deliberately has no foreign key to
+          <code>Scholar</code>, so a scholar's history survives their deletion.
         </li>
       </ul>
       <p>
-        All reads and writes go through raw ADO.NET <code>SqlCommand</code>s in
-        <code>ScholarDataAccess</code>, with every input passed as a bound
-        parameter — nothing is built by string-concatenating SQL.
+        Deleting a scholar cascades to their parents, pickup schedule, and
+        attendance. The JSON columns are checked to hold valid JSON; their shape
+        is enforced by the API's typed models. Schools (name, color, lunch and
+        transport prices) aren't in the database at all — they're static
+        reference data the UI loads from <code>schools.json</code>.
+      </p>
+      <p>
+        There's no seed data: the database starts empty, and the generator below
+        fills it.
       </p>
     </div>
   </div>
@@ -76,10 +156,34 @@ docker run -e "ACCEPT_EULA=1" -e "MSSQL_SA_PASSWORD=MyStrongPassw0rd?" -p 1433:1
     <div class="about-card__header">No authentication</div>
     <div class="about-card__body">
       <p>
-        Unlike a real production app, there's no login here — every API endpoint
-        is open, and CORS accepts requests from any origin. That's a deliberate,
-        appropriate choice for this project's current learning-project scope,
-        not an oversight.
+        Unlike the sibling customer and employee apps, there's no login here —
+        every API endpoint is open. That's a deliberate choice for an app that
+        only ever runs locally, not an oversight. The API still only accepts
+        browser requests from the Angular app's own origin (a configured CORS
+        allow-list).
+      </p>
+    </div>
+  </div>
+
+  <div class="about-card">
+    <div class="about-card__header">Data access &amp; errors</div>
+    <div class="about-card__body">
+      <p>
+        All reads and writes go through raw ADO.NET <code>SqlCommand</code>s in
+        <code>ScholarDataAccess</code>, with every input passed as a typed,
+        bound parameter — nothing is built by string-concatenating SQL. Saving a
+        scholar writes the scholar, pickup schedule, and parents in one
+        transaction; saving attendance replaces the scholar's whole list in one
+        race-free statement. All of it is exposed through
+        <code>ScholarsController</code>, a plain REST API under
+        <code>/api/scholars</code>.
+      </p>
+      <p>
+        Every error the API returns is an RFC 9457 Problem Details response —
+        <code>400</code> for invalid input (such as lunch selected on a day the
+        scholar wasn't present), <code>404</code> for an unknown scholar — which
+        the UI reads to show a specific message next to the control that failed;
+        anything unexpected is logged once and returned as a <code>500</code>.
       </p>
     </div>
   </div>
@@ -88,24 +192,31 @@ docker run -e "ACCEPT_EULA=1" -e "MSSQL_SA_PASSWORD=MyStrongPassw0rd?" -p 1433:1
     <div class="about-card__header">Console-logged API calls</div>
     <div class="about-card__body">
       <p>
-        Every HTTP call the Angular frontend makes to the API is mirrored to the
-        browser's devtools console via <code>apiLoggerInterceptor</code>. Open
-        devtools and watch the Console tab while using the app:
+        Since this is a showcase app, every HTTP call the Angular frontend makes
+        to the API is mirrored to the browser's devtools console via
+        <code>apiLoggerInterceptor</code>, a functional
+        <code>HttpInterceptorFn</code> registered in <code>app.config.ts</code>.
+        Open devtools (<kbd>F12</kbd> or <kbd>Cmd/Ctrl+Shift+I</kbd>) and watch
+        the Console tab while using the app:
       </p>
       <ul>
         <li>
-          A blue <code>→ METHOD url</code> line when a request goes out, with
-          its body.
+          A blue <code>→ METHOD url</code> line is logged when a request goes
+          out, with its request body attached.
         </li>
         <li>
-          A green <code>← METHOD url status (Nms)</code> line when the response
-          comes back, with the response body and timing.
+          A green <code>← METHOD url status (Nms)</code> line is logged when the
+          response comes back successfully, with the response body and how long
+          it took.
         </li>
         <li>
-          A red <code>✖ METHOD url status (Nms)</code> line instead if the
-          request fails.
+          A red <code>✖ METHOD url status (Nms)</code> line is logged instead if
+          the request fails.
         </li>
       </ul>
+      <p>
+        Nothing is logged during server-side rendering — only in the browser.
+      </p>
       <p>
         On by default in development builds and off in production ones; this
         switch overrides that and is remembered in this browser:
@@ -127,13 +238,24 @@ docker run -e "ACCEPT_EULA=1" -e "MSSQL_SA_PASSWORD=MyStrongPassw0rd?" -p 1433:1
     <div class="about-card__body">
       <p>
         <strong>This is test data.</strong> The button below registers 20
-        fictitious scholars through the same endpoints the Add/Edit scholar form
-        and the per-scholar attendance page use — each with a random name, a
-        random school, a random grade, a random Monday&ndash;Friday pickup
-        schedule (landing on real slots on the Pickup time chart), random
-        mother/father details — name and phone number (each parent independently
-        optional) — and a couple of months of random attendance (lunch/transport
-        selections priced from that scholar's school).
+        fictitious scholars through the same
+        <code>POST /api/scholars</code> endpoint the <em>Add scholar</em> form
+        uses — each with a random name, a school from the school list, a grade
+        from 1 to 4, a birth date that makes them 5 to 12 years old, a
+        Monday&ndash;Friday pickup schedule between 11:00 and 13:45 on the
+        quarter hour (so it lands on real slots of the Pickup time chart), a
+        mother (always) and a father (about half the time), each with a name and
+        phone number. It exists purely so there's enough data to try out the
+        dashboard, the attendance pages, and the charts locally.
+      </p>
+      <p>
+        Each test scholar also gets
+        <strong>attendance from July 2024 to September 2026</strong> (through
+        <code>POST /api/scholars/&lt;scholarId&gt;/attendance</code>, the same
+        endpoint the per-scholar attendance page saves with): about 7 in 10
+        weekdays recorded, with lunch and transport selected at random and
+        priced from that scholar's school — never transport without lunch, and
+        no transport in the July&ndash;August summer break.
       </p>
       <button
         type="button"
@@ -155,25 +277,45 @@ docker run -e "ACCEPT_EULA=1" -e "MSSQL_SA_PASSWORD=MyStrongPassw0rd?" -p 1433:1
     <div class="about-card__body">
       <ul>
         <li>
-          Browse the scholar table, sortable by name, school, grade, or birth
-          date.
+          See the dashboard: key figures, today's pickups, upcoming birthdays,
+          and recent activity.
         </li>
         <li>
-          Create a new scholar, or edit an existing one, through a validated
-          form.
-        </li>
-        <li>View a scholar's details, including their pickup schedule.</li>
-        <li>Delete a scholar (with a confirmation prompt).</li>
-        <li>
-          See every scholar's pickup times laid out on a day-by-day Gantt chart.
-        </li>
-        <li>View and edit a scholar's monthly attendance, and save changes.</li>
-        <li>
-          See every scholar's attendance at once on the Attendance dashboard.
+          Browse the scholar table: search by name, sort by name, school, grade,
+          or birth date.
         </li>
         <li>
-          Export the scholar table, the attendance dashboard, or a scholar's
-          monthly attendance to CSV.
+          Add a new scholar, or edit an existing one, through a validated form
+          (name, school, grade, birth date, parents, pickup times); leaving a
+          form with unsaved changes asks first.
+        </li>
+        <li>
+          Open a scholar's details page for their parents, pickup schedule, and
+          audit trail.
+        </li>
+        <li>
+          Delete a scholar (with a confirmation prompt), or select several at
+          once with row checkboxes and delete them together.
+        </li>
+        <li>Export the scholar table to a CSV file.</li>
+        <li>
+          See every scholar's pickup times laid out on a day-by-day Gantt chart,
+          in 15-minute slots colored by school.
+        </li>
+        <li>
+          See every scholar's attendance for a month on one grid, and open a
+          scholar to view and edit their month day by day; both export to CSV.
+        </li>
+        <li>
+          Explore the charts: the month at a glance (attendance rate, scholars
+          per day, revenue, lunch take-up), the month day by day, the year
+          (attendance calendar, revenue by month), and the scholars (pickup rush
+          hour, classes, schools).
+        </li>
+        <li>
+          Browse a global, paginated audit trail of every scholar change
+          (create/edit/delete) across the whole system, newest first, and clear
+          it.
         </li>
       </ul>
     </div>

@@ -1,4 +1,4 @@
-import { Component, OnInit, computed, inject } from '@angular/core';
+import { Component, computed, inject } from '@angular/core';
 import { rxResource } from '@angular/core/rxjs-interop';
 import { HttpErrorResponse } from '@angular/common/http';
 import { forkJoin } from 'rxjs';
@@ -27,13 +27,15 @@ import {
 } from './dashboard-data';
 import { extractErrorMessage } from '../../utils/extract-error-message';
 
+const RECENT_ACTIVITY_PAGE = { pageNumber: 1, pageSize: 5 };
+
 @Component({
   selector: 'app-dashboard',
   imports: [RouterLink, DatePipe, RonPipe],
   templateUrl: './dashboard.component.html',
   styleUrl: './dashboard.component.css',
 })
-export class DashboardComponent implements OnInit {
+export class DashboardComponent {
   private readonly scholarService = inject(ScholarService);
   private readonly schoolService = inject(SchoolService);
   private readonly attendanceService = inject(AttendanceService);
@@ -96,8 +98,8 @@ export class DashboardComponent implements OnInit {
     computeUpcomingBirthdays(this.scholars(), this.today, 30),
   );
 
-  ngOnInit(): void {
-    this.globalAuditLogService.loadAllAuditLog({ pageNumber: 1, pageSize: 5 });
+  constructor() {
+    this.globalAuditLogService.bindAllAuditLog(() => RECENT_ACTIVITY_PAGE);
   }
 
   scholarLabel(entry: GlobalAuditLogEntry): string {

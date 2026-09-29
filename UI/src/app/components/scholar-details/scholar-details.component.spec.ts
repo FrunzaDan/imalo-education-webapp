@@ -60,7 +60,7 @@ async function setup(
       : of(options.scholar ?? SCHOLAR),
   );
   const getSchool = vi.fn(() => of(SCHOOL));
-  const loadAuditLog = vi.fn();
+  const bindAuditLog = vi.fn();
   const deleteScholar = vi.fn(() =>
     options.deleteError
       ? throwError(() => new HttpErrorResponse({ status: 0 }))
@@ -81,7 +81,7 @@ async function setup(
           entries: () => options.auditLog ?? [],
           loading: () => false,
           error: () => null,
-          loadAuditLog,
+          bindAuditLog,
         },
       },
       { provide: ConfirmDialogService, useValue: { confirm } },
@@ -98,7 +98,7 @@ async function setup(
     component: fixture.componentInstance,
     getScholar,
     getSchool,
-    loadAuditLog,
+    bindAuditLog,
     deleteScholar,
     confirm,
   };
@@ -106,12 +106,12 @@ async function setup(
 
 describe('ScholarDetailsComponent', () => {
   it('loads the scholar by the bound id, then its school, and the audit log', async () => {
-    const { component, getScholar, getSchool, loadAuditLog, fixture } =
+    const { component, getScholar, getSchool, bindAuditLog, fixture } =
       await setup();
 
     expect(getScholar).toHaveBeenCalledWith('scholar-1');
     expect(getSchool).toHaveBeenCalledWith(1);
-    expect(loadAuditLog).toHaveBeenCalledWith('scholar-1');
+    expect(bindAuditLog).toHaveBeenCalledWith(component.scholarId);
     expect(component.scholar()).toEqual(SCHOLAR);
     expect(component.school()).toEqual(SCHOOL);
     expect(fixture.nativeElement.textContent).toContain('Test School');

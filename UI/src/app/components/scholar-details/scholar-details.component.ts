@@ -1,11 +1,10 @@
 import {
   Component,
   computed,
-  effect,
   inject,
   input,
+  linkedSignal,
   signal,
-  untracked,
 } from '@angular/core';
 import { rxResource } from '@angular/core/rxjs-interop';
 import { DatePipe, TitleCasePipe } from '@angular/common';
@@ -66,7 +65,11 @@ export class ScholarDetailsComponent {
   readonly auditLog = this.auditLogService.entries;
   readonly auditLogLoading = this.auditLogService.loading;
   readonly auditLogError = this.auditLogService.error;
-  readonly showAllAuditLog = signal(false);
+  // Collapsed again whenever another scholar is shown.
+  readonly showAllAuditLog = linkedSignal({
+    source: this.scholarId,
+    computation: () => false,
+  });
   readonly visibleAuditLog = computed(() =>
     this.showAllAuditLog()
       ? this.auditLog()
@@ -82,14 +85,7 @@ export class ScholarDetailsComponent {
   readonly deleteError = signal<string | null>(null);
 
   constructor() {
-    effect(() => {
-      const scholarId = this.scholarId();
-      if (scholarId)
-        untracked(() => {
-          this.showAllAuditLog.set(false);
-          this.auditLogService.loadAuditLog(scholarId);
-        });
-    });
+    this.auditLogService.bindAuditLog(this.scholarId);
   }
 
   formatParent(
