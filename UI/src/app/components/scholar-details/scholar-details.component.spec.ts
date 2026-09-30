@@ -8,7 +8,7 @@ import { ScholarService } from '../../services/scholar.service';
 import { SchoolService } from '../../services/school.service';
 import { AuditLogService } from '../../services/audit-log.service';
 import { ConfirmDialogService } from '../../services/confirm-dialog.service';
-import type { Scholar } from '../../interfaces/scholar';
+import { Gender, Scholar } from '../../interfaces/scholar';
 import type { School } from '../../interfaces/school';
 import type { AuditLogEntry } from '../../interfaces/audit-log-entry';
 
@@ -16,6 +16,7 @@ const SCHOLAR: Scholar = {
   scholarId: 'scholar-1',
   firstName: 'Ana',
   lastName: 'Popescu',
+  gender: Gender.Female,
   pickupSchedule: null,
   schoolId: 1,
   grade: 3,

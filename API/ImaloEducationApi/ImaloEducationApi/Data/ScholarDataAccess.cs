@@ -36,9 +36,9 @@ public partial class ScholarDataAccess : IScholarDataAccess
 
         const string insertScholarSql = """
 
-                                                INSERT INTO dbo.Scholar (FirstName, LastName, BirthDate, Grade, SchoolId)
+                                                INSERT INTO dbo.Scholar (FirstName, LastName, BirthDate, Gender, Grade, SchoolId)
                                                 OUTPUT INSERTED.ScholarId
-                                                VALUES (@FirstName, @LastName, @BirthDate, @Grade, @SchoolId);
+                                                VALUES (@FirstName, @LastName, @BirthDate, @Gender, @Grade, @SchoolId);
                                         """;
 
         const string insertScheduleSql = """
@@ -59,6 +59,7 @@ public partial class ScholarDataAccess : IScholarDataAccess
         AddParam(insertScholarCmd, "@FirstName", SqlDbType.NVarChar, scholar.FirstName, 100);
         AddParam(insertScholarCmd, "@LastName", SqlDbType.NVarChar, scholar.LastName ?? string.Empty, 100);
         AddParam(insertScholarCmd, "@BirthDate", SqlDbType.Date, (object?)scholar.BirthDate ?? DBNull.Value);
+        AddParam(insertScholarCmd, "@Gender", SqlDbType.TinyInt, (byte)scholar.Gender);
         AddParam(insertScholarCmd, "@Grade", SqlDbType.TinyInt, (object?)scholar.Grade ?? DBNull.Value);
         AddParam(insertScholarCmd, "@SchoolId", SqlDbType.Int, (object?)scholar.SchoolId ?? DBNull.Value);
 
@@ -107,7 +108,7 @@ public partial class ScholarDataAccess : IScholarDataAccess
     {
         const string sql = """
 
-                                           SELECT s.ScholarId, s.FirstName, s.LastName, s.BirthDate, s.Grade, s.SchoolId, ps.ScheduleJson,
+                                           SELECT s.ScholarId, s.FirstName, s.LastName, s.BirthDate, s.Gender, s.Grade, s.SchoolId, ps.ScheduleJson,
                                                   mother.FirstName AS MotherFirstName, mother.LastName AS MotherLastName, mother.PhoneNumber AS MotherPhoneNumber,
                                                   father.FirstName AS FatherFirstName, father.LastName AS FatherLastName, father.PhoneNumber AS FatherPhoneNumber
                                            FROM dbo.Scholar AS s
@@ -146,7 +147,7 @@ public partial class ScholarDataAccess : IScholarDataAccess
     {
         var lockHint = transaction is null ? "" : " WITH (UPDLOCK)";
         var sql = $"""
-                   SELECT s.ScholarId, s.FirstName, s.LastName, s.BirthDate, s.Grade, s.SchoolId, ps.ScheduleJson,
+                   SELECT s.ScholarId, s.FirstName, s.LastName, s.BirthDate, s.Gender, s.Grade, s.SchoolId, ps.ScheduleJson,
                           mother.FirstName AS MotherFirstName, mother.LastName AS MotherLastName, mother.PhoneNumber AS MotherPhoneNumber,
                           father.FirstName AS FatherFirstName, father.LastName AS FatherLastName, father.PhoneNumber AS FatherPhoneNumber
                    FROM dbo.Scholar AS s{lockHint}
@@ -175,6 +176,7 @@ public partial class ScholarDataAccess : IScholarDataAccess
                                                 SET FirstName = @FirstName,
                                                     LastName = @LastName,
                                                     BirthDate = @BirthDate,
+                                                    Gender = @Gender,
                                                     Grade = @Grade,
                                                     SchoolId = @SchoolId
                                                 WHERE ScholarId = @ScholarId;
@@ -213,6 +215,7 @@ public partial class ScholarDataAccess : IScholarDataAccess
         AddParam(updateScholarCmd, "@FirstName", SqlDbType.NVarChar, scholar.FirstName ?? string.Empty, 100);
         AddParam(updateScholarCmd, "@LastName", SqlDbType.NVarChar, scholar.LastName ?? string.Empty, 100);
         AddParam(updateScholarCmd, "@BirthDate", SqlDbType.Date, (object?)scholar.BirthDate ?? DBNull.Value);
+        AddParam(updateScholarCmd, "@Gender", SqlDbType.TinyInt, (byte)scholar.Gender);
         AddParam(updateScholarCmd, "@Grade", SqlDbType.TinyInt, (object?)scholar.Grade ?? DBNull.Value);
         AddParam(updateScholarCmd, "@SchoolId", SqlDbType.Int, (object?)scholar.SchoolId ?? DBNull.Value);
 
@@ -517,6 +520,7 @@ public partial class ScholarDataAccess : IScholarDataAccess
             FirstName = reader.GetString(reader.GetOrdinal("FirstName")),
             LastName = reader.GetString(reader.GetOrdinal("LastName")),
             BirthDate = reader.GetFieldValue<DateOnly>(reader.GetOrdinal("BirthDate")),
+            Gender = (Gender)reader.GetByte(reader.GetOrdinal("Gender")),
             Grade =
                 reader.IsDBNull(reader.GetOrdinal("Grade")) ? null : reader.GetByte(reader.GetOrdinal("Grade")),
             SchoolId = reader.IsDBNull(reader.GetOrdinal("SchoolId"))

@@ -73,6 +73,23 @@ public class WireFormatTests
     }
 
     [Fact]
+    public void Scholar_GenderIsANumberLikeInTheSiblingApps()
+    {
+        var json = JsonSerializer.Serialize(new Scholar { Gender = Gender.Female }, Web);
+
+        Assert.Contains("\"gender\":2", json);
+        Assert.Equal(Gender.Male,
+            JsonSerializer.Deserialize<Scholar>("""{"gender":1}""", Web)!.Gender);
+    }
+
+    [Fact]
+    public void Scholar_MissingGender_IsNotDeclared()
+    {
+        Assert.Equal(Gender.NotDeclared,
+            JsonSerializer.Deserialize<Scholar>("""{"firstName":"Ana"}""", Web)!.Gender);
+    }
+
+    [Fact]
     public void AttendanceRecord_DateIsDateOnly()
     {
         var json = JsonSerializer.Serialize(new AttendanceRecord { Date = new DateOnly(2026, 9, 1) }, Web);

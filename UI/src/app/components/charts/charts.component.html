@@ -302,6 +302,30 @@
         </article>
 
         <article class="app-card chart-card">
+          <h3 class="chart-title">Boys and girls</h3>
+          <p class="chart-caption">Every scholar, by gender.</p>
+          <app-donut-chart
+            [slices]="genders()"
+            centerCaption="scholars"
+            ariaLabel="Scholars by gender"
+            emptyMessage="No scholars yet."
+          />
+        </article>
+
+        <article class="app-card chart-card">
+          <h3 class="chart-title">Boys and girls in each class</h3>
+          <p class="chart-caption">
+            Scholars with no gender declared are left out.
+          </p>
+          <app-bar-chart
+            [points]="boysAndGirls()"
+            series1Label="Boys"
+            series2Label="Girls"
+            emptyMessage="No scholars yet."
+          />
+        </article>
+
+        <article class="app-card chart-card">
           <h3 class="chart-title">Scholars by school</h3>
           <p class="chart-caption">
             The eight schools most scholars come from.

@@ -1,5 +1,5 @@
 import { AttendanceRecord } from '../../interfaces/attendance-record';
-import { Scholar } from '../../interfaces/scholar';
+import { Gender, Scholar } from '../../interfaces/scholar';
 import { ScholarAttendance } from '../../interfaces/scholar-attendance';
 import { School } from '../../interfaces/school';
 import {
@@ -14,7 +14,9 @@ import {
   busiestPoint,
   busiestWeekday,
   chargesByScholar,
+  boysAndGirlsByClass,
   countByGrade,
+  genderSlices,
   elapsedWeekdays,
   monthlyAveragePerDay,
   monthlyRevenue,
@@ -49,6 +51,7 @@ const buildScholar = (overrides: Partial<Scholar> = {}): Scholar => ({
   scholarId: 'scholar-1',
   firstName: 'Ana',
   lastName: 'Pop',
+  gender: Gender.Female,
   pickupSchedule: null,
   schoolId: 1,
   grade: 1,
@@ -451,6 +454,49 @@ describe('countByGrade', () => {
     expect(countByGrade([buildScholar()])).toEqual([
       { label: 'Class 1', value: 1 },
     ]);
+  });
+});
+
+describe('genderSlices', () => {
+  it('counts girls, boys and not declared, keeping empty slices', () => {
+    expect(
+      genderSlices([
+        buildScholar({ gender: Gender.Male }),
+        buildScholar({ gender: Gender.Male }),
+        buildScholar({ gender: Gender.Female }),
+      ]),
+    ).toEqual([
+      { label: 'Girls', value: 1 },
+      { label: 'Boys', value: 2 },
+      { label: 'Not declared', value: 0 },
+    ]);
+  });
+});
+
+describe('boysAndGirlsByClass', () => {
+  it('splits each class into boys and girls, in class order with Unassigned last', () => {
+    expect(
+      boysAndGirlsByClass([
+        buildScholar({ grade: null, gender: Gender.Male }),
+        buildScholar({ grade: 3, gender: Gender.Female }),
+        buildScholar({ grade: 1, gender: Gender.Male }),
+        buildScholar({ grade: 1, gender: Gender.Female }),
+        buildScholar({ grade: 1, gender: Gender.Female }),
+      ]),
+    ).toEqual([
+      { key: '1', label: 'Class 1', value: 1, value2: 2 },
+      { key: '3', label: 'Class 3', value: 0, value2: 1 },
+      { key: 'Unassigned', label: 'Unassigned', value: 1, value2: 0 },
+    ]);
+  });
+
+  it('leaves out scholars with no gender declared', () => {
+    expect(
+      boysAndGirlsByClass([
+        buildScholar({ grade: 2, gender: Gender.NotDeclared }),
+        buildScholar({ grade: 2, gender: Gender.Male }),
+      ]),
+    ).toEqual([{ key: '2', label: 'Class 2', value: 1, value2: 0 }]);
   });
 });
 

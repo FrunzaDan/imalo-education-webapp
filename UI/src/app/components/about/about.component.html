@@ -115,8 +115,9 @@ docker run -e "ACCEPT_EULA=1" -e "MSSQL_SA_PASSWORD=MyStrongPassw0rd?" -p 1433:1
       <p>The schema has five tables:</p>
       <ul>
         <li>
-          <code>Scholar</code> — one row per scholar: name, school, grade, and
-          birth date, keyed by a server-generated <code>ScholarId</code> (GUID).
+          <code>Scholar</code> — one row per scholar: name, gender, school,
+          grade, and birth date, keyed by a server-generated
+          <code>ScholarId</code> (GUID).
         </li>
         <li>
           <code>ScholarParent</code> — up to two rows per scholar, one for the
@@ -240,11 +241,12 @@ docker run -e "ACCEPT_EULA=1" -e "MSSQL_SA_PASSWORD=MyStrongPassw0rd?" -p 1433:1
         <strong>This is test data.</strong> The button below registers 20
         fictitious scholars through the same
         <code>POST /api/scholars</code> endpoint the <em>Add scholar</em> form
-        uses — each with a random name, a school from the school list, a grade
-        from 1 to 4, a birth date that makes them 5 to 12 years old, a
+        uses — each a boy or a girl (46% each, 8% not declared) with a matching
+        first name, a school from the school list, a birth date that makes them
+        6&frac12; to 11 years old and a grade from 1 to 4 that fits that age, a
         Monday&ndash;Friday pickup schedule between 11:00 and 13:45 on the
         quarter hour (so it lands on real slots of the Pickup time chart), a
-        mother (always) and a father (about half the time), each with a name and
+        mother (always) and a father (about four in five), each with a name and
         phone number. It exists purely so there's enough data to try out the
         dashboard, the attendance pages, and the charts locally.
       </p>
@@ -286,8 +288,8 @@ docker run -e "ACCEPT_EULA=1" -e "MSSQL_SA_PASSWORD=MyStrongPassw0rd?" -p 1433:1
         </li>
         <li>
           Add a new scholar, or edit an existing one, through a validated form
-          (name, school, grade, birth date, parents, pickup times); leaving a
-          form with unsaved changes asks first.
+          (name, gender, school, grade, birth date, parents, pickup times);
+          leaving a form with unsaved changes asks first.
         </li>
         <li>
           Open a scholar's details page for their parents, pickup schedule, and
@@ -310,7 +312,7 @@ docker run -e "ACCEPT_EULA=1" -e "MSSQL_SA_PASSWORD=MyStrongPassw0rd?" -p 1433:1
           Explore the charts: the month at a glance (attendance rate, scholars
           per day, revenue, lunch take-up), the month day by day, the year
           (attendance calendar, revenue by month), and the scholars (pickup rush
-          hour, classes, schools).
+          hour, classes, boys and girls, schools).
         </li>
         <li>
           Browse a global, paginated audit trail of every scholar change

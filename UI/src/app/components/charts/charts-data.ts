@@ -1,5 +1,5 @@
 import { AttendanceRecord } from '../../interfaces/attendance-record';
-import { Scholar } from '../../interfaces/scholar';
+import { Gender, Scholar } from '../../interfaces/scholar';
 import { ScholarAttendance } from '../../interfaces/scholar-attendance';
 import { School } from '../../interfaces/school';
 import { WEEK_DAYS } from '../../constants/week-days';
@@ -15,6 +15,7 @@ import {
   toMonthString,
   weekdaysOfMonth,
 } from '../../utils/weekday-dates';
+import { BarChartPoint } from './bar-chart/bar-chart.component';
 import { HeatmapData } from './heatmap/heatmap.component';
 
 export interface AttendancePoint {
@@ -508,6 +509,46 @@ export function countByGrade(scholars: Scholar[]): LabelValue[] {
 
   if (unassigned > 0) result.push({ label: 'Unassigned', value: unassigned });
   return result;
+}
+
+const GENDER_SLICES: ReadonlyArray<[Gender, string]> = [
+  [Gender.Female, 'Girls'],
+  [Gender.Male, 'Boys'],
+  [Gender.NotDeclared, 'Not declared'],
+];
+
+export function genderSlices(scholars: Scholar[]): LabelValue[] {
+  return GENDER_SLICES.map(([gender, label]) => ({
+    label,
+    value: scholars.filter((s) => s.gender === gender).length,
+  }));
+}
+
+// Boys (first series) and girls (second series) in each class, in class
+// order. Scholars with no gender declared are left out.
+export function boysAndGirlsByClass(scholars: Scholar[]): BarChartPoint[] {
+  const byClass = new Map<string, { boys: number; girls: number }>();
+  for (const scholar of scholars) {
+    const key =
+      scholar.grade === null || scholar.grade === undefined
+        ? 'Unassigned'
+        : String(scholar.grade);
+    const counts = byClass.get(key) ?? { boys: 0, girls: 0 };
+    if (scholar.gender === Gender.Male) counts.boys++;
+    if (scholar.gender === Gender.Female) counts.girls++;
+    byClass.set(key, counts);
+  }
+
+  return [...byClass.entries()]
+    .sort(([a], [b]) =>
+      a === 'Unassigned' ? 1 : b === 'Unassigned' ? -1 : Number(a) - Number(b),
+    )
+    .map(([key, { boys, girls }]) => ({
+      key,
+      label: key === 'Unassigned' ? key : `Class ${key}`,
+      value: boys,
+      value2: girls,
+    }));
 }
 
 export function topSchools(

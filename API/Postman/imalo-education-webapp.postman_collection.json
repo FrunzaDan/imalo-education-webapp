@@ -95,7 +95,7 @@
 						},
 						"body": {
 							"mode": "raw",
-							"raw": "{\n    \"firstName\": \"{{scholarFirstName}}\",\n    \"lastName\": \"{{scholarLastName}}\",\n    \"schoolId\": 1,\n    \"grade\": 5,\n    \"birthDate\": \"2015-04-12\",\n    \"pickupSchedule\": {\n        \"monday\": \"15:30\",\n        \"tuesday\": null,\n        \"wednesday\": \"15:30\",\n        \"thursday\": null,\n        \"friday\": \"14:00\"\n    },\n    \"motherFirstName\": \"Jane\",\n    \"motherLastName\": \"Doe\",\n    \"motherPhoneNumber\": \"15551234567\",\n    \"fatherFirstName\": \"John\",\n    \"fatherLastName\": \"Doe\",\n    \"fatherPhoneNumber\": \"15559876543\"\n}",
+							"raw": "{\n    \"firstName\": \"{{scholarFirstName}}\",\n    \"lastName\": \"{{scholarLastName}}\",\n    \"schoolId\": 1,\n    \"grade\": 5,\n    \"gender\": 2,\n    \"birthDate\": \"2015-04-12\",\n    \"pickupSchedule\": {\n        \"monday\": \"15:30\",\n        \"tuesday\": null,\n        \"wednesday\": \"15:30\",\n        \"thursday\": null,\n        \"friday\": \"14:00\"\n    },\n    \"motherFirstName\": \"Jane\",\n    \"motherLastName\": \"Doe\",\n    \"motherPhoneNumber\": \"15551234567\",\n    \"fatherFirstName\": \"John\",\n    \"fatherLastName\": \"Doe\",\n    \"fatherPhoneNumber\": \"15559876543\"\n}",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -190,7 +190,7 @@
 						},
 						"body": {
 							"mode": "raw",
-							"raw": "{\n    \"scholarId\": \"{{scholarId}}\",\n    \"firstName\": \"{{scholarFirstName}}\",\n    \"lastName\": \"{{scholarLastName}}\",\n    \"schoolId\": 1,\n    \"grade\": 6,\n    \"birthDate\": \"2015-04-12\",\n    \"pickupSchedule\": {\n        \"monday\": \"16:00\",\n        \"wednesday\": \"16:00\"\n    },\n    \"motherFirstName\": \"Jane\",\n    \"motherLastName\": \"Doe\",\n    \"motherPhoneNumber\": \"15551234567\"\n}",
+							"raw": "{\n    \"scholarId\": \"{{scholarId}}\",\n    \"firstName\": \"{{scholarFirstName}}\",\n    \"lastName\": \"{{scholarLastName}}\",\n    \"schoolId\": 1,\n    \"grade\": 6,\n    \"gender\": 2,\n    \"birthDate\": \"2015-04-12\",\n    \"pickupSchedule\": {\n        \"monday\": \"16:00\",\n        \"wednesday\": \"16:00\"\n    },\n    \"motherFirstName\": \"Jane\",\n    \"motherLastName\": \"Doe\",\n    \"motherPhoneNumber\": \"15551234567\"\n}",
 							"options": {
 								"raw": {
 									"language": "json"

@@ -11,6 +11,7 @@ public class ScholarChangesTests
         FirstName = "Ana",
         LastName = "Popescu",
         BirthDate = new DateOnly(2016, 5, 1),
+        Gender = Gender.Female,
         Grade = 3,
         SchoolId = 1,
         PickupSchedule = new PickupSchedule { Monday = new TimeOnly(13, 30) },
@@ -24,6 +25,7 @@ public class ScholarChangesTests
         FirstName = scholar.FirstName,
         LastName = scholar.LastName,
         BirthDate = scholar.BirthDate,
+        Gender = scholar.Gender,
         Grade = scholar.Grade,
         SchoolId = scholar.SchoolId,
         PickupSchedule = scholar.PickupSchedule is { } schedule
@@ -55,11 +57,12 @@ public class ScholarChangesTests
         var before = SampleScholar();
         var after = Copy(before);
         after.FirstName = "Ioana";
+        after.Gender = Gender.NotDeclared;
         after.Grade = 4;
         after.PickupSchedule!.Friday = new TimeOnly(12, 0);
         after.FatherFirstName = "Ion";
 
-        Assert.Equal("Updated: first name, grade, pickup schedule, father", ScholarChanges.Describe(before, after));
+        Assert.Equal("Updated: first name, gender, grade, pickup schedule, father", ScholarChanges.Describe(before, after));
     }
 
     [Fact]

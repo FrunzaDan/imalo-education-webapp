@@ -15,6 +15,9 @@ public partial class Scholar
     [StringLength(100, ErrorMessage = "Last name can't exceed 100 characters.")]
     public string LastName { get; set; } = string.Empty;
 
+    [EnumDataType(typeof(Gender), ErrorMessage = "Invalid gender value.")]
+    public Gender Gender { get; set; }
+
     [Range(1, int.MaxValue, ErrorMessage = "SchoolId must be a positive number.")]
     public int? SchoolId { get; set; }
 

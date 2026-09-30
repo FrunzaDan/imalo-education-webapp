@@ -8,7 +8,12 @@ import {
   signal,
 } from '@angular/core';
 import { rxResource, toSignal } from '@angular/core/rxjs-interop';
-import { FormField, FormRoot, form } from '@angular/forms/signals';
+import {
+  FormField,
+  FormRoot,
+  form,
+  TreeValidationResult,
+} from '@angular/forms/signals';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
@@ -16,6 +21,7 @@ import { WEEK_DAYS } from '../../constants/week-days';
 import { ScholarService } from '../../services/scholar.service';
 import { SchoolService } from '../../services/school.service';
 import { extractErrorMessage } from '../../utils/extract-error-message';
+import { toServerErrors } from '../../utils/server-errors';
 import {
   ScholarFormModel,
   emptyScholarForm,
@@ -109,7 +115,7 @@ export class ScholarFormComponent {
     },
   ] as const;
 
-  private async save(): Promise<void> {
+  private async save(): Promise<TreeValidationResult> {
     this.invalidSummary.set(null);
     this.saveError.set(null);
     const scholar = toScholar(this.model(), this.scholarId() ?? null);
@@ -124,12 +130,14 @@ export class ScholarFormComponent {
       this.saved.set(true);
       await this.router.navigate(['/scholars', savedScholar.scholarId]);
     } catch (error) {
-      this.saveError.set(
-        extractErrorMessage(
-          error as HttpErrorResponse,
-          isEditMode ? 'Failed to update scholar' : 'Failed to create scholar',
-        ),
+      const { fieldErrors, message } = toServerErrors(
+        error as HttpErrorResponse,
+        this.scholarForm,
+        isEditMode ? 'Failed to update scholar' : 'Failed to create scholar',
       );
+      this.saveError.set(message);
+      fieldErrors[0]?.fieldTree().focusBoundControl();
+      return fieldErrors;
     }
   }
 

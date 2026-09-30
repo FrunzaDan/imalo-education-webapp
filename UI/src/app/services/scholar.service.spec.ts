@@ -5,7 +5,7 @@ import {
 } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 import { environment } from '../../environments/environment';
-import { Scholar } from '../interfaces/scholar';
+import { Gender, Scholar } from '../interfaces/scholar';
 import { NotificationService } from './notification.service';
 import { ScholarService } from './scholar.service';
 
@@ -20,6 +20,7 @@ describe('ScholarService', () => {
     scholarId: 'scholar-1',
     firstName: 'Ana',
     lastName: 'Pop',
+    gender: Gender.Female,
     pickupSchedule: null,
     schoolId: 1,
     grade: 2,

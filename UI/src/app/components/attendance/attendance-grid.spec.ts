@@ -1,5 +1,5 @@
 import { AttendanceRecord } from '../../interfaces/attendance-record';
-import { Scholar } from '../../interfaces/scholar';
+import { Gender, Scholar } from '../../interfaces/scholar';
 import {
   AttendanceCell,
   buildScholarRows,
@@ -19,6 +19,7 @@ describe('attendance-grid', () => {
     scholarId,
     firstName,
     lastName,
+    gender: Gender.Female,
     pickupSchedule: null,
     schoolId: 1,
     grade: 1,

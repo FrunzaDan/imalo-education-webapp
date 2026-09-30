@@ -21,10 +21,12 @@ import { DonutChartComponent } from './donut-chart/donut-chart.component';
 import { KpiTileComponent } from './kpi-tile/kpi-tile.component';
 import { RankedBarChartComponent } from './ranked-bar-chart/ranked-bar-chart.component';
 import { HeatmapComponent } from './heatmap/heatmap.component';
+import { BarChartComponent } from './bar-chart/bar-chart.component';
 import {
   attendanceCalendar,
   attendanceRate,
   averagePerDay,
+  boysAndGirlsByClass,
   buildDailyPoints,
   busiestDay,
   busiestPickup,
@@ -33,6 +35,7 @@ import {
   chargesByScholar,
   countByGrade,
   elapsedWeekdays,
+  genderSlices,
   monthlyAveragePerDay,
   monthlyRevenue,
   monthlySeries,
@@ -64,6 +67,7 @@ const TREND_MONTHS = 12;
     KpiTileComponent,
     RankedBarChartComponent,
     HeatmapComponent,
+    BarChartComponent,
   ],
   providers: [RonPipe],
   templateUrl: './charts.component.html',
@@ -272,6 +276,8 @@ export class ChartsComponent {
   // ── Scholars ───────────────────────────────────────────────────────
 
   readonly classes = computed(() => countByGrade(this.scholars()));
+  readonly genders = computed(() => genderSlices(this.scholars()));
+  readonly boysAndGirls = computed(() => boysAndGirlsByClass(this.scholars()));
   readonly schoolRanking = computed(() =>
     topSchools(this.scholars(), this.schools(), 8),
   );

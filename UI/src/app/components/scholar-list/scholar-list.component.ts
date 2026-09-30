@@ -25,10 +25,12 @@ import { catchError, concatMap, map, toArray } from 'rxjs/operators';
 import { RouterLink } from '@angular/router';
 import { parseDateOnly } from '../../utils/weekday-dates';
 import { extractErrorMessage } from '../../utils/extract-error-message';
+import { genderLabel } from '../../utils/gender-label';
 
 interface ScholarRow {
   scholarId: string;
   name: string;
+  gender: string;
   schoolName: string;
   grade: number | null;
   schoolColor: string;
@@ -227,6 +229,7 @@ export class ScholarListComponent {
       'scholars',
       [
         { header: 'Name', value: (s: ScholarRow) => s.name },
+        { header: 'Gender', value: (s: ScholarRow) => s.gender },
         {
           header: 'School',
           value: (s: ScholarRow) => s.schoolName,
@@ -254,6 +257,7 @@ function toRows(scholars: Scholar[], schools: School[]): ScholarRow[] {
     return {
       scholarId: scholar.scholarId,
       name: `${scholar.firstName} ${scholar.lastName}`,
+      gender: genderLabel(scholar.gender),
       schoolName: school ? school.name : 'Unknown',
       grade: scholar.grade,
       schoolColor,

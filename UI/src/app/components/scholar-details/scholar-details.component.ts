@@ -15,6 +15,7 @@ import { SchoolService } from '../../services/school.service';
 import { ConfirmDialogService } from '../../services/confirm-dialog.service';
 import { AuditLogService } from '../../services/audit-log.service';
 import { auditActionLabel } from '../../utils/audit-action-label';
+import { genderLabel } from '../../utils/gender-label';
 import { WEEK_DAYS } from '../../constants/week-days';
 import { extractErrorMessage } from '../../utils/extract-error-message';
 
@@ -61,6 +62,7 @@ export class ScholarDetailsComponent {
     this.schoolResource.hasValue() ? this.schoolResource.value() : null,
   );
 
+  readonly genderLabel = genderLabel;
   readonly auditActionLabel = auditActionLabel;
   readonly auditLog = this.auditLogService.entries;
   readonly auditLogLoading = this.auditLogService.loading;

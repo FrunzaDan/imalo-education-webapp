@@ -10,6 +10,7 @@ public class ScholarModelValidationTests
         FirstName = "Ana",
         LastName = "Popescu",
         BirthDate = DateOnly.FromDateTime(DateTime.UtcNow).AddYears(-8),
+        Gender = Gender.Male,
         SchoolId = 1,
         Grade = 3,
         PickupSchedule = new PickupSchedule { Monday = new TimeOnly(13, 0) },
@@ -61,6 +62,16 @@ public class ScholarModelValidationTests
 
         Assert.False(TryValidate(scholar, out var results));
         Assert.Contains(results, r => r.MemberNames.Contains(nameof(Scholar.Grade)));
+    }
+
+    [Fact]
+    public void UnknownGender_FailsValidation()
+    {
+        var scholar = ValidScholar();
+        scholar.Gender = (Gender)7;
+
+        Assert.False(TryValidate(scholar, out var results));
+        Assert.Contains(results, r => r.MemberNames.Contains(nameof(Scholar.Gender)));
     }
 
     [Fact]

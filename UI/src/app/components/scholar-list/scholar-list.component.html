@@ -1,4 +1,9 @@
-<h1 class="page-title">Scholars</h1>
+<h1 class="page-title">
+  Scholars
+  @if (!loading() && !loadError()) {
+    ({{ visibleRows().length }})
+  }
+</h1>
 
 <p class="visually-hidden" role="status">{{ resultsAnnouncement() }}</p>
 

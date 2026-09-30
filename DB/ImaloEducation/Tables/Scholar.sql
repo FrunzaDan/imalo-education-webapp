@@ -5,9 +5,12 @@ CREATE TABLE [dbo].[Scholar]
     [FirstName] NVARCHAR (100) NOT NULL,
     [LastName] NVARCHAR (100) NOT NULL,
     [BirthDate] DATE NOT NULL,
+    [Gender] TINYINT NOT NULL
+        CONSTRAINT [DF_Scholar_Gender] DEFAULT 0,
     [Grade] TINYINT NULL,
     [SchoolId] INT NULL,
     CONSTRAINT [PK_Scholar] PRIMARY KEY CLUSTERED ([ScholarId]),
+    CONSTRAINT [CK_Scholar_Gender] CHECK ([Gender] IN (0, 1, 2)),
     CONSTRAINT [CK_Scholar_Grade] CHECK ([Grade] BETWEEN 0 AND 12),
     CONSTRAINT [CK_Scholar_SchoolId] CHECK ([SchoolId] > 0)
 );

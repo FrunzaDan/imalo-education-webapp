@@ -9,12 +9,13 @@ import {
   validate,
 } from '@angular/forms/signals';
 import { WEEK_DAYS, WeekDay } from '../../constants/week-days';
-import { Scholar } from '../../interfaces/scholar';
+import { Gender, Scholar } from '../../interfaces/scholar';
 import { parseDateOnly } from '../../utils/weekday-dates';
 
 export interface ScholarFormModel {
   firstName: string;
   lastName: string;
+  gender: string;
   schoolId: string;
   grade: number | null;
   birthDate: string;
@@ -32,6 +33,7 @@ export type PickUpScheduleFormModel = Record<WeekDay, string>;
 export const emptyScholarForm = (): ScholarFormModel => ({
   firstName: '',
   lastName: '',
+  gender: '',
   schoolId: '',
   grade: null,
   birthDate: '',
@@ -66,6 +68,8 @@ export const scholarFormSchema = schema<ScholarFormModel>((p) => {
   maxLength(p.lastName, NAME_MAX_LENGTH, {
     message: `Last name can't exceed ${NAME_MAX_LENGTH} characters.`,
   });
+
+  required(p.gender, { message: 'Gender is required.' });
 
   required(p.schoolId, { message: 'School is required.' });
 
@@ -121,6 +125,7 @@ export function toFormModel(scholar: Scholar): ScholarFormModel {
   return {
     firstName: scholar.firstName,
     lastName: scholar.lastName,
+    gender: scholar.gender.toString(),
     schoolId: scholar.schoolId?.toString() ?? '',
     grade: scholar.grade,
     birthDate: scholar.birthDate ?? '',
@@ -142,6 +147,7 @@ export function toScholar(
     scholarId: scholarId ?? '00000000-0000-0000-0000-000000000000',
     firstName: model.firstName,
     lastName: model.lastName,
+    gender: Number(model.gender) as Gender,
     schoolId: Number(model.schoolId),
     grade: model.grade,
     birthDate: model.birthDate,

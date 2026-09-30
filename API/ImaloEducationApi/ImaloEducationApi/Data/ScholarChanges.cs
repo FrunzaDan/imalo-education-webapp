@@ -11,6 +11,7 @@ public static class ScholarChanges
         if (before.FirstName != after.FirstName) changedFields.Add("first name");
         if (before.LastName != after.LastName) changedFields.Add("last name");
         if (before.BirthDate != after.BirthDate) changedFields.Add("birth date");
+        if (before.Gender != after.Gender) changedFields.Add("gender");
         if (before.Grade != after.Grade) changedFields.Add("grade");
         if (before.SchoolId != after.SchoolId) changedFields.Add("school");
         if (after.PickupSchedule is not null && !SameSchedule(before.PickupSchedule, after.PickupSchedule))

@@ -11,7 +11,7 @@ import {
   DEFAULT_MONTH,
   getWeekdayDatesInMonth,
 } from '../../utils/weekday-dates';
-import type { Scholar } from '../../interfaces/scholar';
+import { Gender, Scholar } from '../../interfaces/scholar';
 import type { School } from '../../interfaces/school';
 import type { AttendanceRecord } from '../../interfaces/attendance-record';
 
@@ -19,6 +19,7 @@ const SCHOLAR: Scholar = {
   scholarId: 'scholar-1',
   firstName: 'Ana',
   lastName: 'Popescu',
+  gender: Gender.Female,
   pickupSchedule: null,
   schoolId: 1,
   grade: 3,

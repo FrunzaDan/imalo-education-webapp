@@ -12,7 +12,7 @@ import {
   toFormModel,
   toScholar,
 } from './scholar-form';
-import type { Scholar } from '../../interfaces/scholar';
+import { Gender, Scholar } from '../../interfaces/scholar';
 import type { School } from '../../interfaces/school';
 
 const SCHOOLS: School[] = [
@@ -36,6 +36,7 @@ const EXISTING: Scholar = {
   scholarId: 'scholar-1',
   firstName: 'Ana',
   lastName: 'Popescu',
+  gender: Gender.Female,
   schoolId: 2,
   grade: 0,
   birthDate: '2016-01-01',
@@ -127,6 +128,7 @@ const VALID_MODEL = {
   ...emptyScholarForm(),
   firstName: 'Ana',
   lastName: 'Popescu',
+  gender: '2',
   schoolId: '1',
   grade: 3,
   birthDate: '2016-01-01',
@@ -134,7 +136,7 @@ const VALID_MODEL = {
 
 describe('ScholarFormComponent', () => {
   describe('validation', () => {
-    it('requires name, school, grade and birth date, and leaves parents/schedule optional', async () => {
+    it('requires name, gender, school, grade and birth date, and leaves parents/schedule optional', async () => {
       const { component } = await setup();
 
       expect(component.scholarForm().valid()).toBe(false);
@@ -143,6 +145,9 @@ describe('ScholarFormComponent', () => {
       );
       expect(component.scholarForm.lastName().errors()[0].message).toBe(
         'Last name is required.',
+      );
+      expect(component.scholarForm.gender().errors()[0].message).toBe(
+        'Gender is required.',
       );
       expect(component.scholarForm.schoolId().errors()[0].message).toBe(
         'School is required.',
@@ -215,7 +220,7 @@ describe('ScholarFormComponent', () => {
 
       expect(createScholar).not.toHaveBeenCalled();
       expect(component.invalidSummary()).toBe(
-        'The form has 5 errors. Please correct the highlighted fields.',
+        'The form has 6 errors. Please correct the highlighted fields.',
       );
     });
 
@@ -240,7 +245,7 @@ describe('ScholarFormComponent', () => {
       expect(navigate).toHaveBeenCalledWith(['/scholars', 'saved-id']);
     });
 
-    it('shows the API error inline and stays on the page when saving fails', async () => {
+    it('shows an API error about a field under that field and stays on the page', async () => {
       const { fixture, component, navigate } = await setup({
         saveResult: 'error',
       });
@@ -251,12 +256,45 @@ describe('ScholarFormComponent', () => {
         .dispatchEvent(new Event('submit'));
       await fixture.whenStable();
 
-      expect(component.saveError()).toBe('Invalid phone number.');
-      expect(
-        fixture.nativeElement.querySelector('.app-alert')?.textContent,
-      ).toContain('Invalid phone number.');
+      expect(component.saveError()).toBeNull();
+      expect(component.scholarForm.motherPhoneNumber().errors()).toEqual([
+        expect.objectContaining({
+          kind: 'server',
+          message: 'Invalid phone number.',
+        }),
+      ]);
+      expect(fixture.nativeElement.textContent).toContain(
+        'Invalid phone number.',
+      );
       expect(component.hasUnsavedChanges()).toBe(true);
       expect(navigate).not.toHaveBeenCalled();
+    });
+
+    it('shows an API error the form has no field for above the form', async () => {
+      const { fixture, component, createScholar } = await setup();
+      createScholar.mockReturnValue(
+        throwError(
+          () =>
+            new HttpErrorResponse({
+              status: 400,
+              error: {
+                status: 400,
+                errors: { ScholarId: ['Scholar ID must not be empty.'] },
+              },
+            }),
+        ),
+      );
+      component.model.set(VALID_MODEL);
+
+      fixture.nativeElement
+        .querySelector('form')
+        .dispatchEvent(new Event('submit'));
+      await fixture.whenStable();
+
+      expect(component.saveError()).toBe('Scholar ID must not be empty.');
+      expect(
+        fixture.nativeElement.querySelector('.app-alert')?.textContent,
+      ).toContain('Scholar ID must not be empty.');
     });
   });
 
@@ -270,6 +308,7 @@ describe('ScholarFormComponent', () => {
       expect(component.isEditMode()).toBe(true);
       expect(component.model()).toMatchObject({
         firstName: 'Ana',
+        gender: '2',
         schoolId: '2',
         grade: 0,
         birthDate: '2016-01-01',
@@ -400,6 +439,7 @@ describe('ScholarFormComponent', () => {
       set(input('birthDate'), '2016-01-01');
       set(input('monday'), '12:30');
       set(el.querySelector<HTMLSelectElement>('#schoolId')!, '2');
+      set(el.querySelector<HTMLSelectElement>('#gender')!, '1');
       await fixture.whenStable();
 
       expect(component.model()).toMatchObject({
@@ -407,6 +447,7 @@ describe('ScholarFormComponent', () => {
         grade: 3,
         birthDate: '2016-01-01',
         schoolId: '2',
+        gender: '1',
         pickupSchedule: { monday: '12:30' },
       });
     });

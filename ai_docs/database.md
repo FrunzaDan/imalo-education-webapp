@@ -20,6 +20,7 @@ The `ImaloEducation` SQL Server database, as an SSDT project under `DB/ImaloEduc
   - `ScholarId` (`NEWSEQUENTIALID()`);
   - `FirstName`, `LastName` `NVARCHAR(100)`;
   - `BirthDate` `DATE`;
+  - `Gender` `TINYINT` (0 not declared, 1 male, 2 female; defaults to 0), the same values as the sibling apps;
   - `Grade` `TINYINT` (nullable, with a check);
   - `SchoolId` `INT` (nullable). This is **not a FK**; schools live in `schools.json`.
 - **`ScholarPickupSchedule`:**

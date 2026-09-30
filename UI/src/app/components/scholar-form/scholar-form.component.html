@@ -56,6 +56,30 @@
         }
       </div>
 
+      @let gender = scholarForm.gender();
+      @let genderError = gender.touched() && gender.invalid();
+      <div class="scholar-form__field">
+        <label for="gender" class="app-label">Gender</label>
+        <select
+          id="gender"
+          class="app-input"
+          [formField]="scholarForm.gender"
+          [class.error]="genderError"
+          [attr.aria-invalid]="genderError"
+          [attr.aria-describedby]="genderError ? 'gender-error' : null"
+        >
+          <option value="" disabled>Select a gender</option>
+          <option value="1">Boy</option>
+          <option value="2">Girl</option>
+          <option value="0">Not declared</option>
+        </select>
+        @if (genderError) {
+          <div class="app-error-message" id="gender-error">
+            {{ gender.errors()[0].message }}
+          </div>
+        }
+      </div>
+
       @let school = scholarForm.schoolId();
       @let schoolError = school.touched() && school.invalid();
       <div class="scholar-form__field">

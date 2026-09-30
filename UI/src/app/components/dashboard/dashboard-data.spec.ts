@@ -1,5 +1,5 @@
 import { PickupSchedule } from '../../interfaces/pickup-schedule';
-import { Scholar } from '../../interfaces/scholar';
+import { Gender, Scholar } from '../../interfaces/scholar';
 import { School } from '../../interfaces/school';
 import {
   todayWeekdayKey,
@@ -22,6 +22,7 @@ describe('dashboard-data', () => {
     scholarId: 'scholar-1',
     firstName: 'Ana',
     lastName: 'Ion',
+    gender: Gender.Female,
     pickupSchedule: null,
     schoolId: null,
     grade: 1,

@@ -8,7 +8,7 @@ import { ScholarService } from '../../services/scholar.service';
 import { SchoolService } from '../../services/school.service';
 import { ConfirmDialogService } from '../../services/confirm-dialog.service';
 import { NotificationService } from '../../services/notification.service';
-import type { Scholar } from '../../interfaces/scholar';
+import { Gender, Scholar } from '../../interfaces/scholar';
 import type { School } from '../../interfaces/school';
 
 const SCHOOL: School = {
@@ -23,6 +23,7 @@ const buildScholar = (overrides: Partial<Scholar> = {}): Scholar => ({
   scholarId: 'scholar-1',
   firstName: 'Ana',
   lastName: 'Popescu',
+  gender: Gender.Female,
   pickupSchedule: null,
   schoolId: 1,
   grade: 3,
@@ -166,6 +167,32 @@ describe('ScholarListComponent', () => {
     expect(el.querySelector('[role="status"]')?.textContent).toContain(
       '2 scholars found',
     );
+  });
+
+  it('shows the number of scholars next to the title, following the search', async () => {
+    const { fixture, component } = await setup();
+    const title = () =>
+      (fixture.nativeElement as HTMLElement)
+        .querySelector('h1')!
+        .textContent!.replace(/\s+/g, ' ')
+        .trim();
+
+    expect(title()).toBe('Scholars (2)');
+
+    component.searchForm.term().value.set('bog');
+    await fixture.whenStable();
+
+    expect(title()).toBe('Scholars (1)');
+  });
+
+  it('leaves the count off the title when the list fails to load', async () => {
+    const { fixture } = await setup({ loadError: true });
+
+    expect(
+      (fixture.nativeElement as HTMLElement)
+        .querySelector('h1')!
+        .textContent!.trim(),
+    ).toBe('Scholars');
   });
 
   it('filters the displayed rows by the search term', async () => {
