@@ -1,21 +1,22 @@
 # Imalo Education Webapp
 
-A full-stack app for an afterschool program to track scholars (students), their parents, weekly pickup schedules and daily attendance, including lunch and transport. It's a learning project for practising Angular + ASP.NET Core + SQL Server end to end, and it runs locally only.
+Imalo Education Webapp is a full-stack app for the day-to-day admin of an afterschool program. It tracks the scholars (students) and their parents, the weekly schedule of when each scholar is picked up, and daily attendance, including whether they had lunch or used transport. Lunch and transport are priced per school, so the attendance pages can show what each day costs. The app is made of an Angular UI, a single-project ASP.NET Core Web API and a SQL Server database, using plain ADO.NET with parameterized SQL instead of an ORM. It's a learning project meant to run on a local machine, which is why it deliberately has no login.
 
 ---
 
-## 🚀 Key Features
+## Key Features
 
-- **Scholar records:** Create, view, edit and delete scholars, each with their parents and a weekly pickup schedule.
-- **Pickup time chart:** A Gantt-style view of when each scholar is picked up during the week.
-- **Attendance tracking:** A monthly attendance grid for all scholars, plus a per-scholar editor that records presence, lunch and transport for each day and prices them using the school's rates.
-- **Dashboard and charts:** Overview numbers for the day and charts built from the scholar and attendance data.
-- **Audit log:** Per-scholar history plus a paged global log of every change.
-- **CSV export and test data:** Export the scholar list and attendance to CSV, and generate demo scholars with random schedules and attendance from the About page.
+- **Scholar records:** Scholars can be created, viewed, edited and deleted, each with their parents' contact details and the school they attend. Deleting a scholar also removes their parents, schedule and attendance, so no orphaned data is left behind.
+- **Weekly pickup schedule:** Each scholar has a pickup time for each day of the week. A Gantt-style chart shows all of them together, so it's easy to see who is still there at any point in the afternoon.
+- **Attendance tracking:** A monthly grid shows attendance for every scholar at once. A per-scholar editor records presence, lunch and transport day by day for a chosen month, and fills in each day's cost from the school's prices.
+- **Dashboard and charts:** The dashboard gives an overview of the current day, and the charts page summarizes the scholar and attendance data.
+- **Audit log:** Every change to a scholar is logged. Each scholar has their own history, and a paged global log shows every change across the app.
+- **CSV export and test data:** The scholar list and attendance can be exported to CSV. The About page generates demo scholars with random schedules and attendance, so every page has data to show.
+- **One-command scripts:** `run.sh` starts the SQL Server container in Docker, deploys the schema, and runs the API and the Angular dev server. `build.sh` builds the API, the database project and the UI and runs both test suites, without starting any services.
 
 ---
 
-## 🛠 Tech Stack
+## Tech Stack
 
 - **Frontend:** Angular 22.2 (standalone components, signals, zoneless), SSR via `@angular/ssr` + Express, TypeScript
 - **Backend:** ASP.NET Core Web API on .NET 10, a single project with one controller (`ScholarsController`) and a data-access class
@@ -24,7 +25,7 @@ A full-stack app for an afterschool program to track scholars (students), their 
 
 ---
 
-## 📋 Prerequisites
+## Prerequisites
 
 Before running this project, ensure you have the following installed:
 
@@ -37,7 +38,7 @@ Before running this project, ensure you have the following installed:
 
 ---
 
-## ⚙️ Local Setup & Running
+## Local Setup & Running
 
 ### 1. Clone the repository
 
@@ -73,7 +74,7 @@ To build and test everything without starting any services:
 
 ---
 
-## 🗄 Database & Migrations
+## Database & Migrations
 
 There are no EF migrations. The schema is an SSDT project in `DB/ImaloEducation` with five tables: `Scholar`, `ScholarParent`, `ScholarPickupSchedule`, `ScholarAttendance` and `ScholarAuditLog`. `run.sh` builds it into a `.dacpac` and publishes it with `sqlpackage`, which applies only the differences.
 
@@ -83,7 +84,7 @@ The `sqlserver` container (port 1433) is the same one the Customer and Employee 
 
 ---
 
-## 🔌 API / App Usage
+## API / App Usage
 
 All routes are under `api/scholars`. Swagger UI is at `http://localhost:5244/swagger` in Development, and there's a Postman collection in `API/Postman/`.
 
@@ -102,7 +103,7 @@ Successful responses return the model directly; errors are RFC 9457 Problem Deta
 
 ---
 
-## 📝 License & Notes
+## License & Notes
 
 Personal learning project with no license file.
 
