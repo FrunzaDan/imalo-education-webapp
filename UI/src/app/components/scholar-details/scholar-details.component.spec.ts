@@ -103,6 +103,13 @@ async function setup(
   };
 }
 
+const clickButton = (fixture: { nativeElement: HTMLElement }, text: string) =>
+  Array.from(fixture.nativeElement.querySelectorAll('button'))
+    .find((b) => b.textContent?.trim() === text)!
+    .click();
+
+const settle = () => new Promise((resolve) => setTimeout(resolve));
+
 describe('ScholarDetailsComponent', () => {
   it('loads the scholar by the bound id, then its school, and the audit log', async () => {
     const { component, getScholar, getSchool, bindAuditLog, fixture } =
@@ -142,25 +149,26 @@ describe('ScholarDetailsComponent', () => {
     expect(getSchool).not.toHaveBeenCalled();
   });
 
-  it('sends the user to the update page for this scholar', async () => {
-    const { component } = await setup();
+  it('sends the user to the update page for this scholar from Edit scholar', async () => {
+    const { fixture } = await setup();
     const navigate = vi
       .spyOn(TestBed.inject(Router), 'navigate')
       .mockResolvedValue(true);
 
-    component.navigateToUpdateScholar();
+    clickButton(fixture, 'Edit scholar');
 
     expect(navigate).toHaveBeenCalledWith(['/scholars/update', 'scholar-1']);
   });
 
   describe('deleteScholar', () => {
-    it('asks first, then deletes and returns to the scholar list', async () => {
-      const { component, deleteScholar, confirm } = await setup();
+    it('asks first from Delete scholar, then deletes and returns to the scholar list', async () => {
+      const { fixture, deleteScholar, confirm } = await setup();
       const navigate = vi
         .spyOn(TestBed.inject(Router), 'navigate')
         .mockResolvedValue(true);
 
-      await component.deleteScholar();
+      clickButton(fixture, 'Delete scholar');
+      await settle();
 
       expect(confirm).toHaveBeenCalledWith(
         expect.stringContaining('Ana Popescu'),

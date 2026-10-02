@@ -115,7 +115,8 @@ The ASP.NET Core Web API (.NET 10), one project under `API/ImaloEducationApi/Ima
 - `Controllers/ScholarsControllerTests` — against a Moq `IScholarDataAccess`.
 - In-memory pipeline tests with `WebApplicationFactory`:
   - `ErrorHandling/ErrorResponseTests`;
-  - `Configuration/StartupValidationTests`.
+  - `Configuration/StartupValidationTests`;
+  - `Endpoints/ScholarEndpointTests`: every endpoint called the way the UI calls it, with only `IScholarDataAccess` replaced by a Moq. It checks routes, status codes (201 with `Location`, 204, 404), the JSON wire format (`HH:mm` pickup times, dates, gender as a number) and model validation.
 - Setup: `xunit.v3.mtp-v2`, Moq and `FakeLogger`, with versions in `Directory.Packages.props`.
 
 ## Gotchas / conventions

@@ -141,10 +141,11 @@ The Angular 22 app under `UI/`. It is zoneless, uses standalone components and s
 
 - Vitest through `@angular/build:unit-test`, using the default `ng new` setup.
 - **Pure units:** tested with `new`.
-- **Component specs:** use `TestBed` with plain-object service fakes and `setInput('scholarId', …)`, then `await fixture.whenStable()` for resources.
+- **Component specs:** use `TestBed` with plain-object service fakes and `setInput('scholarId', …)`, then `await fixture.whenStable()` for resources. List and details pages click the real buttons, so a miswired template fails a test.
 - **Components with specs:**
   - `scholar-list`, `scholar-details`, `scholar-form`;
-  - `attendance-per-scholar`;
+  - `attendance`, `attendance-per-scholar`;
+  - `dashboard`, `gantt-chart`;
   - `about` (the test-data generator);
   - `notification`, `confirm-dialog`.
 - **Pure helpers with specs:** `attendance/attendance-grid.ts` and `dashboard/dashboard-data.ts`.
