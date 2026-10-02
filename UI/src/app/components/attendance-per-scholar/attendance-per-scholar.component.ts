@@ -157,7 +157,7 @@ export class AttendancePerScholarComponent implements HasUnsavedChanges {
     () => this.totalSelectedLunchCost() + this.totalSelectedTransportCost(),
   );
 
-  isSaving = signal(false);
+  readonly isSaving = signal(false);
   readonly saveError = signal<string | null>(null);
   readonly hasUnsavedChanges = signal(false);
 

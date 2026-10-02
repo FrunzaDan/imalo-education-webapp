@@ -1,4 +1,3 @@
-import { provideZonelessChangeDetection } from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
@@ -63,7 +62,6 @@ async function setup(
   TestBed.configureTestingModule({
     imports: [ScholarListComponent],
     providers: [
-      provideZonelessChangeDetection(),
       provideRouter([]),
       {
         provide: ScholarService,

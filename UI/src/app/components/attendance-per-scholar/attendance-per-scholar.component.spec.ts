@@ -1,4 +1,3 @@
-import { provideZonelessChangeDetection } from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { of, throwError } from 'rxjs';
@@ -93,7 +92,6 @@ function setup(options: SetupOptions = {}) {
   TestBed.configureTestingModule({
     imports: [AttendancePerScholarComponent],
     providers: [
-      provideZonelessChangeDetection(),
       { provide: ScholarService, useValue: scholarService },
       { provide: SchoolService, useValue: schoolService },
       { provide: AttendanceService, useValue: attendanceService },

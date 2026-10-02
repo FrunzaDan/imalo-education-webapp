@@ -1,4 +1,3 @@
-import { NgStyle } from '@angular/common';
 import { Component, computed, inject } from '@angular/core';
 import { rxResource } from '@angular/core/rxjs-interop';
 import { HttpErrorResponse } from '@angular/common/http';
@@ -19,7 +18,6 @@ interface GanttCell {
 
 @Component({
   selector: 'app-gantt-chart',
-  imports: [NgStyle],
   templateUrl: './gantt-chart.component.html',
   styleUrl: './gantt-chart.component.css',
 })

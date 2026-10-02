@@ -179,6 +179,6 @@ export class BarChartComponent {
     if (this.hoveredKey() === key) this.hoveredKey.set(null);
   }
 
-  barWidth = BAR_WIDTH;
-  bandWidth = BAND_WIDTH;
+  readonly barWidth = BAR_WIDTH;
+  readonly bandWidth = BAND_WIDTH;
 }

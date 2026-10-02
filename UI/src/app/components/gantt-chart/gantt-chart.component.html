@@ -23,7 +23,7 @@
             @for (slot of timeSlots; track slot) {
               <div
                 class="time-slot"
-                [ngStyle]="getSlotStyle(scholar, slot, day)"
+                [style]="getSlotStyle(scholar, slot, day)"
               >
                 @if (isTimeOccupied(scholar, slot, day)) {
                   <span>{{ getTimeRange(scholar, slot, day) }}</span>
