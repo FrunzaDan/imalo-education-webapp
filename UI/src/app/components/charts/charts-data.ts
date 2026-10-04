@@ -511,7 +511,7 @@ export function countByGrade(scholars: Scholar[]): LabelValue[] {
   return result;
 }
 
-const GENDER_SLICES: ReadonlyArray<[Gender, string]> = [
+const GENDER_SLICES: readonly [Gender, string][] = [
   [Gender.Female, 'Girls'],
   [Gender.Male, 'Boys'],
   [Gender.NotDeclared, 'Not declared'],

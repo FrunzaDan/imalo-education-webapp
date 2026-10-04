@@ -157,12 +157,11 @@ const ATTENDANCE_MONTHS = {
   to: { year: 2026, month: 9 },
 };
 
-export const GENDER_WEIGHTS: ReadonlyArray<{ gender: Gender; weight: number }> =
-  [
-    { gender: Gender.Male, weight: 46 },
-    { gender: Gender.Female, weight: 46 },
-    { gender: Gender.NotDeclared, weight: 8 },
-  ];
+export const GENDER_WEIGHTS: readonly { gender: Gender; weight: number }[] = [
+  { gender: Gender.Male, weight: 46 },
+  { gender: Gender.Female, weight: 46 },
+  { gender: Gender.NotDeclared, weight: 8 },
+];
 
 function pick<T>(values: readonly T[]): T {
   return values[Math.floor(Math.random() * values.length)];
@@ -176,10 +175,6 @@ function pickWeighted<T extends { weight: number }>(values: readonly T[]): T {
     if (roll < 0) return value;
   }
   return values[values.length - 1];
-}
-
-function randomInt(min: number, max: number): number {
-  return min + Math.floor(Math.random() * (max - min + 1));
 }
 
 function randomBetween(min: number, max: number): number {

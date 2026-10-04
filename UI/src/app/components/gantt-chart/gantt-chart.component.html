@@ -21,10 +21,7 @@
           <div class="gantt-row" [style.--slot-count]="timeSlots.length">
             <div class="name-cell">{{ scholar.firstName }}</div>
             @for (slot of timeSlots; track slot) {
-              <div
-                class="time-slot"
-                [style]="getSlotStyle(scholar, slot, day)"
-              >
+              <div class="time-slot" [style]="getSlotStyle(scholar, slot, day)">
                 @if (isTimeOccupied(scholar, slot, day)) {
                   <span>{{ getTimeRange(scholar, slot, day) }}</span>
                   <div class="schedule-tooltip">

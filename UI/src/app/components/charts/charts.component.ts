@@ -317,8 +317,10 @@ export class ChartsComponent {
 
   readonly formatCount = (value: number): string => String(Math.round(value));
   readonly formatAverage = (value: number): string => value.toFixed(1);
-  readonly formatPercent = (value: number): string => `${Math.round(value * 100)}%`;
-  readonly formatRon = (value: number): string => this.ron.transform(value, '1.0-0');
+  readonly formatPercent = (value: number): string =>
+    `${Math.round(value * 100)}%`;
+  readonly formatRon = (value: number): string =>
+    this.ron.transform(value, '1.0-0');
   private formatChange(change: number): string {
     const percent = Math.round(change * 100);
     return `${percent > 0 ? '+' : ''}${percent}%`;
