@@ -142,7 +142,7 @@ public partial class ScholarDataAccess : IScholarDataAccess
         return await ReadScholarAsync(connection, null, scholarId, cancellationToken);
     }
 
-    private async Task<Scholar?> ReadScholarAsync(SqlConnection connection, SqlTransaction? transaction,
+    private static async Task<Scholar?> ReadScholarAsync(SqlConnection connection, SqlTransaction? transaction,
         Guid scholarId, CancellationToken cancellationToken)
     {
         var lockHint = transaction is null ? "" : " WITH (UPDLOCK)";

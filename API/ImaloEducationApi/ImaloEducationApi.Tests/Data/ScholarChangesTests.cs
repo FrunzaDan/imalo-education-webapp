@@ -31,8 +31,11 @@ public class ScholarChangesTests
         PickupSchedule = scholar.PickupSchedule is { } schedule
             ? new PickupSchedule
             {
-                Monday = schedule.Monday, Tuesday = schedule.Tuesday, Wednesday = schedule.Wednesday,
-                Thursday = schedule.Thursday, Friday = schedule.Friday,
+                Monday = schedule.Monday,
+                Tuesday = schedule.Tuesday,
+                Wednesday = schedule.Wednesday,
+                Thursday = schedule.Thursday,
+                Friday = schedule.Friday,
             }
             : null,
         MotherFirstName = scholar.MotherFirstName,

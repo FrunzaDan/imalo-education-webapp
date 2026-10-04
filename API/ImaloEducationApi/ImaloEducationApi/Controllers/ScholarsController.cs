@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using System.Globalization;
 using ImaloEducationApi.Data;
 using ImaloEducationApi.Models;
 using Microsoft.AspNetCore.Mvc;
@@ -146,5 +147,5 @@ public class ScholarsController(IScholarDataAccess scholarDataAccess) : Controll
         Problem(statusCode: StatusCodes.Status404NotFound, detail: $"Scholar with ID {scholarId} not found.");
 
     private static string FormatDates(IEnumerable<DateOnly> dates) =>
-        string.Join(", ", dates.Select(date => date.ToString("yyyy-MM-dd")));
+        string.Join(", ", dates.Select(date => date.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)));
 }

@@ -1,9 +1,9 @@
+using ImaloEducationApi.ErrorHandling;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Testing;
 using Moq;
-using ImaloEducationApi.ErrorHandling;
 
 namespace ImaloEducationApi.Tests.ErrorHandling;
 
