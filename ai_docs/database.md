@@ -2,7 +2,7 @@
 
 ## What it is
 
-The `ImaloEducation` SQL Server database, as an SSDT project under `DB/ImaloEducation/`. There are no stored procedures and no seed data; the API uses inline SQL.
+The `ImaloEducation` SQL Server database, as an SSDT project under `src/DB/ImaloEducation/`. There are no stored procedures and no seed data; the API uses inline SQL.
 
 ## Key files / paths
 

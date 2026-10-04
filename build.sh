@@ -5,10 +5,10 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-API_SLN="$ROOT_DIR/API/ImaloEducationApi/ImaloEducationApi.slnx"
-DB_DIR="$ROOT_DIR/DB/ImaloEducation"
+API_SLN="$ROOT_DIR/src/API/ImaloEducationApi/ImaloEducationApi.slnx"
+DB_DIR="$ROOT_DIR/src/DB/ImaloEducation"
 DB_PROJ="ImaloEducation.sqlproj"
-UI_DIR="$ROOT_DIR/UI"
+UI_DIR="$ROOT_DIR/src/UI"
 
 SKIP_TESTS=0
 for arg in "$@"; do

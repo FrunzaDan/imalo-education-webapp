@@ -30,7 +30,7 @@ Imalo Education Webapp is a full-stack app for the day-to-day admin of an afters
 Before running this project, ensure you have the following installed:
 
 - .NET 10 SDK (10.0.401 or newer, pinned in `global.json`)
-- .NET 8 SDK (the database project's `DB/ImaloEducation/global.json` pins it for the SQL build tooling)
+- .NET 8 SDK (the database project's `src/DB/ImaloEducation/global.json` pins it for the SQL build tooling)
 - Node.js `^22.22.3`, `^24.15.0` or `>=26` with npm
 - Docker Desktop (runs the SQL Server container)
 
@@ -49,12 +49,12 @@ cd imalo-education-webapp
 
 ### 2. Configuration
 
-The defaults work for local development. Settings live in `API/ImaloEducationApi/ImaloEducationApi/appsettings.json`:
+The defaults work for local development. Settings live in `src/API/ImaloEducationApi/ImaloEducationApi/appsettings.json`:
 
 - `ConnectionStrings:Docker` points at the container on `localhost,1433`. On Windows, the API falls back to `ConnectionStrings:LocalSqlServer` (Windows auth) if Docker doesn't answer.
 - `Cors:AllowedOrigins` allows the Angular dev server on port 4204.
 
-School reference data (name, color, lunch and transport prices) is not in the database. It lives in `UI/public/assets/schools.json`, so edit that file to change schools or prices.
+School reference data (name, color, lunch and transport prices) is not in the database. It lives in `src/UI/public/assets/schools.json`, so edit that file to change schools or prices.
 
 `run.sh` reads these environment variables if you need to override the defaults: `SQL_SA_PASSWORD`, `SQL_PORT`, `SQL_CONTAINER_NAME`, `SQL_IMAGE` and `SQL_PLATFORM`.
 
@@ -76,7 +76,7 @@ To build and test everything without starting any services:
 
 ## Database & Migrations
 
-There are no EF migrations. The schema is an SSDT project in `DB/ImaloEducation` with five tables: `Scholar`, `ScholarParent`, `ScholarPickupSchedule`, `ScholarAttendance` and `ScholarAuditLog`. `run.sh` builds it into a `.dacpac` and publishes it with `sqlpackage`, which applies only the differences.
+There are no EF migrations. The schema is an SSDT project in `src/DB/ImaloEducation` with five tables: `Scholar`, `ScholarParent`, `ScholarPickupSchedule`, `ScholarAttendance` and `ScholarAuditLog`. `run.sh` builds it into a `.dacpac` and publishes it with `sqlpackage`, which applies only the differences.
 
 Deleting a scholar cascades to their parents, schedule and attendance. `SchoolId` on a scholar is a plain integer that matches `schools.json`; it is not a foreign key.
 
@@ -86,7 +86,7 @@ The `sqlserver` container (port 1433) is the same one the Customer and Employee 
 
 ## API / App Usage
 
-All routes are under `api/scholars`. Swagger UI is at `http://localhost:5244/swagger` in Development, and there's a Postman collection in `API/Postman/`.
+All routes are under `api/scholars`. Swagger UI is at `http://localhost:5244/swagger` in Development, and there's a Postman collection in `src/API/Postman/`.
 
 | Method | Route | Purpose |
 |---|---|---|

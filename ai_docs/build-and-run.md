@@ -16,10 +16,10 @@ How to build, test and run the database, API and UI locally.
   It starts nothing.
 - `run.sh` — the full dev environment. Safe to re-run.
 - `.run/` — logs (`api.log`, `sqlpackage.log`), gitignored.
-- `.vscode/` — shared VS Code tasks (`run.sh`, `build.sh`, `ng serve`, `ng test`), launch configs (API, `ng serve`, `ng test` in Node, "API + UI") and recommended extensions. Same in all three sibling apps. Open the repo root, not `UI/`.
+- `.vscode/` — shared VS Code tasks (`run.sh`, `build.sh`, `ng serve`, `ng test`), launch configs (API, `ng serve`, `ng test` in Node, "API + UI") and recommended extensions. Same in all three sibling apps. Open the repo root, not `src/UI/`.
 - `global.json` (repo root) — .NET 10 SDK, and `dotnet test` on Microsoft Testing Platform.
-- `DB/ImaloEducation/global.json` — pins .NET 8 for the DB project. Keep it.
-- `UI/angular.json` — `outputMode: "server"`, dev server on port 4204.
+- `src/DB/ImaloEducation/global.json` — pins .NET 8 for the DB project. Keep it.
+- `src/UI/angular.json` — `outputMode: "server"`, dev server on port 4204.
 
 ## How it works
 

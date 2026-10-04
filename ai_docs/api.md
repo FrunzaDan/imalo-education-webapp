@@ -2,7 +2,7 @@
 
 ## What it is
 
-The ASP.NET Core Web API (.NET 10), one project under `API/ImaloEducationApi/ImaloEducationApi/`. It serves plain HTTP and has no authentication.
+The ASP.NET Core Web API (.NET 10), one project under `src/API/ImaloEducationApi/ImaloEducationApi/`. It serves plain HTTP and has no authentication.
 
 ## Key files / paths
 
@@ -19,7 +19,7 @@ The ASP.NET Core Web API (.NET 10), one project under `API/ImaloEducationApi/Ima
   - `AuditLogEntry`, `GlobalAuditLogEntry`, `AuditAction`;
   - `PagedResponse`.
 - `appsettings.json` — `ConnectionStrings`, `Cors:AllowedOrigins` (UI on port 4204), logging.
-- `API/ImaloEducationApi/ImaloEducationApi.Tests/` — xUnit v3 tests.
+- `src/API/ImaloEducationApi/ImaloEducationApi.Tests/` — xUnit v3 tests.
 
 ## How it works
 

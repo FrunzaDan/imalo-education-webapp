@@ -8,13 +8,13 @@ A learning full-stack CRUD app for tracking scholars (students), their pickup ti
 
 | Layer | Folder | Tech |
 |---|---|---|
-| UI | `UI/` | Angular 22 (zoneless, signals, SSR) |
-| API | `API/ImaloEducationApi/ImaloEducationApi/` | .NET 10 ASP.NET Core Web API, one project |
-| DB | `DB/ImaloEducation/` | SQL Server, SSDT `.sqlproj` deployed with `sqlpackage` |
+| UI | `src/UI/` | Angular 22 (zoneless, signals, SSR) |
+| API | `src/API/ImaloEducationApi/ImaloEducationApi/` | .NET 10 ASP.NET Core Web API, one project |
+| DB | `src/DB/ImaloEducation/` | SQL Server, SSDT `.sqlproj` deployed with `sqlpackage` |
 
 - `build.sh` — build and test everything; starts nothing.
 - `run.sh` — start the Docker database, deploy the schema, then start the API and UI.
-- `UI/public/assets/schools.json` — school reference data (name, color, prices). It is not stored in the DB.
+- `src/UI/public/assets/schools.json` — school reference data (name, color, prices). It is not stored in the DB.
 
 ## How it works
 

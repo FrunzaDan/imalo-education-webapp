@@ -5,14 +5,14 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-API_PROJ_DIR="$ROOT_DIR/API/ImaloEducationApi/ImaloEducationApi"
+API_PROJ_DIR="$ROOT_DIR/src/API/ImaloEducationApi/ImaloEducationApi"
 API_PROJ="$API_PROJ_DIR/ImaloEducationApi.csproj"
 API_LAUNCH_SETTINGS="$API_PROJ_DIR/Properties/launchSettings.json"
 API_LAUNCH_PROFILE="http"
-DB_DIR="$ROOT_DIR/DB/ImaloEducation"
+DB_DIR="$ROOT_DIR/src/DB/ImaloEducation"
 DB_PROJ="ImaloEducation.sqlproj"
 DB_DACPAC="$DB_DIR/bin/Debug/ImaloEducation.dacpac"
-UI_DIR="$ROOT_DIR/UI"
+UI_DIR="$ROOT_DIR/src/UI"
 RUN_DIR="$ROOT_DIR/.run"
 
 # Same container/port/password convention as the other local .NET projects on this
