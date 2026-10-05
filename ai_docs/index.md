@@ -18,7 +18,7 @@ A learning full-stack CRUD app for tracking scholars (students), their pickup ti
 
 ## How it works
 
-- **UI → API:** JSON over plain HTTP (`http://localhost:5244`). There's no login.
+- **UI → API:** JSON over HTTPS (`https://localhost:7244`, the ASP.NET Core dev cert). There's no login.
 - **API → DB:** `ScholarsController` → `ScholarDataAccess` (parameterized inline SQL through ADO.NET; no stored procedures and no ORM).
 - **Features:**
   - a dashboard;

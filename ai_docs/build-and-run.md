@@ -27,8 +27,9 @@ How to build, test and run the database, API and UI locally.
 
 1. Starts Docker, then starts or creates the `sqlserver` container (Azure SQL Edge on port 1433). The container is shared with the sibling apps; each app uses its own database.
 2. Installs `sqlpackage` 170.3.93 if it's missing, builds the `.sqlproj`, and publishes it with `BlockOnPossibleDataLoss=false`, retrying for up to 180 s.
-3. Starts the API at `http://localhost:5244` (Development) with `ConnectionStrings__Docker` pointing at that container, and waits up to 60 s for it.
-4. Starts `npm start` at `http://localhost:4204`. `Ctrl+C` stops both.
+3. Starts the API at `https://localhost:7244` (Development) with `ConnectionStrings__Docker` pointing at that container, and waits up to 60 s for it.
+4. Exports the API's TLS certificate to `.run/dev-cert.pem` and sets `NODE_EXTRA_CA_CERTS`, so Node (SSR) trusts it.
+5. Starts `npm start` at `http://localhost:4204`. `Ctrl+C` stops both.
 
 - It fails fast if a tool is missing or a port is taken.
 - You can override these environment variables: `SQL_PORT`, `SQL_SA_PASSWORD`, `SQL_DATABASE`, `SQL_CONTAINER_NAME`, `SQL_IMAGE`, `SQL_PLATFORM` and `API_URL`.
@@ -53,7 +54,8 @@ docker run -e "ACCEPT_EULA=1" -e "MSSQL_SA_PASSWORD=MyStrongPassw0rd?" \
 
 ## Gotchas / conventions
 
-- There's no TLS or dev-certificate setup, because everything is plain HTTP.
+- **One-time setup:** `dotnet dev-certs https --trust`.
+- **Browser shows `ERR_CERT_AUTHORITY_INVALID`:** run `dotnet dev-certs https --clean && dotnet dev-certs https --trust`. Never use `--export-path`, which regenerates the certificate.
 - There's no seed data and no test login.
 - `sqlpackage` is pinned; don't bump it without checking the installed .NET runtime.
 - **Formatting:** Prettier (`npm run format`, `npm run format:check`), configured the same in all three apps.

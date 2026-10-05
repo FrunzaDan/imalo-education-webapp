@@ -33,8 +33,9 @@ Before running this project, ensure you have the following installed:
 - .NET 8 SDK (the database project's `src/DB/ImaloEducation/global.json` pins it for the SQL build tooling)
 - Node.js `^22.22.3`, `^24.15.0` or `>=26` with npm
 - Docker Desktop (runs the SQL Server container)
+- A trusted ASP.NET Core dev certificate: `dotnet dev-certs https --trust` (once per machine)
 
-`sqlpackage` is installed automatically as a global dotnet tool by `run.sh` if it is missing. The API runs on plain HTTP, so no dev certificate is needed.
+`sqlpackage` is installed automatically as a global dotnet tool by `run.sh` if it is missing.
 
 ---
 
@@ -64,7 +65,7 @@ School reference data (name, color, lunch and transport prices) is not in the da
 ./run.sh
 ```
 
-This starts Docker if needed, creates or starts the `sqlserver` container, builds and publishes the database schema, starts the API in the background on `http://localhost:5244`, and then runs the Angular dev server in the foreground on `http://localhost:4204`. `Ctrl+C` stops the API and Angular. The script is safe to re-run.
+This starts Docker if needed, creates or starts the `sqlserver` container, builds and publishes the database schema, starts the API in the background on `https://localhost:7244`, and then runs the Angular dev server in the foreground on `http://localhost:4204`. `Ctrl+C` stops the API and Angular. The script is safe to re-run.
 
 To build and test everything without starting any services:
 
@@ -86,7 +87,7 @@ The `sqlserver` container (port 1433) is the same one the Customer and Employee 
 
 ## API / App Usage
 
-All routes are under `api/scholars`. Swagger UI is at `http://localhost:5244/swagger` in Development, and there's a Postman collection in `src/API/Postman/`.
+All routes are under `api/scholars`. Swagger UI is at `https://localhost:7244/swagger` in Development, and there's a Postman collection in `src/API/Postman/`.
 
 | Method | Route | Purpose |
 |---|---|---|

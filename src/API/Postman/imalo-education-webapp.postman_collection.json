@@ -25,7 +25,7 @@
 	"variable": [
 		{
 			"key": "baseUrl",
-			"value": "http://localhost:5244",
+			"value": "https://localhost:7244",
 			"type": "string"
 		},
 		{

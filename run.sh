@@ -8,7 +8,7 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 API_PROJ_DIR="$ROOT_DIR/src/API/ImaloEducationApi/ImaloEducationApi"
 API_PROJ="$API_PROJ_DIR/ImaloEducationApi.csproj"
 API_LAUNCH_SETTINGS="$API_PROJ_DIR/Properties/launchSettings.json"
-API_LAUNCH_PROFILE="http"
+API_LAUNCH_PROFILE="https"
 DB_DIR="$ROOT_DIR/src/DB/ImaloEducation"
 DB_PROJ="ImaloEducation.sqlproj"
 DB_DACPAC="$DB_DIR/bin/Debug/ImaloEducation.dacpac"
@@ -31,14 +31,14 @@ else
 fi
 SQL_DATABASE="${SQL_DATABASE:-ImaloEducation}"
 
-# Default falls back to the "http" launch profile's applicationUrl so the
-# script doesn't silently poll the wrong port if the profile is ever changed; set
-# API_URL yourself to override. This project has no HTTPS profile (see ai_docs/api.md's
-# Gotchas) — plain HTTP only, deliberately, since this is local-only.
-DEFAULT_API_URL="http://localhost:5244"
+# Default falls back to the "https" launch profile's applicationUrl (stripped of the
+# trailing ";" ASP.NET appends when multiple URLs are configured) so the script doesn't
+# silently poll the wrong port if the profile is ever changed; set API_URL yourself to
+# override either.
+DEFAULT_API_URL="https://localhost:7244"
 if [[ -z "${API_URL:-}" ]] && [[ -f "$API_LAUNCH_SETTINGS" ]]; then
-  DEFAULT_API_URL="$(sed -nE 's/.*"applicationUrl"[[:space:]]*:[[:space:]]*"(http:\/\/[^";]*).*/\1/p' "$API_LAUNCH_SETTINGS" | head -1)"
-  DEFAULT_API_URL="${DEFAULT_API_URL:-http://localhost:5244}"
+  DEFAULT_API_URL="$(sed -nE 's/.*"applicationUrl"[[:space:]]*:[[:space:]]*"(https:\/\/[^";]*).*/\1/p' "$API_LAUNCH_SETTINGS" | head -1)"
+  DEFAULT_API_URL="${DEFAULT_API_URL:-https://localhost:7244}"
 fi
 API_URL="${API_URL:-$DEFAULT_API_URL}"
 API_LOG="$RUN_DIR/api.log"
@@ -210,7 +210,7 @@ echo "    API starting in background (pid $API_PID), logs: $API_LOG"
 echo -n "    Waiting for API to come up"
 api_ready=0
 for _ in $(seq 1 30); do
-  if curl -s "$API_URL/swagger/index.html" >/dev/null 2>&1; then
+  if curl -sk "$API_URL/swagger/index.html" >/dev/null 2>&1; then
     echo
     api_ready=1
     break
@@ -231,6 +231,25 @@ if [[ "$api_ready" -ne 1 ]]; then
 fi
 
 echo "    API is up at $API_URL"
+
+# The Angular app runs server-side rendering, so pages that load data make a real fetch()
+# call to the API from Node during SSR. Node's fetch validates TLS certs against its
+# own CA store, which doesn't include the ASP.NET Core dev cert even when it's trusted
+# at the OS level (e.g. via `dotnet dev-certs https --trust`) — that trust lives in the
+# per-user login keychain, which Node's --use-system-ca doesn't read. Without this, SSR
+# requests to the API fail their TLS handshake and get aborted (the page still
+# renders client-side after hydration, but with noisy "AbortError" output).
+DEV_CERT_PEM="$RUN_DIR/dev-cert.pem"
+if command -v openssl >/dev/null 2>&1 &&
+  echo | openssl s_client -connect localhost:"$API_PORT" -servername localhost 2>/dev/null |
+    openssl x509 -outform PEM >"$DEV_CERT_PEM" 2>/dev/null &&
+  [[ -s "$DEV_CERT_PEM" ]]; then
+  export NODE_EXTRA_CA_CERTS="$DEV_CERT_PEM"
+else
+  echo "    Warning: couldn't extract the API's TLS cert for Node to trust;" >&2
+  echo "    SSR requests to the API may log (harmless) AbortErrors." >&2
+  rm -f "$DEV_CERT_PEM"
+fi
 
 echo "    Starting Angular dev server (Ctrl+C stops both)..."
 cd "$UI_DIR"

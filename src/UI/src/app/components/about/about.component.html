@@ -37,15 +37,15 @@ docker run -e "ACCEPT_EULA=1" -e "MSSQL_SA_PASSWORD=MyStrongPassw0rd?" -p 1433:1
       <ul>
         <li>
           <strong>API</strong> — the ASP.NET Core Web API project at
-          <code>http://localhost:5244</code>, run with <code>dotnet run</code>
+          <code>https://localhost:7244</code>, run with <code>dotnet run</code>
           (or from your IDE). It serves the REST endpoints and talks to SQL
           Server over ADO.NET.
         </li>
         <li>
           <strong>Angular frontend</strong> — the SPA at
           <code>http://localhost:4204</code>, run with <code>ng serve</code> /
-          <code>npm start</code>. It calls the API over plain HTTP for every
-          scholar and attendance operation.
+          <code>npm start</code>. It calls the API over HTTPS for every scholar
+          and attendance operation.
         </li>
       </ul>
       <p>

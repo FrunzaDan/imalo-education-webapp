@@ -2,7 +2,7 @@
 
 ## What it is
 
-The ASP.NET Core Web API (.NET 10), one project under `src/API/ImaloEducationApi/ImaloEducationApi/`. It serves plain HTTP and has no authentication.
+The ASP.NET Core Web API (.NET 10), one project under `src/API/ImaloEducationApi/ImaloEducationApi/`. It serves HTTPS and has no authentication.
 
 ## Key files / paths
 
@@ -122,7 +122,7 @@ The ASP.NET Core Web API (.NET 10), one project under `src/API/ImaloEducationApi
 ## Gotchas / conventions
 
 - **No auth, on purpose.** Every endpoint is open, including `DELETE /audit-log/all`.
-- **Plain HTTP only.** There's no HTTPS profile and no `UseHttpsRedirection`.
+- **HTTPS only.** The dev profile serves `https://localhost:7244`; outside Development the API also sends HSTS. `UseHttpsRedirection` redirects plain HTTP.
 - **`Cache-Control: no-store`** is set on every response. Without it, `HttpClient`'s fetch backend served stale data.
 - **`ScholarDataAccess`'s SQL has no automated tests.** It would need a real SQL Server.
 - **Running tests:** `dotnet test` must run from inside the repo, so the root `global.json` selects Microsoft Testing Platform.

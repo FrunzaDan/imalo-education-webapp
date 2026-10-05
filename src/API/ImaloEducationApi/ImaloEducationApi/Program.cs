@@ -53,14 +53,20 @@ if (app.Environment.IsDevelopment())
     app.MapOpenApi();
     app.UseSwaggerUI(options => options.SwaggerEndpoint("/openapi/v1.json", "v1"));
 }
-
-app.UseCors();
+else
+{
+    app.UseHsts();
+}
 
 app.Use(async (context, next) =>
 {
     context.Response.Headers.CacheControl = "no-store";
     await next();
 });
+
+app.UseCors();
+
+app.UseHttpsRedirection();
 
 app.MapHealthChecks("/health")
     .WithHttpLogging(HttpLoggingFields.None);

@@ -6,7 +6,7 @@ The Angular 22 app under `src/UI/`. It is zoneless, uses standalone components a
 
 ## Key files / paths
 
-- `src/environments/environment.ts` — `apiUrl` (`http://localhost:5244`), `phoneNumberRegex`.
+- `src/environments/environment.ts` — `apiUrl` (`https://localhost:7244`), `phoneNumberRegex`.
 - `src/app/app.config.ts`, `app.config.server.ts`, `app.routes.ts`, `app.routes.server.ts`, `app.ts` (the shell).
 - `src/app/services/`:
   - `scholar`, `school`, `attendance`, `audit-log`, `global-audit-log`;
