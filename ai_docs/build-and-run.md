@@ -10,7 +10,7 @@ How to build, test and run the database, API and UI locally.
   1. restores and builds the API;
   2. runs `dotnet test`;
   3. builds the DB project;
-  4. runs `npm ci`, `npm run format:check` and `npm run build`;
+  4. runs `npm ci`, `npm run format:check`, `npm run lint` and `npm run build`;
   5. runs `npm test`.
 
   It starts nothing.
