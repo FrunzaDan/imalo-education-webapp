@@ -9,7 +9,7 @@ Imalo Education Webapp is a full-stack app for the day-to-day admin of an afters
 - **Scholar records:** Scholars can be created, viewed, edited and deleted, each with their parents' contact details and the school they attend. Deleting a scholar also removes their parents, schedule and attendance, so no orphaned data is left behind.
 - **Weekly pickup schedule:** Each scholar has a pickup time for each day of the week. A Gantt-style chart shows all of them together, so it's easy to see who is still there at any point in the afternoon.
 - **Attendance tracking:** A monthly grid shows attendance for every scholar at once. A per-scholar editor records presence, lunch and transport day by day for a chosen month, and fills in each day's cost from the school's prices.
-- **Dashboard and charts:** The dashboard gives an overview of the current day, and the charts page summarizes the scholar and attendance data.
+- **Dashboard and charts:** The dashboard gives an overview of the current day, and the charts page summarizes the scholar and attendance data with the app's own SVG chart components (no chart library).
 - **Audit log:** Every change to a scholar is logged. Each scholar has their own history, and a paged global log shows every change across the app.
 - **CSV export and test data:** The scholar list and attendance can be exported to CSV. The About page generates demo scholars with random schedules and attendance, so every page has data to show.
 - **One-command scripts:** `run.sh` starts the SQL Server container in Docker, deploys the schema, and runs the API and the Angular dev server. `build.sh` builds the API, the database project and the UI and runs both test suites, without starting any services.
@@ -21,7 +21,7 @@ Imalo Education Webapp is a full-stack app for the day-to-day admin of an afters
 - **Frontend:** Angular 22.2 (standalone components, signals, zoneless), SSR via `@angular/ssr` + Express, TypeScript
 - **Backend:** ASP.NET Core Web API on .NET 10, a single project with one controller (`ScholarsController`) and a data-access class
 - **Database / Storage:** SQL Server (Azure SQL Edge in Docker), ADO.NET with parameterized inline SQL (no ORM, no stored procedures), SSDT project deployed with `sqlpackage`
-- **Tooling & Other:** OpenAPI + Swagger UI, xUnit v3 + Moq (Microsoft Testing Platform), Vitest + jsdom, Prettier, .NET analyzers (latest-recommended) + dotnet format, Postman collection
+- **Tooling & Other:** OpenAPI + Swagger UI, xUnit v3 + Moq (Microsoft Testing Platform), Vitest + jsdom, ESLint (angular-eslint), Prettier, .NET analyzers (latest-recommended) + dotnet format, Postman collection
 
 ---
 
@@ -57,7 +57,7 @@ The defaults work for local development. Settings live in `src/API/ImaloEducatio
 
 School reference data (name, color, lunch and transport prices) is not in the database. It lives in `src/UI/public/assets/schools.json`, so edit that file to change schools or prices.
 
-`run.sh` reads these environment variables if you need to override the defaults: `SQL_SA_PASSWORD`, `SQL_PORT`, `SQL_CONTAINER_NAME`, `SQL_IMAGE` and `SQL_PLATFORM`.
+`run.sh` reads these environment variables if you need to override the defaults: `SQL_SA_PASSWORD`, `SQL_PORT`, `SQL_CONTAINER_NAME`, `SQL_IMAGE`, `SQL_PLATFORM` (defaults to `linux/arm64` on Apple Silicon and `linux/amd64` elsewhere), `SQL_DATABASE` and `API_URL`. It passes the resulting connection string to the API, so a changed port or password doesn't need an `appsettings.json` edit. Its logs (API output, `sqlpackage` output) go to `.run/`.
 
 ### 3. Installation & Run
 
@@ -65,13 +65,15 @@ School reference data (name, color, lunch and transport prices) is not in the da
 ./run.sh
 ```
 
-This starts Docker if needed, creates or starts the `sqlserver` container, builds and publishes the database schema, starts the API in the background on `https://localhost:7244`, and then runs the Angular dev server in the foreground on `http://localhost:4203` and opens it in your browser. `Ctrl+C` stops the API and Angular. The script is safe to re-run.
+This starts Docker if needed, creates or starts the `sqlserver` container, builds and publishes the database schema, starts the API in the background on `https://localhost:7244`, and then runs the Angular dev server in the foreground on `http://localhost:4203` and opens it in your browser. `Ctrl+C` stops the API and Angular; the database container keeps running. The script is safe to re-run.
 
 To build and test everything without starting any services:
 
 ```bash
 ./build.sh
 ```
+
+That restores and builds the .NET solution with warnings treated as errors, checks it with `dotnet format --verify-no-changes`, runs the xUnit tests, and builds the SQL project. For the UI it runs `npm ci`, the Prettier check, ESLint, the production build and the Vitest suite. Pass `--skip-tests` to skip both test steps.
 
 ---
 
