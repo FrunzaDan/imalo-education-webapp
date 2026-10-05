@@ -19,7 +19,7 @@ How to build, test and run the database, API and UI locally.
 - `.vscode/` — shared VS Code tasks (`run.sh`, `build.sh`, `ng serve`, `ng test`), launch configs (API, `ng serve`, `ng test` in Node, "API + UI") and recommended extensions. Same in all three sibling apps. Open the repo root, not `src/UI/`.
 - `global.json` (repo root) — .NET 10 SDK, and `dotnet test` on Microsoft Testing Platform.
 - `src/DB/ImaloEducation/global.json` — pins .NET 8 for the DB project. Keep it.
-- `src/UI/angular.json` — `outputMode: "server"`, dev server on port 4204.
+- `src/UI/angular.json` — `outputMode: "server"`, dev server on port 4203.
 
 ## How it works
 
@@ -29,7 +29,7 @@ How to build, test and run the database, API and UI locally.
 2. Installs `sqlpackage` 170.3.93 if it's missing, builds the `.sqlproj`, and publishes it with `BlockOnPossibleDataLoss=false`, retrying for up to 180 s.
 3. Starts the API at `https://localhost:7244` (Development) with `ConnectionStrings__Docker` pointing at that container, and waits up to 60 s for it.
 4. Exports the API's TLS certificate to `.run/dev-cert.pem` and sets `NODE_EXTRA_CA_CERTS`, so Node (SSR) trusts it.
-5. Starts `npm start` at `http://localhost:4204`. `Ctrl+C` stops both.
+5. Starts `npm start` at `http://localhost:4203`. `Ctrl+C` stops both.
 
 - It fails fast if a tool is missing or a port is taken.
 - You can override these environment variables: `SQL_PORT`, `SQL_SA_PASSWORD`, `SQL_DATABASE`, `SQL_CONTAINER_NAME`, `SQL_IMAGE`, `SQL_PLATFORM` and `API_URL`.

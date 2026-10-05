@@ -18,7 +18,7 @@ The ASP.NET Core Web API (.NET 10), one project under `src/API/ImaloEducationApi
   - `AttendanceRecord`, `ScholarAttendance`;
   - `AuditLogEntry`, `GlobalAuditLogEntry`, `AuditAction`;
   - `PagedResponse`.
-- `appsettings.json` — `ConnectionStrings`, `Cors:AllowedOrigins` (UI on port 4204), logging.
+- `appsettings.json` — `ConnectionStrings`, `Cors:AllowedOrigins` (UI on port 4203), logging.
 - `src/API/ImaloEducationApi/ImaloEducationApi.Tests/` — xUnit v3 tests.
 
 ## How it works

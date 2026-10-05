@@ -53,7 +53,7 @@ cd imalo-education-webapp
 The defaults work for local development. Settings live in `src/API/ImaloEducationApi/ImaloEducationApi/appsettings.json`:
 
 - `ConnectionStrings:Docker` points at the container on `localhost,1433`. On Windows, the API falls back to `ConnectionStrings:LocalSqlServer` (Windows auth) if Docker doesn't answer.
-- `Cors:AllowedOrigins` allows the Angular dev server on port 4204.
+- `Cors:AllowedOrigins` allows the Angular dev server on port 4203.
 
 School reference data (name, color, lunch and transport prices) is not in the database. It lives in `src/UI/public/assets/schools.json`, so edit that file to change schools or prices.
 
@@ -65,7 +65,7 @@ School reference data (name, color, lunch and transport prices) is not in the da
 ./run.sh
 ```
 
-This starts Docker if needed, creates or starts the `sqlserver` container, builds and publishes the database schema, starts the API in the background on `https://localhost:7244`, and then runs the Angular dev server in the foreground on `http://localhost:4204`. `Ctrl+C` stops the API and Angular. The script is safe to re-run.
+This starts Docker if needed, creates or starts the `sqlserver` container, builds and publishes the database schema, starts the API in the background on `https://localhost:7244`, and then runs the Angular dev server in the foreground on `http://localhost:4203`. `Ctrl+C` stops the API and Angular. The script is safe to re-run.
 
 To build and test everything without starting any services:
 
