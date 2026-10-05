@@ -106,7 +106,7 @@ The Angular 22 app under `src/UI/`. It is zoneless, uses standalone components a
 
 ### Naming (same in all three apps)
 
-- **Page state:** `loading` and `loadError` for the data the page itself loads. Actions get their own: `saveError`, `deleteError`, `loginError`.
+- **Page state:** `loading` and `loadError` for the data the page itself loads. Actions get their own: `saveError`, `deleteError` (and `loginError` in the siblings; Imalo has no login).
 - **Service verbs:** `loadX()` starts a resource the service holds and returns nothing. `getX()` and `fetchX()` return an Observable. Writes are `createX`, `updateX` and `deleteX`, plus `…Silently` variants.
 - **Service fields:** private resources end in `Resource`, and the base URL field is `apiUrl`.
 - **Lists:** `sortColumn` and `sortDirection` (`'asc' | 'desc'`), with `SORT_LABELS` for the table caption. Bulk selection uses `selectedXIds`, `isSelected`, `toggleSelection`, `allSelected`, `toggleSelectAll` and `bulkActionInProgress`.
