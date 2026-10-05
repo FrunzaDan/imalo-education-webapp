@@ -65,7 +65,7 @@ School reference data (name, color, lunch and transport prices) is not in the da
 ./run.sh
 ```
 
-This starts Docker if needed, creates or starts the `sqlserver` container, builds and publishes the database schema, starts the API in the background on `https://localhost:7244`, and then runs the Angular dev server in the foreground on `http://localhost:4203`. `Ctrl+C` stops the API and Angular. The script is safe to re-run.
+This starts Docker if needed, creates or starts the `sqlserver` container, builds and publishes the database schema, starts the API in the background on `https://localhost:7244`, and then runs the Angular dev server in the foreground on `http://localhost:4203` and opens it in your browser. `Ctrl+C` stops the API and Angular. The script is safe to re-run.
 
 To build and test everything without starting any services:
 
