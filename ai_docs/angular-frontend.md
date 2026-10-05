@@ -15,8 +15,9 @@ The Angular 22 app under `src/UI/`. It is zoneless, uses standalone components a
 - `src/app/components/` — one folder per page or widget.
 - `src/app/interfaces/` — mirrors of the API's JSON.
 - `src/app/utils/`:
-  - `extract-error-message.ts`, `audit-action-label.ts`;
-  - `weekday-dates.ts`, `contrast-color.ts`.
+  - `extract-error-message.ts`, `server-errors.ts`, `audit-action-label.ts`, `gender-label.ts`;
+  - `weekday-dates.ts` (date helpers, `parseDateOnly`, `DEFAULT_MONTH`), `contrast-color.ts`;
+  - `random-scholar.ts` (the About page's test-data generator).
 - `src/app/constants/week-days.ts` — `WEEK_DAYS` and the `WeekDay` type.
 - `src/app/utils/chart-scale.ts`, `chart-stats.ts`, `chart-geometry.ts` — chart axis math, data helpers and smooth curves, shared with the sibling apps.
 - `src/app/pipes/ron.pipe.ts`, `src/styles.css`.
@@ -26,10 +27,12 @@ The Angular 22 app under `src/UI/`. It is zoneless, uses standalone components a
 
 ### Config
 
+- **Zoneless:** there's no `zone.js` and no zoneless provider; zoneless change detection is the Angular default.
 - `app.config.ts` sets up:
-  - `provideZonelessChangeDetection()`;
-  - the router, with component input binding, view transitions and `canceledNavigationResolution: 'computed'`;
-  - hydration with event replay;
+  - `provideBrowserGlobalErrorListeners()`;
+  - the router, with component input binding, in-memory scrolling (scroll to top, anchors), `canceledNavigationResolution: 'computed'` and view transitions (initial one skipped);
+  - `AppTitleStrategy` as the `TitleStrategy`;
+  - hydration with event replay and no incremental hydration;
   - `provideHttpClient(withFetch(), withInterceptors([apiLoggerInterceptor]))`.
 - **Render modes:** `create-scholar` and `about` are prerendered; everything else renders on the server per request.
 - Every route is lazy and has a `title` (" · Imalo Education Webapp").
@@ -76,12 +79,12 @@ The Angular 22 app under `src/UI/`. It is zoneless, uses standalone components a
 ### Charts (`/charts`)
 
 - The charts are hand-built inline SVG/HTML, with no chart library. The pure transforms live in `charts/charts-data.ts` and the shared `utils/chart-stats.ts`, both with specs.
-- **Components:** the shared `time-series-chart`, `donut-chart`, `kpi-tile` and `ranked-bar-chart` (identical in the sibling apps), plus Imalo's own `heatmap` (rows × columns of cells, shaded in 5 levels; `showValues` prints the numbers in wide cells).
+- **Components:** the shared `time-series-chart`, `donut-chart`, `kpi-tile` and `ranked-bar-chart` (identical in the sibling apps), plus Imalo's own `heatmap` (rows × columns of cells, shaded in 5 levels; `showValues` prints the numbers in wide cells) and `bar-chart` (bars with an optional second series, `value2`, stacked on the first and labelled by `series1Label`/`series2Label`; the axis scales to the stacked total; used for boys and girls in each class).
 - **Sections:**
   - **At a glance:** a month picker and KPIs for that month: attendance rate (vs the month before), scholars per day and revenue (with 12-month sparklines), lunch take-up (and transport), scholars.
   - **The month, day by day:** scholars present each day, the weekday pattern, what the days included (lunch and/or transport), revenue split, and the eight biggest bills.
   - **The year:** a year picker; an attendance calendar heatmap, revenue by month (with the change on the same months of the year before) and scholars per day by month.
-  - **Scholars:** a weekday × pickup-time heatmap (rush hour), scholars by class and the top eight schools.
+  - **Scholars:** a weekday × pickup-time heatmap (rush hour), scholars by class, boys and girls (donut), boys and girls in each class (`bar-chart`; scholars with no gender declared are left out) and the top eight schools.
 - **Definitions:**
   - Attendance rate is present days ÷ (scholars × weekdays so far): days still to come don't count (`elapsedWeekdays`). The dashboard uses the same rule.
   - "Scholars per day" averages only the days anyone came, so holidays and short months compare fairly.

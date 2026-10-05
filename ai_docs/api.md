@@ -7,16 +7,17 @@ The ASP.NET Core Web API (.NET 10), one project under `src/API/ImaloEducationApi
 ## Key files / paths
 
 - `Program.cs` — options, pipeline, CORS, OpenAPI, logging, `no-store` header.
-- `Controllers/ScholarController.cs` — `ScholarsController`, route `api/scholars`.
+- `Controllers/ScholarsController.cs` — `ScholarsController`, route `api/scholars`.
 - `Data/ScholarDataAccess.cs` (implements `IScholarDataAccess`) — all SQL.
 - `Data/SqlConnectionFactory.cs` — picks the database; see below.
 - `Configuration/DatabaseOptions.cs`.
 - `ErrorHandling/GlobalExceptionHandler.cs`.
+- `Routing/KebabCaseParameterTransformer.cs` — kebab-case `[controller]` routes, as in the sibling apps.
 - `Models/`:
-  - `Scholar` (with its validation attributes);
+  - `Scholar` (with its validation attributes), `Gender`;
   - `PickupSchedule` (with `HourMinuteTimeOnlyConverter`);
   - `AttendanceRecord`, `ScholarAttendance`;
-  - `AuditLogEntry`, `GlobalAuditLogEntry`, `AuditAction`;
+  - `AuditLogEntry` and `GlobalAuditLogEntry` (both in `AuditLogEntry.cs`), `AuditAction`;
   - `PagedResponse`.
 - `appsettings.json` — `ConnectionStrings`, `Cors:AllowedOrigins` (UI on port 4203), logging.
 - `src/API/ImaloEducationApi/ImaloEducationApi.Tests/` — xUnit v3 tests.
@@ -102,19 +103,20 @@ The ASP.NET Core Web API (.NET 10), one project under `src/API/ImaloEducationApi
 - App logs are `[LoggerMessage]` methods with event ids shared across the three APIs:
   - 1 = unhandled exception;
   - 2 = audit write failed;
-  - 3/4 = which database was chosen.
+  - 3/4 = which database was chosen;
+  - 5 = the client aborted the request (Debug).
 
 ### Tests
 
 - `Models/`:
-  - validation attributes;
+  - validation attributes (`ScholarModelValidationTests`, `ScholarValidationTests`);
   - `WireFormatTests`, which pin the JSON shapes.
 - `Data/`:
   - `ScholarChangesTests`;
   - `SqlConnectionFactoryTests`, with a faked probe.
 - `Controllers/ScholarsControllerTests` — against a Moq `IScholarDataAccess`.
 - In-memory pipeline tests with `WebApplicationFactory`:
-  - `ErrorHandling/ErrorResponseTests`;
+  - `ErrorHandling/ErrorResponseTests` and `GlobalExceptionHandlerTests`;
   - `Configuration/StartupValidationTests`;
   - `Endpoints/ScholarEndpointTests`: every endpoint called the way the UI calls it, with only `IScholarDataAccess` replaced by a Moq. It checks routes, status codes (201 with `Location`, 204, 404), the JSON wire format (`HH:mm` pickup times, dates, gender as a number) and model validation.
 - Setup: `xunit.v3.mtp-v2`, Moq and `FakeLogger`, with versions in `Directory.Packages.props`.
