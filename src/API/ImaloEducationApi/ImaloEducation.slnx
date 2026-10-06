@@ -1,0 +1,7 @@
+<Solution>
+  <Project Path="ImaloEducation.BusinessLogic/ImaloEducation.BusinessLogic.csproj" />
+  <Project Path="ImaloEducation.DataAccess/ImaloEducation.DataAccess.csproj" />
+  <Project Path="ImaloEducation.Domain/ImaloEducation.Domain.csproj" />
+  <Project Path="ImaloEducation.Tests/ImaloEducation.Tests.csproj" />
+  <Project Path="ImaloEducation.WebAPI/ImaloEducation.WebAPI.csproj" />
+</Solution>

@@ -1,0 +1,32 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <OutputType>Exe</OutputType>
+        <IsPackable>false</IsPackable>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <Content Include="xunit.runner.json" CopyToOutputDirectory="PreserveNewest" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" />
+        <PackageReference Include="Microsoft.Extensions.Diagnostics.Testing" />
+        <PackageReference Include="Microsoft.Testing.Extensions.CodeCoverage" />
+        <PackageReference Include="Moq" />
+        <PackageReference Include="NetArchTest.Rules" />
+        <PackageReference Include="xunit.v3.mtp-v2" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <Using Include="Xunit" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\ImaloEducation.BusinessLogic\ImaloEducation.BusinessLogic.csproj" />
+        <ProjectReference Include="..\ImaloEducation.DataAccess\ImaloEducation.DataAccess.csproj" />
+        <ProjectReference Include="..\ImaloEducation.Domain\ImaloEducation.Domain.csproj" />
+        <ProjectReference Include="..\ImaloEducation.WebAPI\ImaloEducation.WebAPI.csproj" />
+    </ItemGroup>
+
+</Project>

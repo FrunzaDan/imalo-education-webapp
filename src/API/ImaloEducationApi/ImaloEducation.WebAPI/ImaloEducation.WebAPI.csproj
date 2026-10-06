@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+    <PropertyGroup>
+        <UserSecretsId>d0af71d4-294a-4a18-9be7-d5e426e12e1e</UserSecretsId>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="Microsoft.AspNetCore.OpenApi" />
+        <PackageReference Include="Swashbuckle.AspNetCore.SwaggerUI" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\ImaloEducation.BusinessLogic\ImaloEducation.BusinessLogic.csproj" />
+        <!-- Composition root only: Program.cs calls AddDataAccess() to plug the SQL implementations in. -->
+        <ProjectReference Include="..\ImaloEducation.DataAccess\ImaloEducation.DataAccess.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <InternalsVisibleTo Include="ImaloEducation.Tests" />
+    </ItemGroup>
+
+</Project>

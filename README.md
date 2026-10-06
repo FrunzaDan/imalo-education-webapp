@@ -19,7 +19,7 @@ Imalo Education Webapp is a full-stack app for the day-to-day admin of an afters
 ## Tech Stack
 
 - **Frontend:** Angular 22.2 (standalone components, signals, zoneless), SSR via `@angular/ssr` + Express, TypeScript
-- **Backend:** ASP.NET Core Web API on .NET 10, a single project with one controller (`ScholarsController`) and a data-access class
+- **Backend:** ASP.NET Core Web API on .NET 10, split into Domain ← BusinessLogic ← DataAccess projects plus a WebAPI host: one controller (`ScholarsController`), a service (`ScholarService`) and a SQL repository (`ScholarRepository`)
 - **Database / Storage:** SQL Server (Azure SQL Edge in Docker), ADO.NET with parameterized inline SQL (no ORM, no stored procedures), SSDT project deployed with `sqlpackage`
 - **Tooling & Other:** OpenAPI + Swagger UI, xUnit v3 + Moq (Microsoft Testing Platform), Vitest + jsdom, ESLint (angular-eslint), Prettier, .NET analyzers (latest-recommended) + dotnet format, Postman collection
 
@@ -50,7 +50,7 @@ cd imalo-education-webapp
 
 ### 2. Configuration
 
-The defaults work for local development. Settings live in `src/API/ImaloEducationApi/ImaloEducationApi/appsettings.json`:
+The defaults work for local development. Settings live in `src/API/ImaloEducationApi/ImaloEducation.WebAPI/appsettings.json`:
 
 - `ConnectionStrings:Docker` points at the container on `localhost,1433`. On Windows, the API falls back to `ConnectionStrings:LocalSqlServer` (Windows auth) if Docker doesn't answer.
 - `Cors:AllowedOrigins` allows the Angular dev server on port 4203.
@@ -111,5 +111,5 @@ Successful responses return the model directly; errors are RFC 9457 Problem Deta
 Personal learning project with no license file.
 
 - There is no authentication. The app is meant to run on a local machine only, with CORS limited to the UI's origin.
-- The SQL in `ScholarDataAccess` has no automated tests, since that would need a real SQL Server. The API tests cover the models, controller, endpoint contracts, error responses and startup validation.
+- The SQL in `ScholarRepository` has no automated tests, since that would need a real SQL Server. The API tests cover the models, service, controller, endpoint contracts, error responses, startup validation and the layer dependencies.
 - More detailed technical notes per layer are in [`ai_docs/`](ai_docs/index.md).

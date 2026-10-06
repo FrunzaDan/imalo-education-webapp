@@ -1,4 +1,0 @@
-<Solution>
-  <Project Path="ImaloEducationApi.Tests/ImaloEducationApi.Tests.csproj" />
-  <Project Path="ImaloEducationApi/ImaloEducationApi.csproj" />
-</Solution>

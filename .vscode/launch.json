@@ -7,7 +7,7 @@
       "name": "API",
       "type": "dotnet",
       "request": "launch",
-      "projectPath": "${workspaceFolder}/src/API/ImaloEducationApi/ImaloEducationApi/ImaloEducationApi.csproj"
+      "projectPath": "${workspaceFolder}/src/API/ImaloEducationApi/ImaloEducation.WebAPI/ImaloEducation.WebAPI.csproj"
     },
     {
       "name": "ng serve",

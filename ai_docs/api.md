@@ -2,25 +2,40 @@
 
 ## What it is
 
-The ASP.NET Core Web API (.NET 10), one project under `src/API/ImaloEducationApi/ImaloEducationApi/`. It serves HTTPS and has no authentication.
+The ASP.NET Core Web API (.NET 10), in `src/API/ImaloEducationApi/` (solution `ImaloEducation.slnx`). It serves HTTPS and has no authentication.
+
+It is split into four projects with references pointing inward: Domain ← BusinessLogic ← DataAccess, and WebAPI → BusinessLogic (+ DataAccess for composition in `Program.cs` only).
+
+| Project | Holds | References |
+|---|---|---|
+| `ImaloEducation.Domain` | Models | none |
+| `ImaloEducation.BusinessLogic` | `IScholarService`/`ScholarService`, the `IScholarRepository` abstraction, `ScholarChanges`, `AttendanceValidation`, `AddBusinessLogic()` | Domain |
+| `ImaloEducation.DataAccess` | `ScholarRepository` (all SQL), `SqlConnectionFactory`, `DatabaseOptions`, `AddDataAccess()` | BusinessLogic only |
+| `ImaloEducation.WebAPI` | `Program.cs`, controller, error handling, routing | BusinessLogic, DataAccess |
 
 ## Key files / paths
 
-- `Program.cs` — options, pipeline, CORS, OpenAPI, logging, `no-store` header.
-- `Controllers/ScholarsController.cs` — `ScholarsController`, route `api/scholars`.
-- `Data/ScholarDataAccess.cs` (implements `IScholarDataAccess`) — all SQL.
-- `Data/SqlConnectionFactory.cs` — picks the database; see below.
-- `Configuration/DatabaseOptions.cs`.
-- `ErrorHandling/GlobalExceptionHandler.cs`.
-- `Routing/KebabCaseParameterTransformer.cs` — kebab-case `[controller]` routes, as in the sibling apps.
-- `Models/`:
+- `ImaloEducation.WebAPI/`:
+  - `Program.cs` — options, `AddBusinessLogic()` + `AddDataAccess()`, pipeline, CORS, OpenAPI, logging, `no-store` header.
+  - `Controllers/ScholarsController.cs` — `ScholarsController`, route `api/scholars`; depends on `IScholarService`.
+  - `ErrorHandling/GlobalExceptionHandler.cs`.
+  - `Routing/KebabCaseParameterTransformer.cs` — kebab-case `[controller]` routes, as in the sibling apps.
+  - `appsettings.json` — `ConnectionStrings`, `Cors:AllowedOrigins` (UI on port 4203), logging.
+- `ImaloEducation.BusinessLogic/`:
+  - `Services/Implementation/ScholarService.cs` (implements `IScholarService`) — empty-id guards and the best-effort audit trail.
+  - `Abstractions/IScholarRepository.cs` — the persistence port DataAccess implements.
+  - `ScholarFunctions/ScholarChanges.cs`, `Validations/AttendanceValidation.cs`.
+- `ImaloEducation.DataAccess/`:
+  - `Repositories/ScholarRepository.cs` (implements `IScholarRepository`) — all SQL.
+  - `DBConnection/SqlConnectionFactory.cs` — picks the database; see below.
+  - `Configuration/DatabaseOptions.cs`.
+- `ImaloEducation.Domain/Models/`:
   - `Scholar` (with its validation attributes), `Gender`;
   - `PickupSchedule` (with `HourMinuteTimeOnlyConverter`);
   - `AttendanceRecord`, `ScholarAttendance`;
   - `AuditLogEntry` and `GlobalAuditLogEntry` (both in `AuditLogEntry.cs`), `AuditAction`;
   - `PagedResponse`.
-- `appsettings.json` — `ConnectionStrings`, `Cors:AllowedOrigins` (UI on port 4203), logging.
-- `src/API/ImaloEducationApi/ImaloEducationApi.Tests/` — xUnit v3 tests.
+- `src/API/ImaloEducationApi/ImaloEducation.Tests/` — xUnit v3 tests.
 
 ## How it works
 
@@ -66,17 +81,18 @@ The ASP.NET Core Web API (.NET 10), one project under `src/API/ImaloEducationApi
 - **Create/update:** write the scholar, schedule and parents in one `SqlTransaction`. Disposing an uncommitted transaction rolls it back.
 - **Parents:** there is at most one mother and one father. A role row is written only if one of its fields is set, and deleted once all its fields are blank.
 - **Attendance save:** one batch using `UPDLOCK, SERIALIZABLE`, which updates the row or inserts it. It is race-free, and an unknown scholar returns `404`.
+- **Update:** `ScholarRepository.UpdateScholarAsync` reads the current row under `UPDLOCK` in the same transaction and returns it, so `ScholarService` can describe what changed.
 - **Audit log:**
-  - It is written after the change commits, on its own connection, and is best-effort (a failure is only logged).
+  - `ScholarService` writes it through `IScholarRepository.AddAuditEntryAsync` after the change commits, on its own connection, not cancelled with the request, and best-effort (a failure is only logged).
   - For `Edited` entries, `ScholarChanges.Describe` lists the changed fields.
 - **JSON columns:** use one shared `JsonSerializerOptions`.
 - **SQL parameters:** every `SqlParameter` has an explicit `SqlDbType` and size. `AddWithValue` is never used.
-- **Naming** (as in the other two apps): every data-access method ends in `Async`, and is named after the controller action it backs (`SaveAttendanceAsync`, `GetScholarAuditLogAsync`). Collections are returned as `IReadOnlyList<T>`.
+- **Naming** (as in the other two apps): every service and repository method ends in `Async`, and is named after the controller action it backs (`SaveAttendanceAsync`, `GetScholarAuditLogAsync`). Collections are returned as `IReadOnlyList<T>`.
 
 ### Validation and types
 
 - **DataAnnotations and `[ApiController]`** return `400` `ValidationProblemDetails` before the action runs.
-- **Rules across fields:** attendance rules and id mismatches are added with `ModelState.AddModelError`.
+- **Rules across fields:** `AttendanceValidation.Validate` (BusinessLogic) returns the attendance rule violations; the controller adds them, and id mismatches, with `ModelState.AddModelError`.
 - **`PickupSchedule`:**
   - it only accepts the five weekday keys;
   - times must be strict `"HH:mm"`;
@@ -93,7 +109,7 @@ The ASP.NET Core Web API (.NET 10), one project under `src/API/ImaloEducationApi
 - **`404`:** `Problem(statusCode: 404, detail: …)`.
 - **`404`/`405`/`415` from routing:** `UseStatusCodePages`.
 - **`500`:** anything thrown, handled by `GlobalExceptionHandler`. It is logged once, and `detail` is included in Development only. If the client has already aborted the request (a cancelled navigation or a superseded search), the handler logs at Debug and ends with `499` instead.
-- There's no try/catch in the controller or data access. The one exception is the best-effort audit write.
+- There's no try/catch in the controller, service or repository. The one exception is the best-effort audit write in `ScholarService`.
 
 ### Logging
 
@@ -111,20 +127,21 @@ The ASP.NET Core Web API (.NET 10), one project under `src/API/ImaloEducationApi
 - `Models/`:
   - validation attributes (`ScholarModelValidationTests`, `ScholarValidationTests`);
   - `WireFormatTests`, which pin the JSON shapes.
-- `Data/`:
-  - `ScholarChangesTests`;
-  - `SqlConnectionFactoryTests`, with a faked probe.
-- `Controllers/ScholarsControllerTests` — against a Moq `IScholarDataAccess`.
+- `ScholarFunctions/ScholarChangesTests`.
+- `DataAccess/SqlConnectionFactoryTests`, with a faked probe.
+- `Services/ScholarServiceTests` — audit entries and empty-id guards, against a Moq `IScholarRepository`.
+- `Architecture/LayerDependencyTests` — NetArchTest: Domain must not depend on DataAccess.
+- `Controllers/ScholarsControllerTests` — against a Moq `IScholarService`.
 - In-memory pipeline tests with `WebApplicationFactory`:
   - `ErrorHandling/ErrorResponseTests` and `GlobalExceptionHandlerTests`;
   - `Configuration/StartupValidationTests`;
-  - `Endpoints/ScholarEndpointTests`: every endpoint called the way the UI calls it, with only `IScholarDataAccess` replaced by a Moq. It checks routes, status codes (201 with `Location`, 204, 404), the JSON wire format (`HH:mm` pickup times, dates, gender as a number) and model validation.
-- Setup: `xunit.v3.mtp-v2`, Moq and `FakeLogger`, with versions in `Directory.Packages.props`.
+  - `Endpoints/ScholarEndpointTests`: every endpoint called the way the UI calls it, with only `IScholarRepository` (the SQL layer) replaced by a Moq. It checks routes, status codes (201 with `Location`, 204, 404), the JSON wire format (`HH:mm` pickup times, dates, gender as a number) and model validation.
+- Setup: `xunit.v3.mtp-v2`, Moq, NetArchTest and `FakeLogger`, with versions in `Directory.Packages.props`.
 
 ## Gotchas / conventions
 
 - **No auth, on purpose.** Every endpoint is open, including `DELETE /audit-log/all`.
 - **HTTPS only.** The dev profile serves `https://localhost:7244`; outside Development the API also sends HSTS. `UseHttpsRedirection` redirects plain HTTP.
 - **`Cache-Control: no-store`** is set on every response. Without it, `HttpClient`'s fetch backend served stale data.
-- **`ScholarDataAccess`'s SQL has no automated tests.** It would need a real SQL Server.
+- **`ScholarRepository`'s SQL has no automated tests.** It would need a real SQL Server.
 - **Running tests:** `dotnet test` must run from inside the repo, so the root `global.json` selects Microsoft Testing Platform.

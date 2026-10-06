@@ -7,7 +7,7 @@
   },
   // Only format where a Prettier config exists (src/UI/), so root JSON keeps its own style.
   "prettier.requireConfig": true,
-  "dotnet.defaultSolution": "src/API/ImaloEducationApi/ImaloEducationApi.slnx",
+  "dotnet.defaultSolution": "src/API/ImaloEducationApi/ImaloEducation.slnx",
   "files.watcherExclude": {
     "**/node_modules/**": true,
     "**/.angular/**": true,

@@ -5,8 +5,8 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-API_PROJ_DIR="$ROOT_DIR/src/API/ImaloEducationApi/ImaloEducationApi"
-API_PROJ="$API_PROJ_DIR/ImaloEducationApi.csproj"
+API_PROJ_DIR="$ROOT_DIR/src/API/ImaloEducationApi/ImaloEducation.WebAPI"
+API_PROJ="$API_PROJ_DIR/ImaloEducation.WebAPI.csproj"
 API_LAUNCH_SETTINGS="$API_PROJ_DIR/Properties/launchSettings.json"
 API_LAUNCH_PROFILE="https"
 DB_DIR="$ROOT_DIR/src/DB/ImaloEducation"

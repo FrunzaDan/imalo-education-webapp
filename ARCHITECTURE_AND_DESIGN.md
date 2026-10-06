@@ -11,12 +11,12 @@ It is a three-tier **client–server** system:
 | Tier | Location | Technology |
 |---|---|---|
 | UI | `src/UI/` | Angular 22 (standalone components, signals, Signal Forms, zoneless, SSR via `@angular/ssr` + Express), custom CSS |
-| API | `src/API/ImaloEducationApi/ImaloEducationApi/` | ASP.NET Core (.NET 10) Web API, a single project |
+| API | `src/API/ImaloEducationApi/` | ASP.NET Core (.NET 10) Web API: `Domain`, `BusinessLogic`, `DataAccess`, `WebAPI` projects + tests |
 | DB | `src/DB/ImaloEducation/` | SQL Server, SSDT project (`Microsoft.Build.Sql`), tables only, deployed as a dacpac with `sqlpackage` |
 
-The API is a **two-layer** design inside a single project: a REST-style controller (`ScholarsController`) talks directly to a data-access class (`ScholarDataAccess`) that issues **parameterized inline SQL** over ADO.NET. There is no service/business layer, no ORM, no stored procedures, and **no authentication**. Parts of the data model are stored as **JSON documents** in `NVARCHAR(MAX)` columns (pickup schedule, attendance list). Reference data for schools lives in a static file in the UI (`public/assets/schools.json`), not in the database.
+The API is a **layered monolith organized along Clean Architecture lines**: four production projects whose compile-time references point inward — `Domain` (models, no dependencies) ← `BusinessLogic` (`ScholarService`, attendance rules, change detection, and the `IScholarRepository` abstraction it needs) ← `DataAccess` (`ScholarRepository`, which issues **parameterized inline SQL** over ADO.NET). `WebAPI` is the outer HTTP layer and composition root. See [Clean Architecture refactoring](#clean-architecture-refactoring) for what changed from the earlier single project. There is no ORM, no stored procedures, and **no authentication**. Parts of the data model are stored as **JSON documents** in `NVARCHAR(MAX)` columns (pickup schedule, attendance list). Reference data for schools lives in a static file in the UI (`public/assets/schools.json`), not in the database.
 
-This repository is one of three sibling applications (with `customer-management-system` and `employee-management-system`). Per `ai_docs/index.md`, Imalo's API shape differs on purpose (one project, inline SQL, no response envelope), while conventions and a set of files are shared. Comparing sources confirms that `SqlConnectionFactory` and `GlobalExceptionHandler` are identical to the siblings' apart from namespaces.
+This repository is one of three sibling applications (with `customer-management-system` and `employee-management-system`). Per `ai_docs/index.md`, Imalo's API shape differs on purpose (inline SQL, no response envelope), while conventions and a set of files are shared. Comparing sources confirms that `SqlConnectionFactory` and `GlobalExceptionHandler` are identical to the siblings' apart from namespaces.
 
 ## High-Level Architecture
 
@@ -30,11 +30,13 @@ flowchart TD
         Static["public/assets/schools.json"]
         Int["apiLoggerInterceptor"]
     end
-    subgraph API["src/API (ASP.NET Core, one project)"]
+    subgraph API["src/API (ASP.NET Core)"]
         MW["Middleware pipeline<br/>logging, exception handler,<br/>CORS, HTTPS"]
-        Ctl["ScholarsController<br/>(DataAnnotations + cross-field rules)"]
-        DA["IScholarDataAccess / ScholarDataAccess<br/>(inline SQL, JSON columns, audit writes)"]
+        Ctl["WebAPI<br/>ScholarsController<br/>(DataAnnotations + ModelState)"]
+        BL["BusinessLogic<br/>IScholarService → ScholarService,<br/>AttendanceValidation, ScholarChanges,<br/>declares IScholarRepository"]
+        DA["DataAccess<br/>ScholarRepository : IScholarRepository<br/>(inline SQL, JSON columns)"]
         CF["SqlConnectionFactory"]
+        Dom["Domain<br/>models, enums, JSON converter"]
     end
     DB[("SQL Server<br/>5 tables")]
 
@@ -42,15 +44,23 @@ flowchart TD
     Browser --> Comp
     Comp --> Svc --> Int
     Svc -- "GET (via SchoolService)" --> Static
-    Int -- "HTTPS JSON, no auth" --> MW --> Ctl --> DA --> CF
+    Int -- "HTTPS JSON, no auth" --> MW --> Ctl --> BL
+    BL -- "calls IScholarRepository<br/>(implemented by DataAccess)" --> DA
+    DA -. "implements IScholarRepository" .-> BL
+    DA --> CF
     DA -- "parameterized SQL" --> DB
+    Ctl -.-> Dom
+    BL -.-> Dom
+    DA -.-> Dom
 ```
 
 Responsibilities:
 
 - **UI** — rendering, routing, form validation, joining scholars to schools by `schoolId`, client-side sorting/searching/CSV export, deriving attendance costs from school prices, all dashboard and chart aggregation.
-- **ScholarsController** — HTTP mapping, route/body consistency, cross-field validation of attendance, translation of `null`/`false` results into 404 Problem Details.
-- **ScholarDataAccess** — SQL, transactions, JSON (de)serialization of document columns, mapping, and writing audit-log entries (including computing the "what changed" description via `ScholarChanges`).
+- **WebAPI** (`ScholarsController`, `Program.cs`) — HTTP mapping, route/body consistency, turning `AttendanceValidation` errors into `ModelState` entries, translation of `null`/`false` results into 404 Problem Details; `Program.cs` composes the application.
+- **BusinessLogic** (`ScholarService`) — empty-id guards, the audit trail (written after the change, best-effort, with the "what changed" description from `ScholarChanges`), and the attendance cross-field rules (`AttendanceValidation`); declares the persistence interface `IScholarRepository` it depends on.
+- **DataAccess** (`ScholarRepository`) — implements `IScholarRepository`: SQL, transactions, JSON (de)serialization of document columns, mapping, connection selection.
+- **Domain** — models, enums and the `HH:mm` JSON converter. It has no project or package references.
 - **Database** — schema, constraints (`ISJSON` checks, cascades, check constraints).
 
 ## Project Structure
@@ -58,17 +68,17 @@ Responsibilities:
 ```text
 src/
 ├── API/ImaloEducationApi/
-│   ├── ImaloEducationApi/
-│   │   ├── Program.cs                     # composition root + middleware pipeline
-│   │   ├── Controllers/ScholarsController.cs
-│   │   ├── Data/                          # IScholarDataAccess, ScholarDataAccess, ScholarChanges, SqlConnectionFactory
-│   │   ├── Models/                        # Scholar, PickupSchedule (+ JSON converter), AttendanceRecord,
-│   │   │                                  # ScholarAttendance, AuditLogEntry, PagedResponse, enums
-│   │   ├── ErrorHandling/GlobalExceptionHandler.cs
-│   │   ├── Routing/KebabCaseParameterTransformer.cs
-│   │   └── Configuration/DatabaseOptions.cs
-│   ├── ImaloEducationApi.Tests/           # xUnit v3 + Moq
-│   └── Directory.Build.props / Directory.Packages.props / ImaloEducationApi.slnx
+│   ├── ImaloEducation.WebAPI/             # host: Program.cs (composition root + pipeline),
+│   │                                      # Controllers/, ErrorHandling/, Routing/, appsettings
+│   ├── ImaloEducation.BusinessLogic/      # Services/ (IScholarService, ScholarService), Abstractions/
+│   │                                      # (IScholarRepository), ScholarFunctions/ScholarChanges,
+│   │                                      # Validations/AttendanceValidation, AddBusinessLogic()
+│   ├── ImaloEducation.DataAccess/         # Repositories/ScholarRepository, DBConnection/SqlConnectionFactory,
+│   │                                      # Configuration/DatabaseOptions, AddDataAccess()
+│   ├── ImaloEducation.Domain/Models/      # Scholar, PickupSchedule (+ JSON converter), AttendanceRecord,
+│   │                                      # ScholarAttendance, AuditLogEntry, PagedResponse, enums
+│   ├── ImaloEducation.Tests/              # xUnit v3 + Moq + NetArchTest
+│   └── Directory.Build.props / Directory.Packages.props / ImaloEducation.slnx
 ├── DB/ImaloEducation/
 │   └── Tables/                            # Scholar, ScholarParent, ScholarPickupSchedule,
 │                                          # ScholarAttendance, ScholarAuditLog
@@ -81,14 +91,27 @@ src/
         └── app.config*.ts, app.routes*.ts, app.ts
 ```
 
-| Area | Responsibility | Key types | Depends on | Used by |
-|---|---|---|---|---|
-| `Controllers/` | HTTP edge, validation orchestration | `ScholarsController` | `IScholarDataAccess`, `Models` | ASP.NET routing |
-| `Data/` | Persistence, transactions, audit | `IScholarDataAccess`, `ScholarDataAccess`, `ScholarChanges`, `ISqlConnectionFactory`/`SqlConnectionFactory` | `Microsoft.Data.SqlClient`, `System.Text.Json`, `Models`, `Configuration` | Controller |
-| `Models/` | API contract, validation rules, persistence shape | `Scholar` (DataAnnotations + custom validators), `PickupSchedule` + `HourMinuteTimeOnlyConverter`, `AttendanceRecord`, `ScholarAttendance`, `AuditLogEntry`, `GlobalAuditLogEntry`, `PagedResponse<T>`, `Gender`, `AuditAction` | `System.ComponentModel.DataAnnotations`, `System.Text.Json` | Controller, Data |
-| `ErrorHandling/`, `Routing/`, `Configuration/` | Cross-cutting infrastructure | `GlobalExceptionHandler`, `KebabCaseParameterTransformer`, `DatabaseOptions` | ASP.NET Core | `Program.cs` |
+### API projects
 
-Folder namespaces provide the only separation; there are no project boundaries inside the API.
+Project references (from the `.csproj` files):
+
+```mermaid
+flowchart LR
+    BusinessLogic --> Domain
+    DataAccess --> BusinessLogic
+    WebAPI --> BusinessLogic
+    WebAPI -. "composition root only<br/>(AddDataAccess)" .-> DataAccess
+    Tests --> WebAPI & BusinessLogic & DataAccess & Domain
+```
+
+| Project | Responsibility | Key types | Depends on | Used by |
+|---|---|---|---|---|
+| `ImaloEducation.WebAPI` | HTTP edge, validation orchestration, composition root | `ScholarsController`, `GlobalExceptionHandler`, `KebabCaseParameterTransformer`, `Program.cs` | BusinessLogic; DataAccess (only `Program.cs`, for `AddDataAccess()` and `DatabaseOptions`); ASP.NET Core | ASP.NET routing, Tests |
+| `ImaloEducation.BusinessLogic` | Use cases, audit trail, cross-field rules, persistence abstraction | `IScholarService`/`ScholarService`, `IScholarRepository`, `ScholarChanges`, `AttendanceValidation` | Domain, `Microsoft.Extensions.{DependencyInjection,Logging}.Abstractions` | WebAPI, DataAccess, Tests |
+| `ImaloEducation.DataAccess` | Persistence, transactions, JSON columns, connection selection | `ScholarRepository`, `ISqlConnectionFactory`/`SqlConnectionFactory`, `DatabaseOptions` | BusinessLogic only (for `IScholarRepository`; Domain types arrive transitively), `Microsoft.Data.SqlClient`, `Microsoft.Extensions.Options` | WebAPI (`Program.cs`), Tests |
+| `ImaloEducation.Domain` | API contract, validation rules, persistence shape | `Scholar` (DataAnnotations + custom validators), `PickupSchedule` + `HourMinuteTimeOnlyConverter`, `AttendanceRecord`, `ScholarAttendance`, `AuditLogEntry`, `GlobalAuditLogEntry`, `PagedResponse<T>`, `Gender`, `AuditAction` | nothing (BCL only: DataAnnotations, System.Text.Json) | BusinessLogic (direct); DataAccess and WebAPI (transitively); Tests |
+
+WebAPI has no direct Domain reference: its controller uses Domain types (`Scholar`, `AttendanceRecord`, …) through BusinessLogic's transitive reference. `Architecture/LayerDependencyTests` checks with NetArchTest that Domain does not depend on DataAccess.
 
 ## Application/Data Flow
 
@@ -100,14 +123,16 @@ ScholarFormComponent (Signal Form; one component for add and edit)
  ↓ POST /api/scholars   |   PUT /api/scholars/{scholarId}
  ↓ [ApiController] model validation on Scholar (DataAnnotations, CustomValidation, JSON converter)
  ↓ ScholarsController: route id ≠ body id → 400 ValidationProblem
- ↓ ScholarDataAccess.CreateScholarAsync | UpdateScholarAsync
+ ↓ ScholarService.CreateScholarAsync | UpdateScholarAsync   (empty-id guard)
+ ↓ ScholarRepository.CreateScholarAsync | UpdateScholarAsync
      one SqlTransaction:
        INSERT/UPDATE dbo.Scholar
        insert / upsert dbo.ScholarPickupSchedule.ScheduleJson   (only if PickupSchedule is not null)
        per parent role (Mother, Father): insert/upsert, or DELETE when all fields empty
      (update only) read "before" WITH (UPDLOCK) in the same transaction
-     COMMIT
-     LogAuditAsync(Created | Edited, ScholarChanges.Describe(before, after))   (separate connection, best-effort)
+     COMMIT; return the new scholar (create) | the "before" snapshot or null (update)
+ ↓ ScholarService: IScholarRepository.AddAuditEntryAsync(Created | Edited,
+     ScholarChanges.Describe(before, after))   (separate connection, best-effort, logged on failure)
  ↑ 201 Created + Location (create) | 200 OK with the scholar (update) | 404 Problem Details
  ↑ UI: toast; navigate to /scholars/{id}; on error toServerErrors() maps fields
 ```
@@ -123,8 +148,8 @@ AttendancePerScholarComponent
  ↓ AttendanceService.saveAttendance(scholarId, recordsToSave())   (the scholar's WHOLE list)
  ↓ POST /api/scholars/{scholarId}/attendance
  ↓ [ApiController] validates each AttendanceRecord (cost ranges)
- ↓ ScholarsController: duplicate dates → 400; lunch/transport on an absent day → 400
- ↓ ScholarDataAccess.SaveAttendanceAsync
+ ↓ ScholarsController: AttendanceValidation.Validate → duplicate dates → 400; lunch/transport on an absent day → 400
+ ↓ ScholarService.SaveAttendanceAsync → ScholarRepository.SaveAttendanceAsync
      SET XACT_ABORT ON; BEGIN TRAN;
      UPDATE dbo.ScholarAttendance WITH (UPDLOCK, SERIALIZABLE) SET AttendanceJson = …
      IF @@ROWCOUNT = 0 INSERT … WHERE EXISTS (scholar)
@@ -140,7 +165,7 @@ Attendance saves are not audit-logged.
 
 ### Flow 4 — Audit log
 
-Audit entries are written only by `ScholarDataAccess` after create, update, and delete. `GET /api/scholars/{id}/audit-log` and `GET /api/scholars/audit-log/all` (paged, joined to `Scholar` for names) are read through `AuditLogService` / `GlobalAuditLogService` (`httpResource`). `DELETE /api/scholars/audit-log/all` clears the log.
+Audit entries are written only by `ScholarService` (through `IScholarRepository.AddAuditEntryAsync`) after create, update, and delete. `GET /api/scholars/{id}/audit-log` and `GET /api/scholars/audit-log/all` (paged, joined to `Scholar` for names) are read through `AuditLogService` / `GlobalAuditLogService` (`httpResource`). `DELETE /api/scholars/audit-log/all` clears the log.
 
 ## Layers and Responsibilities
 
@@ -148,30 +173,35 @@ Audit entries are written only by `ScholarDataAccess` after create, update, and 
 |---|---|---|---|---|
 | UI components | Presentation, forms, client-side aggregation | UI services, utils | `HttpClient` directly (none do) | `scholar-list.component.ts`, `attendance-per-scholar.component.ts` |
 | UI services | HTTP calls, static data, generic helpers | `HttpClient`, `NotificationService` | Components | `scholar.service.ts`, `school.service.ts`, `sorting.service.ts` |
-| Controller | HTTP mapping, validation, status codes | `IScholarDataAccess`, Models | SQL | `ScholarsController` |
-| Data access | SQL, transactions, JSON columns, audit | `ISqlConnectionFactory`, Models | HTTP types | `ScholarDataAccess` |
-| Models | Wire contract + validation + persistence shape | DataAnnotations, System.Text.Json | — | `Scholar`, `AttendanceRecord` |
+| WebAPI | HTTP mapping, validation, status codes, composition | `IScholarService`, `AttendanceValidation`, Domain types (transitively); DataAccess in `Program.cs` only | SQL, `IScholarRepository` | `ScholarsController`, `Program.cs` |
+| BusinessLogic | Use cases, audit trail, cross-field rules | Domain, `IScholarRepository` (its own abstraction) | DataAccess, ASP.NET Core, SqlClient | `ScholarService`, `AttendanceValidation`, `ScholarChanges` |
+| DataAccess | SQL, transactions, JSON columns | BusinessLogic abstractions (+ Domain types transitively), `ISqlConnectionFactory` | HTTP types, Domain directly | `ScholarRepository` |
+| Domain | Wire contract + validation + persistence shape | DataAnnotations, System.Text.Json | Any other project | `Scholar`, `AttendanceRecord` |
 | Database | Schema and integrity | — | — | `Tables/*.sql` |
 
 Observations:
 
-- **Business rules are split between the controller and the data-access class.** Attendance cross-field rules (unique dates, no lunch/transport when absent) are in the controller; audit logging and change detection (`ScholarChanges`) are in the data layer; field rules are attributes on `Scholar`.
+- **Business rules live in BusinessLogic, except field rules.** Attendance cross-field rules (unique dates, no lunch/transport when absent) are in `AttendanceValidation`; audit logging and change detection (`ScholarChanges`) are in `ScholarService`; field rules remain attributes on the Domain `Scholar`.
 - **Pricing is a UI concern.** Lunch and transport prices come from `schools.json` in the browser and are copied into each `AttendanceRecord`. The API accepts whatever cost the client sends (bounded to 0–9999.99).
-- **The data layer stays free of HTTP types.** It returns `null`/`false` for "not found", which the controller turns into 404s. It does throw `ArgumentException` for an empty id, as a guard behind the controller's own checks.
+- **BusinessLogic and DataAccess stay free of HTTP types.** They return `null`/`false` for "not found", which the controller turns into 404s. `ScholarService` throws `ArgumentException` for an empty id, as a guard behind the controller's own checks.
 
 ## Design Patterns
 
-### Two-tier controller → data access
+### Layered architecture with compile-time boundaries
 
-- **Where:** `ScholarsController` → `IScholarDataAccess`.
-- **How:** each action validates, calls one data-access method, and maps the result to an HTTP response. There is no intermediate service.
-- **Classification:** this is a deliberate simplification compared with the sibling apps (stated in `ai_docs/index.md`); the code has no business layer to bypass.
+- **Where:** the four API projects and their `ProjectReference`s.
+- **How:** `BusinessLogic → Domain`, `DataAccess → BusinessLogic`, `WebAPI → BusinessLogic` (+ `DataAccess` for composition in `Program.cs`). The compiler rejects a BusinessLogic → DataAccess dependency, and `LayerDependencyTests` checks Domain → DataAccess.
 
-### Repository-like data access
+### Service layer
 
-- **Where:** `IScholarDataAccess` / `ScholarDataAccess` (12 methods).
-- **How:** organized around the `Scholar` aggregate and its owned data (parents, schedule, attendance, audit log). It presents scholars as complete objects, hiding that parents live in a separate table and the schedule in a JSON column.
-- **Classification:** reasonably described as a repository for the `Scholar` aggregate, although it also carries cross-cutting behavior (audit writes) and returns `PagedResponse` for the audit log.
+- **Where:** `ScholarsController` → `IScholarService` → `ScholarService`.
+- **How:** each controller action validates, calls one service method, and maps the result to an HTTP response. Most service methods are pass-throughs with an empty-id guard; create, update and delete add the audit trail.
+
+### Repository (Dependency Inversion)
+
+- **Where:** `IScholarRepository` (BusinessLogic/Abstractions, 13 methods) / `ScholarRepository` (DataAccess).
+- **How:** organized around the `Scholar` aggregate and its owned data (parents, schedule, attendance, audit log). It presents scholars as complete objects, hiding that parents live in a separate table and the schedule in a JSON column. `UpdateScholarAsync` returns the pre-update snapshot, read under `UPDLOCK` in the same transaction, so the service can describe the change.
+- **Classification:** a repository for the `Scholar` aggregate, declared by the layer that uses it and implemented by the outer layer. It returns `PagedResponse` for the audit log.
 
 ### Factory
 
@@ -218,26 +248,26 @@ ASP.NET Core middleware in `Program.cs`; on the UI, a single `apiLoggerIntercept
 
 ### Patterns not present
 
-No service layer, ORM, stored procedures, authentication, response envelope, or UI store library.
+No ORM, stored procedures, authentication, response envelope, or UI store library.
 
 ## Design Principles
 
 ### Single Responsibility Principle
 
-- **Followed:** `ScholarChanges` only computes change descriptions; `SqlConnectionFactory` only selects/opens connections; `CsvExportService` only builds and downloads CSV; `SortingService` only sorts; `SchoolService` only provides school data; pure helper modules (`attendance-grid.ts`, `dashboard-data.ts`, `charts-data.ts`, `weekday-dates.ts`) contain no Angular dependencies.
-- **Not followed:** `ScholarDataAccess` (≈560 lines) handles scholars, parents, schedules, attendance, audit writes, audit reads, paging, JSON serialization, and mapping. `ScholarsController` mixes HTTP mapping with attendance business rules. `Scholar` is simultaneously the API contract, the validation model, and the persistence shape.
+- **Followed:** `ScholarService` holds the use-case policy (guards, audit) and nothing else; `AttendanceValidation` only checks attendance rules; `ScholarChanges` only computes change descriptions; `SqlConnectionFactory` only selects/opens connections; `CsvExportService` only builds and downloads CSV; `SortingService` only sorts; `SchoolService` only provides school data; pure helper modules (`attendance-grid.ts`, `dashboard-data.ts`, `charts-data.ts`, `weekday-dates.ts`) contain no Angular dependencies.
+- **Not followed:** `ScholarRepository` (≈520 lines) still handles SQL for scholars, parents, schedules, attendance, audit writes, audit reads, paging, JSON serialization, and mapping. `Scholar` is simultaneously the API contract, the validation model, and the persistence shape.
 
 ### Open/Closed Principle
 
-Adding a field or entity requires editing the model, the controller, multiple SQL strings and mappers in `ScholarDataAccess`, `ScholarChanges`, and the DDL. The design is not structured for extension without modification.
+Adding a field or entity requires editing the model, the controller, multiple SQL strings and mappers in `ScholarRepository`, `ScholarChanges`, and the DDL. The design is not structured for extension without modification.
 
 ### Liskov Substitution / Interface Segregation
 
-LSP is not meaningfully exercised. `IScholarDataAccess` is a single 12-method interface for one controller, which is proportionate.
+LSP is not meaningfully exercised. `IScholarService` (12 methods) and `IScholarRepository` (13) each have one consumer, which is proportionate.
 
 ### Dependency Inversion Principle
 
-The controller depends on `IScholarDataAccess`; the data class depends on `ISqlConnectionFactory`. Both abstractions live in the same project as their implementations.
+Followed at the project level. `ScholarService` depends on `IScholarRepository`, which BusinessLogic declares and DataAccess implements; BusinessLogic has no reference to DataAccess, SqlClient or ASP.NET Core. The controller depends on `IScholarService`. `ISqlConnectionFactory` stays inside DataAccess because it exposes `SqlConnection`.
 
 ### DRY
 
@@ -249,12 +279,12 @@ The controller depends on `IScholarDataAccess`; the data class depends on `ISqlC
 
 ### KISS / YAGNI
 
-The API is intentionally minimal: one project, one controller, inline SQL, plain model returns, static school data, JSON columns for whole-document data. The absence of auth is a stated scoping decision ("runs locally only"). These choices keep the system small.
+The API is intentionally small: one controller, one service, one repository, inline SQL, plain model returns, static school data, JSON columns for whole-document data. The absence of auth is a stated scoping decision ("runs locally only"). These choices keep the system small.
 
 ### Separation of Concerns
 
-- The API keeps HTTP out of the data layer (it returns `null`/`bool`, not status codes) — cleaner than the siblings in this respect.
-- Persistence, domain rules, and side effects are concentrated in `ScholarDataAccess`; pricing logic lives in the UI.
+- The API keeps HTTP out of BusinessLogic and DataAccess (they return `null`/`bool`, not status codes) — cleaner than the siblings in this respect.
+- Persistence is in `ScholarRepository`; the audit side effect and change detection are in `ScholarService`; pricing logic lives in the UI.
 - UI data services trigger toasts (`tap(() => notificationService.show(...))`), coupling data access to presentation feedback; `…Silently` variants opt out.
 
 ### Encapsulation
@@ -270,16 +300,17 @@ Followed; the only inheritance is from framework base types.
 ### API
 
 - Built-in container, constructor injection.
-- Registrations in `Program.cs`:
+- Registrations: `Program.cs` (the composition root) calls `AddBusinessLogic()` and `AddDataAccess()`, each defined in its own project, and binds `DatabaseOptions`:
 
-| Registration | Lifetime |
-|---|---|
-| `ISqlConnectionFactory → SqlConnectionFactory` | Singleton |
-| `IScholarDataAccess → ScholarDataAccess` | Scoped |
-| `DatabaseOptions` (options) | validated on start |
+| Registration | Defined in | Lifetime |
+|---|---|---|
+| `IScholarService → ScholarService` | `BusinessLogic/BusinessLogicDependencyInjection` | Scoped |
+| `ISqlConnectionFactory → SqlConnectionFactory` | `DataAccess/DataAccessDependencyInjection` | Singleton |
+| `IScholarRepository → ScholarRepository` | `DataAccess/DataAccessDependencyInjection` | Scoped |
+| `DatabaseOptions` (options) | `Program.cs` | validated on start |
 
-- `ScholarDataAccess` uses an explicit constructor with `ArgumentNullException` guards (the siblings use primary constructors).
-- Direct instantiation: `SqlCommand`, `SqlTransaction` (via `BeginTransactionAsync`), and a static `JsonSerializerOptions`. `ScholarChanges` is a static helper.
+- `ScholarService` and `ScholarRepository` use explicit constructors with `ArgumentNullException` guards (the siblings use primary constructors).
+- Direct instantiation: `SqlCommand`, `SqlTransaction` (via `BeginTransactionAsync`), and a static `JsonSerializerOptions`. `ScholarChanges` and `AttendanceValidation` are static helpers.
 
 ### UI
 
@@ -372,8 +403,8 @@ Plus `GET /health` (liveness only).
 UseHttpLogging → UseExceptionHandler → UseStatusCodePages → [Dev: OpenAPI + Swagger | else: HSTS]
 → Cache-Control: no-store → UseCors → UseHttpsRedirection → MapControllers
 → [ApiController] model binding + DataAnnotations validation (→ 400 ValidationProblem)
-→ ScholarsController action (id checks, cross-field rules)
-→ IScholarDataAccess → SQL
+→ ScholarsController action (id checks, AttendanceValidation → ModelState)
+→ IScholarService (guards, audit) → IScholarRepository → SQL
 ← model / NoContent / Problem(404)
 ```
 
@@ -387,7 +418,7 @@ A single `Scholar` class is used for create input, update input, and output. It 
 
 1. JSON deserialization (`HourMinuteTimeOnlyConverter` throws `JsonException` for bad times → 400).
 2. DataAnnotations on models (automatic via `[ApiController]`).
-3. Controller checks: empty GUID, route/body id mismatch, duplicate attendance dates, lunch/transport on absent days — all reported through `ModelState` / `ValidationProblem()`.
+3. Controller checks: empty GUID, route/body id mismatch, and the attendance rules from BusinessLogic's `AttendanceValidation` (duplicate dates, lunch/transport on absent days) — all reported through `ModelState` / `ValidationProblem()`.
 4. Database constraints as the last line (`CK_Scholar_Grade`, `CK_ScholarParent_NotEmpty`, `ISJSON`).
 
 ### Error handling and serialization
@@ -475,12 +506,14 @@ One pooled connection per operation via `SqlConnectionFactory`; no server-side c
 ### API
 
 - xUnit v3 (Microsoft Testing Platform), Moq, `WebApplicationFactory`.
-- **Controller unit tests:** `Controllers/ScholarsControllerTests` with a mocked `IScholarDataAccess`.
-- **In-memory HTTP tests:** `Endpoints/ScholarEndpointTests` replace only `IScholarDataAccess` and exercise URLs, methods, JSON wire format, validation, and status codes.
+- **Controller unit tests:** `Controllers/ScholarsControllerTests` with a mocked `IScholarService`.
+- **Service unit tests:** `Services/ScholarServiceTests` with a mocked `IScholarRepository` — audit entries on create/update/delete, a failed audit write is logged (event 2) and swallowed, empty ids never reach the repository.
+- **In-memory HTTP tests:** `Endpoints/ScholarEndpointTests` replace only `IScholarRepository` (the SQL layer) and exercise URLs, methods, JSON wire format, validation, and status codes through the real controller and service.
 - **Model tests:** `Models/ScholarModelValidationTests`, `ScholarValidationTests`, `WireFormatTests` (e.g., `HH:mm` converter).
-- **Data helpers:** `Data/ScholarChangesTests`, `Data/SqlConnectionFactoryTests`.
+- **Helpers:** `ScholarFunctions/ScholarChangesTests`, `DataAccess/SqlConnectionFactoryTests`.
+- **Architecture:** `Architecture/LayerDependencyTests` (NetArchTest) — `Domain_Should_Not_Reference_DataAccess`.
 - **Infrastructure:** `ErrorHandling/*`, `Configuration/StartupValidationTests`.
-- **Boundary:** `ScholarDataAccess` SQL (transactions, upserts, JSON round-trips, cascades) has no automated tests, as `ai_docs/api.md` notes.
+- **Boundary:** `ScholarRepository` SQL (transactions, upserts, JSON round-trips, cascades) has no automated tests, as `ai_docs/api.md` notes.
 
 ### UI
 
@@ -488,13 +521,48 @@ Vitest via `@angular/build:unit-test`; co-located specs for services (`HttpTesti
 
 ### Architectural impact
 
-The `IScholarDataAccess` seam makes the HTTP surface easy to test. Because audit logging and change detection live inside `ScholarDataAccess`, they are only partly testable (`ScholarChanges` is pure and tested; the audit write itself is not).
+The `IScholarService` seam makes the HTTP surface easy to test, and the `IScholarRepository` seam makes the audit policy testable without a database. Only the SQL itself remains untested.
+
+## Clean Architecture refactoring
+
+The API was split from one project into four so that inner layers no longer depend on outer ones, matching the sibling apps. Behavior is unchanged: same endpoints, status codes, messages, SQL, log event ids and audit entries.
+
+### Dependencies before and after
+
+```text
+Before                                   After
+ImaloEducationApi (one project):         Domain            (no references)
+  Controllers → Data → Models            BusinessLogic  →  Domain (+ Microsoft.Extensions.* abstractions)
+  (folders only; nothing enforced)       DataAccess     →  BusinessLogic
+                                         WebAPI         →  BusinessLogic, DataAccess (composition root only)
+```
+
+### Violations fixed
+
+| Violation | Fix |
+|---|---|
+| No layer boundaries: controllers, SQL and models shared one project, separated only by folders | Four projects (`ImaloEducation.Domain`, `.BusinessLogic`, `.DataAccess`, `.WebAPI`); project references enforce the direction |
+| The controller depended directly on the SQL class's interface (`IScholarDataAccess`), declared next to its implementation | Controller depends on `IScholarService` (BusinessLogic); the persistence abstraction `IScholarRepository` is declared in `BusinessLogic/Abstractions` and implemented by `ScholarRepository` in DataAccess (Dependency Inversion) |
+| Audit policy (write after commit, best-effort, log on failure) and change detection (`ScholarChanges`) lived inside the SQL class | Moved to `ScholarService` and `BusinessLogic/ScholarFunctions`; the repository exposes data-only `AddAuditEntryAsync`, and `UpdateScholarAsync` returns the pre-update snapshot it reads under `UPDLOCK` |
+| Attendance cross-field rules lived in the controller | Moved to `BusinessLogic/Validations/AttendanceValidation`; the controller only copies the returned messages into `ModelState` |
+| Empty-id guards lived in the SQL class | Moved to `ScholarService` |
+| `Program.cs` registered the SQL implementations directly | `AddBusinessLogic()` and `AddDataAccess()` in their own projects; `Program.cs` calls both |
+| `DatabaseOptions` and `SqlConnectionFactory` sat in the web project | Moved to `DataAccess/Configuration` and `DataAccess/DBConnection` |
+
+Tests were retargeted: controller tests mock `IScholarService`, endpoint and error-response tests replace only `IScholarRepository`, and `ScholarServiceTests` (audit policy, guards) and `LayerDependencyTests` were added. `build.sh`, `run.sh` and `.vscode` point at `ImaloEducation.slnx` and `ImaloEducation.WebAPI`.
+
+### Remaining compromises
+
+- **WebAPI references DataAccess.** Something has to compose the application; a separate composition-root project would add a project without adding protection. The reference is used only by `Program.cs` (`AddDataAccess()` and `DatabaseOptions`); the controller imports no DataAccess namespace.
+- **Domain holds transport-shaped types.** `Scholar` carries DataAnnotations and `PickupSchedule` a JSON converter, so the Domain models are also the wire contract. Splitting request/response DTOs from domain models would touch every layer and the UI contract.
+- **Many service methods are pass-throughs.** Only create, update and delete add policy; the rest forward to the repository after a guard. They exist so the controller never sees the repository.
+- The project is still named `DataAccess` (the "Db" layer in Clean Architecture terms), as in the sibling apps.
 
 ## Architectural Decisions
 
 | Decision | What it solves | Trade-offs | Rationale evident? |
 |---|---|---|---|
-| Single API project, controller → data access, no service layer | Minimal ceremony for a small domain | Rules spread across controller, data class, and model attributes | Stated in `ai_docs` as deliberate, without further reasoning |
+| Four API projects (Domain ← BusinessLogic ← DataAccess; WebAPI composes) | Compile-time layer boundaries, dependency inversion, use-case logic testable without SQL; same shape as the sibling apps | More projects and an extra service hop for a small domain; many service methods are pass-throughs | See [Clean Architecture refactoring](#clean-architecture-refactoring) |
 | Inline parameterized SQL instead of stored procedures | SQL lives next to the mapping code; no proc deployment | SQL is untested; schema knowledge spread across C# strings | Stated as deliberate |
 | JSON document columns for schedule and attendance | Whole-document reads/writes; no child tables | No SQL-level querying/constraints on items; full rewrite per save; all attendance must be shipped to the UI for aggregation | Not stated beyond describing it |
 | Static school reference data in the UI | No `School` table or endpoints | Prices can differ between clients/deploys; `SchoolId` is unchecked by the DB; prices are snapshotted into attendance by the client | Stated as deliberate ("don't add a School table without asking") |
@@ -506,21 +574,21 @@ The `IScholarDataAccess` seam makes the HTTP surface easy to test. Because audit
 
 ## Strengths
 
-- **Small and direct.** One controller and one data class cover the API; there is little indirection to learn.
-- **HTTP stays out of the data layer.** `ScholarDataAccess` returns domain results (`null`, `bool`, models), and the controller decides status codes — a cleaner boundary than the sibling apps' HTTP-coded results.
+- **Small, with enforced boundaries.** One controller, one service and one repository cover the API, and project references stop inner layers from depending on outer ones.
+- **HTTP stays out of the inner layers.** `ScholarService` and `ScholarRepository` return domain results (`null`, `bool`, models), and the controller decides status codes — a cleaner boundary than the sibling apps' HTTP-coded results.
 - **Idiomatic REST surface.** Resource-oriented routes, correct verbs, `201 Created` with `Location`, `204 No Content`, Problem Details for every error.
 - **Declarative, layered validation.** DataAnnotations, a strict JSON converter, explicit cross-field rules, and DB check constraints back each other up.
 - **Careful concurrency on writes.** Transactions for multi-table writes, `UPDLOCK` for the audit "before" image, and `UPDLOCK, SERIALIZABLE` for the attendance upsert.
-- **Cohesive aggregate API.** `IScholarDataAccess` hides the parent table and JSON columns behind a single `Scholar` shape.
-- **Testable seams.** In-memory endpoint tests with only data access mocked; pure UI helpers separated from components and unit-tested.
+- **Cohesive aggregate API.** `IScholarRepository` hides the parent table and JSON columns behind a single `Scholar` shape.
+- **Testable seams.** In-memory endpoint tests with only the repository mocked; service tests for the audit policy; pure UI helpers separated from components and unit-tested.
 
 ## Technical Debt / Design Concerns
 
 1. **No access control on a destructive, personal-data API.** All endpoints, including `DELETE /api/scholars/audit-log/all` and scholar deletion, are anonymous, and the data includes children's details and parents' phone numbers. The safety of this rests entirely on the "local only" deployment assumption, which nothing in the code enforces (CORS does not restrict non-browser clients).
 
-2. **`ScholarDataAccess` is a god class.** It owns SQL for five tables, JSON serialization, transactions, mapping, audit writing, and audit paging (~560 lines). Domain behavior (audit and change detection) is hidden inside persistence code.
+2. **`ScholarRepository` is still large.** It owns SQL for five tables, JSON serialization, transactions, mapping, and audit paging (~520 lines). The audit policy and change detection have moved out to `ScholarService`, but the SQL is not split per table or concern.
 
-3. **Business rules have no clear home.** Attendance rules live in the controller, scholar rules in model attributes, audit policy in the data layer, and pricing in the UI. There is no service layer where use-case logic naturally accumulates.
+3. **Business rules are only partly centralized.** Attendance rules and audit policy now live in BusinessLogic, but scholar field rules are still model attributes in Domain and pricing is in the UI.
 
 4. **Pricing is trusted from the client.** Lunch and transport costs are computed in the browser from `schools.json` and accepted by the API as long as they fall within 0–9999.99. The API has no knowledge of schools or prices, so revenue figures depend on whichever client wrote them.
 
@@ -538,8 +606,8 @@ The `IScholarDataAccess` seam makes the HTTP surface easy to test. Because audit
 
 ## Summary
 
-- **Architecture:** three-tier client–server — Angular 22 SPA with mostly per-request SSR, a single-project ASP.NET Core Web API with a two-layer controller → data-access design, and SQL Server accessed through parameterized inline SQL with JSON document columns. No authentication.
-- **Major patterns:** repository-like aggregate data access (`IScholarDataAccess`), connection factory, document storage in JSON columns, declarative DataAnnotations validation with custom converters, options validation, middleware pipeline, signal-based reactive UI with `rxResource`/`forkJoin`, cached shared observable for static reference data, table-driven sorting.
-- **Major principles:** KISS/YAGNI (deliberately minimal API), dependency inversion at the controller/data boundary, HTTP-free data layer, pure UI helper modules, composition over inheritance.
+- **Architecture:** three-tier client–server — Angular 22 SPA with mostly per-request SSR, an ASP.NET Core Web API in four projects along Clean Architecture lines (Domain ← BusinessLogic ← DataAccess, WebAPI as composition root), and SQL Server accessed through parameterized inline SQL with JSON document columns. No authentication.
+- **Major patterns:** layered architecture with compile-time boundaries, service layer, repository with dependency inversion (`IScholarRepository`), connection factory, document storage in JSON columns, declarative DataAnnotations validation with custom converters, options validation, middleware pipeline, signal-based reactive UI with `rxResource`/`forkJoin`, cached shared observable for static reference data, table-driven sorting.
+- **Major principles:** dependency inversion across projects (BusinessLogic declares, DataAccess implements), KISS (one controller/service/repository), HTTP-free inner layers, pure UI helper modules, composition over inheritance.
 - **Strengths:** small and direct, idiomatic REST with Problem Details, layered validation, careful transactional writes, cohesive aggregate API, good test seams for the HTTP surface.
-- **Most significant concerns:** no access control on destructive endpoints with personal data; a god-class data layer that also holds domain behavior; business rules (including pricing) scattered across controller, model, data class, and UI; unpaged whole-dataset reads and full-document attendance writes; a single multi-purpose `Scholar` model; untested SQL.
+- **Most significant concerns:** no access control on destructive endpoints with personal data; a large single repository class; pricing and field rules outside BusinessLogic; unpaged whole-dataset reads and full-document attendance writes; a single multi-purpose `Scholar` model; untested SQL.

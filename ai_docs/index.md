@@ -9,7 +9,7 @@ A learning full-stack CRUD app for an afterschool program: it tracks scholars (s
 | Layer | Folder | Tech |
 |---|---|---|
 | UI | `src/UI/` | Angular 22 (zoneless, signals, Signal Forms, SSR), custom CSS |
-| API | `src/API/ImaloEducationApi/ImaloEducationApi/` | .NET 10 ASP.NET Core Web API, one project + tests |
+| API | `src/API/ImaloEducationApi/` | .NET 10 ASP.NET Core Web API: Domain, BusinessLogic, DataAccess, WebAPI + tests |
 | DB | `src/DB/ImaloEducation/` | SQL Server, SSDT `.sqlproj` deployed with `sqlpackage` |
 
 - `build.sh` — build and test everything; starts nothing.
@@ -25,9 +25,11 @@ A learning full-stack CRUD app for an afterschool program: it tracks scholars (s
 Browser ──► Angular dev server :4203 (SSR via Express in Node)
               │  JSON over HTTPS, no auth
               ▼
-           ASP.NET Core API :7244 (one project)
+           ASP.NET Core API :7244 (WebAPI → BusinessLogic ← DataAccess; Domain models)
              ScholarsController (DataAnnotations + ModelState for validation)
-               → ScholarDataAccess (parameterized inline SQL, ADO.NET, typed SqlParameters)
+               → ScholarService (guards, audit trail; BusinessLogic)
+                 → IScholarRepository ⇐ ScholarRepository (DataAccess: parameterized inline SQL,
+                   ADO.NET, typed SqlParameters)
               │  no stored procedures, no ORM
               ▼
            SQL Server (Azure SQL Edge container "sqlserver" :1433, database ImaloEducation)
@@ -41,8 +43,8 @@ Browser ──► Angular dev server :4203 (SSR via Express in Node)
 ### A request end to end (saving a month of attendance)
 
 1. `attendance-per-scholar` saves the month edited in its Signal Form → `AttendanceService.saveAttendance()` → `POST api/scholars/{scholarId}/attendance` with the scholar's whole attendance list.
-2. `[ApiController]` validation runs, then the controller adds the cross-field rules (no duplicate dates; lunch/transport only on a present day) → `400` on failure.
-3. `ScholarDataAccess.SaveAttendanceAsync` updates or inserts the row in one `UPDLOCK, SERIALIZABLE` batch; an unknown scholar returns `404`.
+2. `[ApiController]` validation runs, then the controller adds the cross-field rules from `AttendanceValidation` (no duplicate dates; lunch/transport only on a present day) → `400` on failure.
+3. `ScholarService.SaveAttendanceAsync` → `ScholarRepository.SaveAttendanceAsync` updates or inserts the row in one `UPDLOCK, SERIALIZABLE` batch; an unknown scholar returns `404`.
 4. The API answers `204 No Content` and the UI toasts. Attendance saves are not audit-logged; only scholar create, edit and delete are.
 
 ### Features
@@ -86,5 +88,5 @@ Browser ──► Angular dev server :4203 (SSR via Express in Node)
 ## Gotchas / conventions
 
 - **No authentication, on purpose.** The app runs locally only. Don't add auth without asking.
-- The API's shape differs from the sibling apps on purpose: one project, inline SQL, and no `ResponseModel` envelope. What is shared is the conventions: names, data types, Problem Details, logging, the database connection, and a set of identical UI files.
+- The API's shape differs from the sibling apps on purpose: inline SQL and no `ResponseModel` envelope. What is shared is the conventions: names, data types, Problem Details, logging, the database connection, and a set of identical UI files.
 - The sibling apps are customer-management-system and employee-management-system. Ports: customer 4204/7145, employee 4205/7146, Imalo 4203/7244; all three share the `sqlserver` container.
