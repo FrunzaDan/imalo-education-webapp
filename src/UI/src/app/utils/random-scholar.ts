@@ -210,10 +210,16 @@ function monthsInRange(
 // the odd child a year ahead or behind.
 function randomAgeAndGrade(today: Date): { birthDate: string; grade: number } {
   const age = randomBetween(6.5, 11);
-  const birth = new Date(today.getTime() - age * 365.25 * 86_400_000);
+  const birthDate = toIsoDate(
+    new Date(today.getTime() - age * 365.25 * 86_400_000),
+  );
+  // Grade from the stored (day-rounded) birth date, not the exact age, so a
+  // child born near a birthday is not placed by an age it does not show.
+  const storedAge =
+    (today.getTime() - new Date(birthDate).getTime()) / (365.25 * 86_400_000);
   const drift = Math.random() < 0.15 ? pick([-1, 1]) : 0;
-  const grade = Math.min(4, Math.max(1, Math.floor(age) - 6 + drift));
-  return { birthDate: toIsoDate(birth), grade };
+  const grade = Math.min(4, Math.max(1, Math.floor(storedAge) - 6 + drift));
+  return { birthDate, grade };
 }
 
 // Most days at the child's usual time; some children vary more than others.
