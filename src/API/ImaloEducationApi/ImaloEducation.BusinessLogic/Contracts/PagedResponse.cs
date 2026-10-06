@@ -1,4 +1,4 @@
-namespace ImaloEducation.Domain.Models;
+namespace ImaloEducation.BusinessLogic.Contracts;
 
 public sealed class PagedResponse<T>(IReadOnlyList<T> items, int totalItems, int pageNumber, int pageSize)
 {

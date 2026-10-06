@@ -1,24 +1,32 @@
 using ImaloEducation.BusinessLogic.Abstractions;
-using ImaloEducation.BusinessLogic.Services.Implementation;
+using ImaloEducation.BusinessLogic.Contracts;
+using ImaloEducation.BusinessLogic.Features.AuditLog;
+using ImaloEducation.BusinessLogic.Features.Scholars;
 using ImaloEducation.Domain.Models;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Testing;
 using Moq;
 
-namespace ImaloEducation.Tests.Services;
+namespace ImaloEducation.Tests.Features.Scholars;
 
 // The audit trail and argument guards that sit between the controller and the SQL repository.
-public class ScholarServiceTests
+public class ScholarHandlersTests
 {
     private readonly Mock<IScholarRepository> _repository = new();
-    private readonly FakeLogger<ScholarService> _logger = new();
-    private readonly ScholarService _service;
+    private readonly FakeLogger<ScholarAuditLogger> _logger = new();
+    private readonly ScholarAuditLogger _auditLogger;
 
-    public ScholarServiceTests() => _service = new ScholarService(_repository.Object, _logger);
+    public ScholarHandlersTests() => _auditLogger = new ScholarAuditLogger(_repository.Object, _logger);
+
+    private CreateScholarHandler CreateHandler => new(_repository.Object, _auditLogger);
+
+    private UpdateScholarHandler UpdateHandler => new(_repository.Object, _auditLogger);
+
+    private DeleteScholarHandler DeleteHandler => new(_repository.Object, _auditLogger);
 
     private static CancellationToken Token => TestContext.Current.CancellationToken;
 
-    private static Scholar Ana(string firstName = "Ana") => new()
+    private static ScholarRequest Ana(string firstName = "Ana") => new()
     {
         ScholarId = Guid.NewGuid(),
         FirstName = firstName,
@@ -37,10 +45,10 @@ public class ScholarServiceTests
     [Fact]
     public async Task CreateScholar_AuditsTheCreation_WithTheNewId()
     {
-        var created = Ana();
+        var created = Ana().ToScholar();
         _repository.Setup(r => r.CreateScholarAsync(It.IsAny<Scholar>(), Token)).ReturnsAsync(created);
 
-        var result = await _service.CreateScholarAsync(Ana(), Token);
+        var result = await CreateHandler.HandleAsync(Ana(), Token);
 
         Assert.Same(created, result);
         VerifyAudited(created.ScholarId, AuditAction.Created, null);
@@ -49,14 +57,16 @@ public class ScholarServiceTests
     [Fact]
     public async Task UpdateScholar_AuditsTheChangedFields()
     {
-        var before = Ana();
+        var before = Ana().ToScholar();
         var after = Ana(firstName: "Ioana");
         after.ScholarId = before.ScholarId;
-        _repository.Setup(r => r.UpdateScholarAsync(after, Token)).ReturnsAsync(before);
+        _repository.Setup(r => r.UpdateScholarAsync(It.Is<Scholar>(s => s.ScholarId == after.ScholarId), Token))
+            .ReturnsAsync(before);
 
-        var result = await _service.UpdateScholarAsync(after, Token);
+        var result = await UpdateHandler.HandleAsync(after, Token);
 
-        Assert.Same(after, result);
+        Assert.NotNull(result);
+        Assert.Equal("Ioana", result.FirstName);
         VerifyAudited(after.ScholarId, AuditAction.Edited, "Updated: first name");
     }
 
@@ -65,7 +75,7 @@ public class ScholarServiceTests
     {
         _repository.Setup(r => r.UpdateScholarAsync(It.IsAny<Scholar>(), Token)).ReturnsAsync((Scholar?)null);
 
-        Assert.Null(await _service.UpdateScholarAsync(Ana(), Token));
+        Assert.Null(await UpdateHandler.HandleAsync(Ana(), Token));
         VerifyNotAudited();
     }
 
@@ -77,7 +87,7 @@ public class ScholarServiceTests
         var scholarId = Guid.NewGuid();
         _repository.Setup(r => r.DeleteScholarAsync(scholarId, Token)).ReturnsAsync(deleted);
 
-        Assert.Equal(deleted, await _service.DeleteScholarAsync(scholarId, Token));
+        Assert.Equal(deleted, await DeleteHandler.HandleAsync(scholarId, Token));
 
         if (deleted) VerifyAudited(scholarId, AuditAction.Deleted, null);
         else VerifyNotAudited();
@@ -91,7 +101,7 @@ public class ScholarServiceTests
         _repository.Setup(r => r.AddAuditEntryAsync(scholarId, AuditAction.Deleted, null, CancellationToken.None))
             .ThrowsAsync(new InvalidOperationException("audit table locked"));
 
-        Assert.True(await _service.DeleteScholarAsync(scholarId, Token));
+        Assert.True(await DeleteHandler.HandleAsync(scholarId, Token));
 
         var record = Assert.Single(_logger.Collector.GetSnapshot());
         Assert.Equal(LogLevel.Error, record.Level);
@@ -102,10 +112,11 @@ public class ScholarServiceTests
     [Fact]
     public async Task EmptyScholarId_IsRejectedBeforeReachingTheRepository()
     {
-        await Assert.ThrowsAsync<ArgumentException>(() => _service.GetScholarAsync(Guid.Empty, Token));
-        await Assert.ThrowsAsync<ArgumentException>(() => _service.DeleteScholarAsync(Guid.Empty, Token));
         await Assert.ThrowsAsync<ArgumentException>(() =>
-            _service.UpdateScholarAsync(new Scholar { ScholarId = Guid.Empty }, Token));
+            new GetScholarHandler(_repository.Object).HandleAsync(Guid.Empty, Token));
+        await Assert.ThrowsAsync<ArgumentException>(() => DeleteHandler.HandleAsync(Guid.Empty, Token));
+        await Assert.ThrowsAsync<ArgumentException>(() =>
+            UpdateHandler.HandleAsync(new ScholarRequest { ScholarId = Guid.Empty }, Token));
 
         Assert.Empty(_repository.Invocations);
     }

@@ -19,7 +19,7 @@ Imalo Education Webapp is a full-stack app for the day-to-day admin of an afters
 ## Tech Stack
 
 - **Frontend:** Angular 22.2 (standalone components, signals, zoneless), SSR via `@angular/ssr` + Express, TypeScript
-- **Backend:** ASP.NET Core Web API on .NET 10, split into Domain ← BusinessLogic ← DataAccess projects plus a WebAPI host: one controller (`ScholarsController`), a service (`ScholarService`) and a SQL repository (`ScholarRepository`)
+- **Backend:** ASP.NET Core Web API on .NET 10, split into Domain ← BusinessLogic ← DataAccess projects plus a WebAPI host: one controller (`ScholarsController`), one handler per action organized by feature (`BusinessLogic/Features`) and a SQL repository (`ScholarRepository`)
 - **Database / Storage:** SQL Server (Azure SQL Edge in Docker), ADO.NET with parameterized inline SQL (no ORM, no stored procedures), SSDT project deployed with `sqlpackage`
 - **Tooling & Other:** OpenAPI + Swagger UI, xUnit v3 + Moq (Microsoft Testing Platform), Vitest + jsdom, ESLint (angular-eslint), Prettier, .NET analyzers (latest-recommended) + dotnet format, Postman collection
 

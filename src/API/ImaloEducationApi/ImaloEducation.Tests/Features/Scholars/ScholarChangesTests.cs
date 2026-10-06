@@ -1,7 +1,7 @@
-using ImaloEducation.BusinessLogic.ScholarFunctions;
+using ImaloEducation.BusinessLogic.Features.Scholars;
 using ImaloEducation.Domain.Models;
 
-namespace ImaloEducation.Tests.ScholarFunctions;
+namespace ImaloEducation.Tests.Features.Scholars;
 
 public class ScholarChangesTests
 {

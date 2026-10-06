@@ -1,12 +1,12 @@
 using System.ComponentModel.DataAnnotations;
-using ImaloEducation.Domain.Models;
+using ImaloEducation.BusinessLogic.Contracts;
 
-namespace ImaloEducation.Tests.Models;
+namespace ImaloEducation.Tests.Contracts;
 
-public class ScholarValidationTests
+public class ScholarRequestRuleTests
 {
     private static ValidationResult? Validate(DateOnly date) =>
-        Scholar.ValidateBirthDate(date, new ValidationContext(new object()));
+        ScholarRequest.ValidateBirthDate(date, new ValidationContext(new object()));
 
     [Fact]
     public void ValidateBirthDate_AcceptsPastDate()
@@ -24,7 +24,7 @@ public class ScholarValidationTests
     }
 
     private static ValidationResult? ValidatePhone(string? phone) =>
-        Scholar.ValidatePhoneNumber(phone, new ValidationContext(new object()));
+        ScholarRequest.ValidatePhoneNumber(phone, new ValidationContext(new object()));
 
     [Theory]
     [InlineData(null)]

@@ -1,12 +1,12 @@
 using System.Globalization;
-using ImaloEducation.Domain.Models;
+using ImaloEducation.BusinessLogic.Contracts;
 
 namespace ImaloEducation.BusinessLogic.Validations;
 
 public static class AttendanceValidation
 {
     /// <summary>Returns the rule violations in an attendance sheet; empty when it is valid.</summary>
-    public static IReadOnlyList<string> Validate(IReadOnlyCollection<AttendanceRecord> attendance)
+    public static IReadOnlyList<string> Validate(IReadOnlyCollection<AttendanceRecordRequest> attendance)
     {
         ArgumentNullException.ThrowIfNull(attendance);
 

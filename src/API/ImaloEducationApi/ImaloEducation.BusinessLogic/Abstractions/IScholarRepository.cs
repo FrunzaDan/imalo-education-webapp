@@ -1,3 +1,4 @@
+using ImaloEducation.BusinessLogic.Contracts;
 using ImaloEducation.Domain.Models;
 
 namespace ImaloEducation.BusinessLogic.Abstractions;

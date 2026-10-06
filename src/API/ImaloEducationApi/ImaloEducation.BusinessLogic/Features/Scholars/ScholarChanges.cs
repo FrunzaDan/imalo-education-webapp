@@ -1,6 +1,6 @@
 using ImaloEducation.Domain.Models;
 
-namespace ImaloEducation.BusinessLogic.ScholarFunctions;
+namespace ImaloEducation.BusinessLogic.Features.Scholars;
 
 public static class ScholarChanges
 {

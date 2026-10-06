@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using System.Text.Json;
+using ImaloEducation.BusinessLogic.Contracts;
 using ImaloEducation.Domain.Models;
 
 namespace ImaloEducation.Tests.Models;
@@ -86,7 +87,7 @@ public class WireFormatTests
     public void Scholar_MissingGender_IsNotDeclared()
     {
         Assert.Equal(Gender.NotDeclared,
-            JsonSerializer.Deserialize<Scholar>("""{"firstName":"Ana"}""", Web)!.Gender);
+            JsonSerializer.Deserialize<ScholarRequest>("""{"firstName":"Ana"}""", Web)!.Gender);
     }
 
     [Fact]
@@ -100,9 +101,9 @@ public class WireFormatTests
     [Theory]
     [InlineData(-1)]
     [InlineData(10000)]
-    public void AttendanceRecord_CostOutOfRange_FailsValidation(decimal cost)
+    public void AttendanceRecordRequest_CostOutOfRange_FailsValidation(decimal cost)
     {
-        var record = new AttendanceRecord { LunchCost = cost, TransportCost = cost };
+        var record = new AttendanceRecordRequest { LunchCost = cost, TransportCost = cost };
         var results = new List<ValidationResult>();
 
         Assert.False(Validator.TryValidateObject(record, new ValidationContext(record), results, true));

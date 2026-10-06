@@ -8,8 +8,8 @@ It is split into four projects with references pointing inward: Domain ← Busin
 
 | Project | Holds | References |
 |---|---|---|
-| `ImaloEducation.Domain` | Models | none |
-| `ImaloEducation.BusinessLogic` | `IScholarService`/`ScholarService`, the `IScholarRepository` abstraction, `ScholarChanges`, `AttendanceValidation`, `AddBusinessLogic()` | Domain |
+| `ImaloEducation.Domain` | Plain models (no validation attributes) | none |
+| `ImaloEducation.BusinessLogic` | Handlers in `Features/`, request contracts in `Contracts/`, the `IScholarRepository` abstraction, `ScholarChanges`, `AttendanceValidation`, `AddBusinessLogic()` | Domain |
 | `ImaloEducation.DataAccess` | `ScholarRepository` (all SQL), `SqlConnectionFactory`, `DatabaseOptions`, `AddDataAccess()` | BusinessLogic only |
 | `ImaloEducation.WebAPI` | `Program.cs`, controller, error handling, routing | BusinessLogic, DataAccess |
 
@@ -17,24 +17,27 @@ It is split into four projects with references pointing inward: Domain ← Busin
 
 - `ImaloEducation.WebAPI/`:
   - `Program.cs` — options, `AddBusinessLogic()` + `AddDataAccess()`, pipeline, CORS, OpenAPI, logging, `no-store` header.
-  - `Controllers/ScholarsController.cs` — `ScholarsController`, route `api/scholars`; depends on `IScholarService`.
+  - `Controllers/ScholarsController.cs` — `ScholarsController`, route `api/scholars`; each action takes its handler with `[FromServices]`.
   - `ErrorHandling/GlobalExceptionHandler.cs`.
   - `Routing/KebabCaseParameterTransformer.cs` — kebab-case `[controller]` routes, as in the sibling apps.
   - `appsettings.json` — `ConnectionStrings`, `Cors:AllowedOrigins` (UI on port 4203), logging.
 - `ImaloEducation.BusinessLogic/`:
-  - `Services/Implementation/ScholarService.cs` (implements `IScholarService`) — empty-id guards and the best-effort audit trail.
+  - `Features/` — one `<Action>Handler` per endpoint, each with a single `HandleAsync`:
+    - `Scholars/` — create, get list, get, update, delete; plus `ScholarChanges`;
+    - `Attendance/` — save, get, get all, delete;
+    - `AuditLog/` — `IScholarAuditLogger`/`ScholarAuditLogger` (the best-effort audit write) and the get, get-all and delete-all handlers.
+  - `Contracts/` — `ScholarRequest` and `AttendanceRecordRequest` (the request bodies, with the DataAnnotations; `ToScholar()`/`ToAttendanceRecord()` map them to Domain models), `PagedResponse`.
   - `Abstractions/IScholarRepository.cs` — the persistence port DataAccess implements.
-  - `ScholarFunctions/ScholarChanges.cs`, `Validations/AttendanceValidation.cs`.
+  - `Validations/AttendanceValidation.cs`, `Validations/ScholarIdGuard.cs` (empty-id guard).
 - `ImaloEducation.DataAccess/`:
   - `Repositories/ScholarRepository.cs` (implements `IScholarRepository`) — all SQL.
   - `DBConnection/SqlConnectionFactory.cs` — picks the database; see below.
   - `Configuration/DatabaseOptions.cs`.
 - `ImaloEducation.Domain/Models/`:
-  - `Scholar` (with its validation attributes), `Gender`;
+  - `Scholar` (the response shape), `Gender`;
   - `PickupSchedule` (with `HourMinuteTimeOnlyConverter`);
   - `AttendanceRecord`, `ScholarAttendance`;
-  - `AuditLogEntry` and `GlobalAuditLogEntry` (both in `AuditLogEntry.cs`), `AuditAction`;
-  - `PagedResponse`.
+  - `AuditLogEntry` and `GlobalAuditLogEntry` (both in `AuditLogEntry.cs`), `AuditAction`.
 - `src/API/ImaloEducationApi/ImaloEducation.Tests/` — xUnit v3 tests.
 
 ## How it works
@@ -81,17 +84,17 @@ It is split into four projects with references pointing inward: Domain ← Busin
 - **Create/update:** write the scholar, schedule and parents in one `SqlTransaction`. Disposing an uncommitted transaction rolls it back.
 - **Parents:** there is at most one mother and one father. A role row is written only if one of its fields is set, and deleted once all its fields are blank.
 - **Attendance save:** one batch using `UPDLOCK, SERIALIZABLE`, which updates the row or inserts it. It is race-free, and an unknown scholar returns `404`.
-- **Update:** `ScholarRepository.UpdateScholarAsync` reads the current row under `UPDLOCK` in the same transaction and returns it, so `ScholarService` can describe what changed.
+- **Update:** `ScholarRepository.UpdateScholarAsync` reads the current row under `UPDLOCK` in the same transaction and returns it, so `UpdateScholarHandler` can describe what changed.
 - **Audit log:**
-  - `ScholarService` writes it through `IScholarRepository.AddAuditEntryAsync` after the change commits, on its own connection, not cancelled with the request, and best-effort (a failure is only logged).
+  - The create, update and delete handlers write it through `IScholarAuditLogger` → `IScholarRepository.AddAuditEntryAsync` after the change commits, on its own connection, not cancelled with the request, and best-effort (a failure is only logged).
   - For `Edited` entries, `ScholarChanges.Describe` lists the changed fields.
 - **JSON columns:** use one shared `JsonSerializerOptions`.
 - **SQL parameters:** every `SqlParameter` has an explicit `SqlDbType` and size. `AddWithValue` is never used.
-- **Naming** (as in the other two apps): every service and repository method ends in `Async`, and is named after the controller action it backs (`SaveAttendanceAsync`, `GetScholarAuditLogAsync`). Collections are returned as `IReadOnlyList<T>`.
+- **Naming** (as in the other two apps): handlers are named `<Action>Handler` after the controller action they back (`SaveAttendanceHandler`, `GetScholarAuditLogHandler`) and expose `HandleAsync`; repository methods end in `Async` and carry the action's name (`SaveAttendanceAsync`). Register new handlers in `BusinessLogicDependencyInjection`. Collections are returned as `IReadOnlyList<T>`.
 
 ### Validation and types
 
-- **DataAnnotations and `[ApiController]`** return `400` `ValidationProblemDetails` before the action runs.
+- **DataAnnotations** on `ScholarRequest` and `AttendanceRecordRequest`, checked by `[ApiController]`, return `400` `ValidationProblemDetails` before the action runs.
 - **Rules across fields:** `AttendanceValidation.Validate` (BusinessLogic) returns the attendance rule violations; the controller adds them, and id mismatches, with `ModelState.AddModelError`.
 - **`PickupSchedule`:**
   - it only accepts the five weekday keys;
@@ -109,7 +112,7 @@ It is split into four projects with references pointing inward: Domain ← Busin
 - **`404`:** `Problem(statusCode: 404, detail: …)`.
 - **`404`/`405`/`415` from routing:** `UseStatusCodePages`.
 - **`500`:** anything thrown, handled by `GlobalExceptionHandler`. It is logged once, and `detail` is included in Development only. If the client has already aborted the request (a cancelled navigation or a superseded search), the handler logs at Debug and ends with `499` instead.
-- There's no try/catch in the controller, service or repository. The one exception is the best-effort audit write in `ScholarService`.
+- There's no try/catch in the controller, handlers or repository. The one exception is the best-effort audit write in `ScholarAuditLogger`.
 
 ### Logging
 
@@ -124,14 +127,13 @@ It is split into four projects with references pointing inward: Domain ← Busin
 
 ### Tests
 
-- `Models/`:
-  - validation attributes (`ScholarModelValidationTests`, `ScholarValidationTests`);
-  - `WireFormatTests`, which pin the JSON shapes.
-- `ScholarFunctions/ScholarChangesTests`.
+- `Contracts/` — the request validation attributes (`ScholarRequestValidationTests`, `ScholarRequestRuleTests`).
+- `Models/WireFormatTests`, which pin the JSON shapes.
+- `Features/Scholars/ScholarChangesTests`.
 - `DataAccess/SqlConnectionFactoryTests`, with a faked probe.
-- `Services/ScholarServiceTests` — audit entries and empty-id guards, against a Moq `IScholarRepository`.
-- `Architecture/LayerDependencyTests` — NetArchTest: Domain must not depend on DataAccess.
-- `Controllers/ScholarsControllerTests` — against a Moq `IScholarService`.
+- `Features/Scholars/ScholarHandlersTests` — audit entries and empty-id guards, against a Moq `IScholarRepository`.
+- `Architecture/LayerDependencyTests` — NetArchTest: Domain references no other layer, ASP.NET Core or SqlClient; BusinessLogic references neither DataAccess, WebAPI, ASP.NET Core nor SqlClient; DataAccess references neither WebAPI nor ASP.NET Core; the controller references neither DataAccess nor SqlClient.
+- `Controllers/ScholarsControllerTests` — real handlers over a Moq `IScholarRepository`.
 - In-memory pipeline tests with `WebApplicationFactory`:
   - `ErrorHandling/ErrorResponseTests` and `GlobalExceptionHandlerTests`;
   - `Configuration/StartupValidationTests`;

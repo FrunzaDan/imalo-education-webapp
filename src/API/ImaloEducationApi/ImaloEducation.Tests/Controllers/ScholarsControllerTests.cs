@@ -1,4 +1,8 @@
-using ImaloEducation.BusinessLogic.Services;
+using ImaloEducation.BusinessLogic.Abstractions;
+using ImaloEducation.BusinessLogic.Contracts;
+using ImaloEducation.BusinessLogic.Features.Attendance;
+using ImaloEducation.BusinessLogic.Features.AuditLog;
+using ImaloEducation.BusinessLogic.Features.Scholars;
 using ImaloEducation.Domain.Models;
 using ImaloEducation.WebAPI.Controllers;
 using Microsoft.AspNetCore.Http;
@@ -13,7 +17,12 @@ public class ScholarsControllerTests
     private static readonly IServiceProvider Services =
         new ServiceCollection().AddLogging().AddControllers().Services.BuildServiceProvider();
 
-    private static Scholar SampleScholar(Guid? id = null) => new()
+    // The handlers' audit writes are covered by ScholarHandlersTests.
+    private static readonly IScholarAuditLogger NoAudit = Mock.Of<IScholarAuditLogger>();
+
+    private static CancellationToken Token => TestContext.Current.CancellationToken;
+
+    private static ScholarRequest SampleScholar(Guid? id = null) => new()
     {
         ScholarId = id ?? Guid.NewGuid(),
         FirstName = "Ana",
@@ -21,17 +30,17 @@ public class ScholarsControllerTests
         BirthDate = DateOnly.FromDateTime(DateTime.UtcNow).AddYears(-8),
     };
 
-    private static (ScholarsController controller, Mock<IScholarService> service) MakeController()
+    private static (ScholarsController controller, Mock<IScholarRepository> repository) MakeController()
     {
-        var service = new Mock<IScholarService>();
-        var controller = new ScholarsController(service.Object)
+        var repository = new Mock<IScholarRepository>();
+        var controller = new ScholarsController
         {
             ControllerContext = new ControllerContext
             {
                 HttpContext = new DefaultHttpContext { RequestServices = Services },
             },
         };
-        return (controller, service);
+        return (controller, repository);
     }
 
     private static ValidationProblemDetails AssertValidationProblem(IActionResult? result)
@@ -53,12 +62,13 @@ public class ScholarsControllerTests
     [Fact]
     public async Task CreateScholar_Success_ReturnsCreatedAtActionWithScholar()
     {
-        var (controller, service) = MakeController();
-        var created = SampleScholar();
-        service.Setup(d => d.CreateScholarAsync(It.IsAny<Scholar>(), It.IsAny<CancellationToken>()))
+        var (controller, repository) = MakeController();
+        var created = SampleScholar().ToScholar();
+        repository.Setup(d => d.CreateScholarAsync(It.IsAny<Scholar>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(created);
 
-        var result = await controller.CreateScholar(SampleScholar(), TestContext.Current.CancellationToken);
+        var result = await controller.CreateScholar(SampleScholar(),
+            new CreateScholarHandler(repository.Object, NoAudit), Token);
 
         var createdAt = Assert.IsType<CreatedAtActionResult>(result.Result);
         Assert.Equal(nameof(ScholarsController.GetScholar), createdAt.ActionName);
@@ -68,22 +78,22 @@ public class ScholarsControllerTests
     [Fact]
     public async Task CreateScholar_ServiceThrows_LetsTheExceptionReachTheGlobalHandler()
     {
-        var (controller, service) = MakeController();
-        service.Setup(d => d.CreateScholarAsync(It.IsAny<Scholar>(), It.IsAny<CancellationToken>()))
+        var (controller, repository) = MakeController();
+        repository.Setup(d => d.CreateScholarAsync(It.IsAny<Scholar>(), It.IsAny<CancellationToken>()))
             .ThrowsAsync(new InvalidOperationException("boom"));
 
         await Assert.ThrowsAsync<InvalidOperationException>(() =>
-            controller.CreateScholar(SampleScholar(), TestContext.Current.CancellationToken));
+            controller.CreateScholar(SampleScholar(), new CreateScholarHandler(repository.Object, NoAudit), Token));
     }
 
     [Fact]
     public async Task GetScholars_ReturnsOkWithList()
     {
-        var (controller, service) = MakeController();
-        var scholars = new List<Scholar> { SampleScholar(), SampleScholar() };
-        service.Setup(d => d.GetScholarsAsync(It.IsAny<CancellationToken>())).ReturnsAsync(scholars);
+        var (controller, repository) = MakeController();
+        var scholars = new List<Scholar> { SampleScholar().ToScholar(), SampleScholar().ToScholar() };
+        repository.Setup(d => d.GetScholarsAsync(It.IsAny<CancellationToken>())).ReturnsAsync(scholars);
 
-        var result = await controller.GetScholars(TestContext.Current.CancellationToken);
+        var result = await controller.GetScholars(new GetScholarsHandler(repository.Object), Token);
 
         var ok = Assert.IsType<OkObjectResult>(result.Result);
         var returned = Assert.IsAssignableFrom<IEnumerable<Scholar>>(ok.Value);
@@ -93,12 +103,12 @@ public class ScholarsControllerTests
     [Fact]
     public async Task GetScholarById_Found_ReturnsOk()
     {
-        var (controller, service) = MakeController();
-        var scholar = SampleScholar();
-        service.Setup(d => d.GetScholarAsync(scholar.ScholarId, It.IsAny<CancellationToken>()))
+        var (controller, repository) = MakeController();
+        var scholar = SampleScholar().ToScholar();
+        repository.Setup(d => d.GetScholarAsync(scholar.ScholarId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(scholar);
 
-        var result = await controller.GetScholar(scholar.ScholarId, TestContext.Current.CancellationToken);
+        var result = await controller.GetScholar(scholar.ScholarId, new GetScholarHandler(repository.Object), Token);
 
         var ok = Assert.IsType<OkObjectResult>(result.Result);
         Assert.Equal(scholar.ScholarId, ((Scholar)ok.Value!).ScholarId);
@@ -107,11 +117,11 @@ public class ScholarsControllerTests
     [Fact]
     public async Task GetScholarById_NotFound_ReturnsNotFoundProblem()
     {
-        var (controller, service) = MakeController();
+        var (controller, repository) = MakeController();
         var id = Guid.NewGuid();
-        service.Setup(d => d.GetScholarAsync(id, It.IsAny<CancellationToken>())).ReturnsAsync((Scholar?)null);
+        repository.Setup(d => d.GetScholarAsync(id, It.IsAny<CancellationToken>())).ReturnsAsync((Scholar?)null);
 
-        var result = await controller.GetScholar(id, TestContext.Current.CancellationToken);
+        var result = await controller.GetScholar(id, new GetScholarHandler(repository.Object), Token);
 
         var problem = AssertNotFoundProblem(result.Result);
         Assert.Equal($"Scholar with ID {id} not found.", problem.Detail);
@@ -120,37 +130,40 @@ public class ScholarsControllerTests
     [Fact]
     public async Task GetScholarById_EmptyId_ReturnsValidationProblem_WithoutTouchingTheDb()
     {
-        var (controller, service) = MakeController();
+        var (controller, repository) = MakeController();
 
-        var result = await controller.GetScholar(Guid.Empty, TestContext.Current.CancellationToken);
+        var result = await controller.GetScholar(Guid.Empty, new GetScholarHandler(repository.Object), Token);
 
         var problem = AssertValidationProblem(result.Result);
         Assert.Contains("scholarId", problem.Errors.Keys);
-        service.Verify(d => d.GetScholarAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()), Times.Never);
+        repository.Verify(d => d.GetScholarAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [Fact]
     public async Task UpdateScholar_UrlIdDoesNotMatchBodyId_ReturnsValidationProblem()
     {
-        var (controller, service) = MakeController();
+        var (controller, repository) = MakeController();
         var scholar = SampleScholar();
 
-        var result = await controller.UpdateScholar(Guid.NewGuid(), scholar, TestContext.Current.CancellationToken);
+        var result = await controller.UpdateScholar(Guid.NewGuid(), scholar,
+            new UpdateScholarHandler(repository.Object, NoAudit), Token);
 
         var problem = AssertValidationProblem(result.Result);
-        Assert.Contains(nameof(Scholar.ScholarId), problem.Errors.Keys);
-        service.Verify(d => d.UpdateScholarAsync(It.IsAny<Scholar>(), It.IsAny<CancellationToken>()), Times.Never);
+        Assert.Contains(nameof(ScholarRequest.ScholarId), problem.Errors.Keys);
+        repository.Verify(d => d.UpdateScholarAsync(It.IsAny<Scholar>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [Fact]
     public async Task UpdateScholar_NotFound_ReturnsNotFoundProblem()
     {
-        var (controller, service) = MakeController();
+        var (controller, repository) = MakeController();
         var scholar = SampleScholar();
-        service.Setup(d => d.UpdateScholarAsync(scholar, It.IsAny<CancellationToken>()))
+        repository.Setup(d => d.UpdateScholarAsync(It.Is<Scholar>(s => s.ScholarId == scholar.ScholarId),
+                It.IsAny<CancellationToken>()))
             .ReturnsAsync((Scholar?)null);
 
-        var result = await controller.UpdateScholar(scholar.ScholarId, scholar, TestContext.Current.CancellationToken);
+        var result = await controller.UpdateScholar(scholar.ScholarId, scholar,
+            new UpdateScholarHandler(repository.Object, NoAudit), Token);
 
         AssertNotFoundProblem(result.Result);
     }
@@ -158,11 +171,13 @@ public class ScholarsControllerTests
     [Fact]
     public async Task UpdateScholar_Success_ReturnsOk()
     {
-        var (controller, service) = MakeController();
+        var (controller, repository) = MakeController();
         var scholar = SampleScholar();
-        service.Setup(d => d.UpdateScholarAsync(scholar, It.IsAny<CancellationToken>())).ReturnsAsync(scholar);
+        repository.Setup(d => d.UpdateScholarAsync(It.Is<Scholar>(s => s.ScholarId == scholar.ScholarId),
+            It.IsAny<CancellationToken>())).ReturnsAsync(scholar.ToScholar());
 
-        var result = await controller.UpdateScholar(scholar.ScholarId, scholar, TestContext.Current.CancellationToken);
+        var result = await controller.UpdateScholar(scholar.ScholarId, scholar,
+            new UpdateScholarHandler(repository.Object, NoAudit), Token);
 
         var ok = Assert.IsType<OkObjectResult>(result.Result);
         Assert.Equal(scholar.ScholarId, ((Scholar)ok.Value!).ScholarId);
@@ -171,11 +186,11 @@ public class ScholarsControllerTests
     [Fact]
     public async Task DeleteScholar_Success_ReturnsNoContent()
     {
-        var (controller, service) = MakeController();
+        var (controller, repository) = MakeController();
         var id = Guid.NewGuid();
-        service.Setup(d => d.DeleteScholarAsync(id, It.IsAny<CancellationToken>())).ReturnsAsync(true);
+        repository.Setup(d => d.DeleteScholarAsync(id, It.IsAny<CancellationToken>())).ReturnsAsync(true);
 
-        var result = await controller.DeleteScholar(id, TestContext.Current.CancellationToken);
+        var result = await controller.DeleteScholar(id, new DeleteScholarHandler(repository.Object, NoAudit), Token);
 
         Assert.IsType<NoContentResult>(result);
     }
@@ -183,11 +198,11 @@ public class ScholarsControllerTests
     [Fact]
     public async Task DeleteScholar_NotFound_ReturnsNotFoundProblem()
     {
-        var (controller, service) = MakeController();
+        var (controller, repository) = MakeController();
         var id = Guid.NewGuid();
-        service.Setup(d => d.DeleteScholarAsync(id, It.IsAny<CancellationToken>())).ReturnsAsync(false);
+        repository.Setup(d => d.DeleteScholarAsync(id, It.IsAny<CancellationToken>())).ReturnsAsync(false);
 
-        var result = await controller.DeleteScholar(id, TestContext.Current.CancellationToken);
+        var result = await controller.DeleteScholar(id, new DeleteScholarHandler(repository.Object, NoAudit), Token);
 
         AssertNotFoundProblem(result);
     }
@@ -195,7 +210,7 @@ public class ScholarsControllerTests
     [Fact]
     public async Task GetScholarAuditLog_ReturnsOkWithEntries()
     {
-        var (controller, service) = MakeController();
+        var (controller, repository) = MakeController();
         var id = Guid.NewGuid();
         var entries = new List<AuditLogEntry>
         {
@@ -205,9 +220,9 @@ public class ScholarsControllerTests
                 OccurredAt = new DateTime(2026, 9, 23, 10, 0, 0, DateTimeKind.Utc)
             }
         };
-        service.Setup(d => d.GetScholarAuditLogAsync(id, It.IsAny<CancellationToken>())).ReturnsAsync(entries);
+        repository.Setup(d => d.GetScholarAuditLogAsync(id, It.IsAny<CancellationToken>())).ReturnsAsync(entries);
 
-        var result = await controller.GetScholarAuditLog(id, TestContext.Current.CancellationToken);
+        var result = await controller.GetScholarAuditLog(id, new GetScholarAuditLogHandler(repository.Object), Token);
 
         var ok = Assert.IsType<OkObjectResult>(result.Result);
         Assert.Single((IEnumerable<AuditLogEntry>)ok.Value!);
@@ -216,11 +231,11 @@ public class ScholarsControllerTests
     [Fact]
     public async Task GetAllAuditLog_ValidPaging_ReturnsOkWithPagedResponse()
     {
-        var (controller, service) = MakeController();
+        var (controller, repository) = MakeController();
         var page = new PagedResponse<GlobalAuditLogEntry>([], 45, 2, 20);
-        service.Setup(d => d.GetAllScholarAuditLogAsync(2, 20, It.IsAny<CancellationToken>())).ReturnsAsync(page);
+        repository.Setup(d => d.GetAllScholarAuditLogAsync(2, 20, It.IsAny<CancellationToken>())).ReturnsAsync(page);
 
-        var result = await controller.GetAllScholarAuditLog(2, 20, TestContext.Current.CancellationToken);
+        var result = await controller.GetAllScholarAuditLog(new GetAllScholarAuditLogHandler(repository.Object), 2, 20, Token);
 
         var ok = Assert.IsType<OkObjectResult>(result.Result);
         Assert.Equal(45, ((PagedResponse<GlobalAuditLogEntry>)ok.Value!).TotalItems);
@@ -229,69 +244,72 @@ public class ScholarsControllerTests
     [Fact]
     public async Task DeleteAllAuditLog_Success_ReturnsNoContent()
     {
-        var (controller, service) = MakeController();
-        service.Setup(d => d.DeleteAllScholarAuditLogAsync(It.IsAny<CancellationToken>())).Returns(Task.CompletedTask);
+        var (controller, repository) = MakeController();
+        repository.Setup(d => d.DeleteAllScholarAuditLogAsync(It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
 
-        var result = await controller.DeleteAllScholarAuditLog(TestContext.Current.CancellationToken);
+        var result = await controller.DeleteAllScholarAuditLog(
+            new DeleteAllScholarAuditLogHandler(repository.Object), Token);
 
         Assert.IsType<NoContentResult>(result);
     }
 
-    private static void VerifyAttendanceNotSaved(Mock<IScholarService> service) =>
-        service.Verify(
+    private static void VerifyAttendanceNotSaved(Mock<IScholarRepository> repository) =>
+        repository.Verify(
             d => d.SaveAttendanceAsync(It.IsAny<Guid>(), It.IsAny<List<AttendanceRecord>>(),
                 It.IsAny<CancellationToken>()), Times.Never);
 
     [Fact]
     public async Task SaveAttendance_EmptyId_ReturnsValidationProblem()
     {
-        var (controller, service) = MakeController();
+        var (controller, repository) = MakeController();
 
-        var result = await controller.SaveAttendance(Guid.Empty, [], TestContext.Current.CancellationToken);
+        var result = await controller.SaveAttendance(Guid.Empty, [],
+            new SaveAttendanceHandler(repository.Object), Token);
 
         AssertValidationProblem(result);
-        VerifyAttendanceNotSaved(service);
+        VerifyAttendanceNotSaved(repository);
     }
 
     [Fact]
     public async Task SaveAttendance_AbsentButLunchSelected_ReturnsValidationProblemNamingTheDate()
     {
-        var (controller, service) = MakeController();
-        var records = new List<AttendanceRecord>
+        var (controller, repository) = MakeController();
+        var records = new List<AttendanceRecordRequest>
         {
             new() { Date = new DateOnly(2024, 3, 4), Present = false, LunchSelected = true },
         };
 
         var result = await controller.SaveAttendance(Guid.NewGuid(), records,
-            TestContext.Current.CancellationToken);
+            new SaveAttendanceHandler(repository.Object), Token);
 
         var message = Assert.Single(AssertValidationProblem(result).Errors["attendance"]);
         Assert.Equal(
             "Lunch or Transport cannot be selected on a day the scholar was not present: 2024-03-04.", message);
-        VerifyAttendanceNotSaved(service);
+        VerifyAttendanceNotSaved(repository);
     }
 
     [Fact]
     public async Task SaveAttendance_AbsentButTransportSelected_ReturnsValidationProblem()
     {
-        var (controller, service) = MakeController();
-        var records = new List<AttendanceRecord>
+        var (controller, repository) = MakeController();
+        var records = new List<AttendanceRecordRequest>
         {
             new() { Date = new DateOnly(2024, 3, 4), Present = false, TransportSelected = true },
         };
 
         var result = await controller.SaveAttendance(Guid.NewGuid(), records,
-            TestContext.Current.CancellationToken);
+            new SaveAttendanceHandler(repository.Object), Token);
 
         AssertValidationProblem(result);
-        VerifyAttendanceNotSaved(service);
+        VerifyAttendanceNotSaved(repository);
     }
 
     [Fact]
     public async Task SaveAttendance_MultipleOffendingRecords_ListsAllDates()
     {
-        var (controller, service) = MakeController();
-        var records = new List<AttendanceRecord>
+        var (controller, repository) = MakeController();
+        var records = new List<AttendanceRecordRequest>
         {
             new() { Date = new DateOnly(2024, 3, 4), Present = true, LunchSelected = true },
             new() { Date = new DateOnly(2024, 3, 5), Present = false, LunchSelected = true },
@@ -299,19 +317,19 @@ public class ScholarsControllerTests
         };
 
         var result = await controller.SaveAttendance(Guid.NewGuid(), records,
-            TestContext.Current.CancellationToken);
+            new SaveAttendanceHandler(repository.Object), Token);
 
         var message = Assert.Single(AssertValidationProblem(result).Errors["attendance"]);
         Assert.EndsWith(": 2024-03-05, 2024-03-06.", message);
-        VerifyAttendanceNotSaved(service);
+        VerifyAttendanceNotSaved(repository);
     }
 
     [Fact]
     public async Task SaveAttendance_DuplicateDates_ListsThem()
     {
-        var (controller, service) = MakeController();
+        var (controller, repository) = MakeController();
         var repeated = new DateOnly(2024, 3, 4);
-        var records = new List<AttendanceRecord>
+        var records = new List<AttendanceRecordRequest>
         {
             new() { Date = repeated },
             new() { Date = new DateOnly(2024, 3, 5) },
@@ -319,26 +337,26 @@ public class ScholarsControllerTests
         };
 
         var result = await controller.SaveAttendance(Guid.NewGuid(), records,
-            TestContext.Current.CancellationToken);
+            new SaveAttendanceHandler(repository.Object), Token);
 
         var message = Assert.Single(AssertValidationProblem(result).Errors["attendance"]);
         Assert.Equal("Each date can appear only once. Repeated: 2024-03-04.", message);
-        VerifyAttendanceNotSaved(service);
+        VerifyAttendanceNotSaved(repository);
     }
 
     [Fact]
     public async Task SaveAttendance_BreakingBothRules_ReportsBoth()
     {
-        var (controller, _) = MakeController();
+        var (controller, repository) = MakeController();
         var date = new DateOnly(2024, 3, 4);
-        var records = new List<AttendanceRecord>
+        var records = new List<AttendanceRecordRequest>
         {
             new() { Date = date, Present = false, LunchSelected = true },
             new() { Date = date },
         };
 
         var result = await controller.SaveAttendance(Guid.NewGuid(), records,
-            TestContext.Current.CancellationToken);
+            new SaveAttendanceHandler(repository.Object), Token);
 
         Assert.Equal(2, AssertValidationProblem(result).Errors["attendance"].Length);
     }
@@ -346,48 +364,58 @@ public class ScholarsControllerTests
     [Fact]
     public async Task SaveAttendance_AbsentAndNothingSelected_Saves()
     {
-        var (controller, service) = MakeController();
+        var (controller, repository) = MakeController();
         var id = Guid.NewGuid();
-        var records = new List<AttendanceRecord>
+        var records = new List<AttendanceRecordRequest>
         {
             new() { Date = new DateOnly(2024, 3, 4), Present = false, LunchSelected = false, TransportSelected = false },
         };
 
-        service.Setup(d => d.SaveAttendanceAsync(id, records, It.IsAny<CancellationToken>()))
+        repository.Setup(d => d.SaveAttendanceAsync(id, It.Is<List<AttendanceRecord>>(saved =>
+                saved.Select(r => r.Date).SequenceEqual(records.Select(r => r.Date))),
+                It.IsAny<CancellationToken>()))
             .ReturnsAsync(true);
 
-        var result = await controller.SaveAttendance(id, records, TestContext.Current.CancellationToken);
+        var result = await controller.SaveAttendance(id, records, new SaveAttendanceHandler(repository.Object), Token);
 
         Assert.IsType<NoContentResult>(result);
-        service.Verify(d => d.SaveAttendanceAsync(id, records, It.IsAny<CancellationToken>()), Times.Once);
+        repository.Verify(d => d.SaveAttendanceAsync(id, It.Is<List<AttendanceRecord>>(saved =>
+                saved.Select(r => r.Date).SequenceEqual(records.Select(r => r.Date))),
+                It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
     public async Task SaveAttendance_Success_ReturnsNoContent()
     {
-        var (controller, service) = MakeController();
+        var (controller, repository) = MakeController();
         var id = Guid.NewGuid();
-        var records = new List<AttendanceRecord> { new() { Date = new DateOnly(2024, 3, 4), LunchCost = 10m } };
+        var records = new List<AttendanceRecordRequest> { new() { Date = new DateOnly(2024, 3, 4), LunchCost = 10m } };
 
-        service.Setup(d => d.SaveAttendanceAsync(id, records, It.IsAny<CancellationToken>()))
+        repository.Setup(d => d.SaveAttendanceAsync(id, It.Is<List<AttendanceRecord>>(saved =>
+                saved.Select(r => r.Date).SequenceEqual(records.Select(r => r.Date))),
+                It.IsAny<CancellationToken>()))
             .ReturnsAsync(true);
 
-        var result = await controller.SaveAttendance(id, records, TestContext.Current.CancellationToken);
+        var result = await controller.SaveAttendance(id, records, new SaveAttendanceHandler(repository.Object), Token);
 
         Assert.IsType<NoContentResult>(result);
-        service.Verify(d => d.SaveAttendanceAsync(id, records, It.IsAny<CancellationToken>()), Times.Once);
+        repository.Verify(d => d.SaveAttendanceAsync(id, It.Is<List<AttendanceRecord>>(saved =>
+                saved.Select(r => r.Date).SequenceEqual(records.Select(r => r.Date))),
+                It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
     public async Task SaveAttendance_UnknownScholar_ReturnsNotFoundProblem()
     {
-        var (controller, service) = MakeController();
+        var (controller, repository) = MakeController();
         var id = Guid.NewGuid();
-        var records = new List<AttendanceRecord> { new() { Date = new DateOnly(2024, 3, 4) } };
-        service.Setup(d => d.SaveAttendanceAsync(id, records, It.IsAny<CancellationToken>()))
+        var records = new List<AttendanceRecordRequest> { new() { Date = new DateOnly(2024, 3, 4) } };
+        repository.Setup(d => d.SaveAttendanceAsync(id, It.Is<List<AttendanceRecord>>(saved =>
+                saved.Select(r => r.Date).SequenceEqual(records.Select(r => r.Date))),
+                It.IsAny<CancellationToken>()))
             .ReturnsAsync(false);
 
-        var result = await controller.SaveAttendance(id, records, TestContext.Current.CancellationToken);
+        var result = await controller.SaveAttendance(id, records, new SaveAttendanceHandler(repository.Object), Token);
 
         AssertNotFoundProblem(result);
     }
@@ -395,9 +423,9 @@ public class ScholarsControllerTests
     [Fact]
     public async Task GetAttendance_EmptyId_ReturnsValidationProblem()
     {
-        var (controller, _) = MakeController();
+        var (controller, repository) = MakeController();
 
-        var result = await controller.GetAttendance(Guid.Empty, TestContext.Current.CancellationToken);
+        var result = await controller.GetAttendance(Guid.Empty, new GetAttendanceHandler(repository.Object), Token);
 
         AssertValidationProblem(result.Result);
     }
@@ -405,12 +433,12 @@ public class ScholarsControllerTests
     [Fact]
     public async Task GetAttendance_NoneYet_ReturnsOkWithEmptyList()
     {
-        var (controller, service) = MakeController();
+        var (controller, repository) = MakeController();
         var id = Guid.NewGuid();
-        service.Setup(d => d.GetAttendanceAsync(id, It.IsAny<CancellationToken>()))
+        repository.Setup(d => d.GetAttendanceAsync(id, It.IsAny<CancellationToken>()))
             .ReturnsAsync([]);
 
-        var result = await controller.GetAttendance(id, TestContext.Current.CancellationToken);
+        var result = await controller.GetAttendance(id, new GetAttendanceHandler(repository.Object), Token);
 
         var ok = Assert.IsType<OkObjectResult>(result.Result);
         Assert.Empty((IEnumerable<AttendanceRecord>)ok.Value!);
@@ -419,9 +447,10 @@ public class ScholarsControllerTests
     [Fact]
     public async Task DeleteAttendance_EmptyId_ReturnsValidationProblem()
     {
-        var (controller, _) = MakeController();
+        var (controller, repository) = MakeController();
 
-        var result = await controller.DeleteAttendance(Guid.Empty, TestContext.Current.CancellationToken);
+        var result = await controller.DeleteAttendance(Guid.Empty,
+            new DeleteAttendanceHandler(repository.Object), Token);
 
         AssertValidationProblem(result);
     }
@@ -429,11 +458,11 @@ public class ScholarsControllerTests
     [Fact]
     public async Task DeleteAttendance_NotFound_ReturnsNotFoundProblem()
     {
-        var (controller, service) = MakeController();
+        var (controller, repository) = MakeController();
         var id = Guid.NewGuid();
-        service.Setup(d => d.DeleteAttendanceAsync(id, It.IsAny<CancellationToken>())).ReturnsAsync(false);
+        repository.Setup(d => d.DeleteAttendanceAsync(id, It.IsAny<CancellationToken>())).ReturnsAsync(false);
 
-        var result = await controller.DeleteAttendance(id, TestContext.Current.CancellationToken);
+        var result = await controller.DeleteAttendance(id, new DeleteAttendanceHandler(repository.Object), Token);
 
         AssertNotFoundProblem(result);
     }
@@ -441,11 +470,11 @@ public class ScholarsControllerTests
     [Fact]
     public async Task DeleteAttendance_Success_ReturnsNoContent()
     {
-        var (controller, service) = MakeController();
+        var (controller, repository) = MakeController();
         var id = Guid.NewGuid();
-        service.Setup(d => d.DeleteAttendanceAsync(id, It.IsAny<CancellationToken>())).ReturnsAsync(true);
+        repository.Setup(d => d.DeleteAttendanceAsync(id, It.IsAny<CancellationToken>())).ReturnsAsync(true);
 
-        var result = await controller.DeleteAttendance(id, TestContext.Current.CancellationToken);
+        var result = await controller.DeleteAttendance(id, new DeleteAttendanceHandler(repository.Object), Token);
 
         Assert.IsType<NoContentResult>(result);
     }
@@ -453,13 +482,13 @@ public class ScholarsControllerTests
     [Fact]
     public async Task GetAllAttendance_ReturnsOkWithShapedResult()
     {
-        var (controller, service) = MakeController();
+        var (controller, repository) = MakeController();
         var scholarId = Guid.NewGuid();
         var records = new List<AttendanceRecord> { new() { Date = new DateOnly(2024, 3, 4) } };
-        service.Setup(d => d.GetAllAttendanceAsync(It.IsAny<CancellationToken>()))
+        repository.Setup(d => d.GetAllAttendanceAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync([new ScholarAttendance(scholarId, records)]);
 
-        var result = await controller.GetAllAttendance(TestContext.Current.CancellationToken);
+        var result = await controller.GetAllAttendance(new GetAllAttendanceHandler(repository.Object), Token);
 
         var ok = Assert.IsType<OkObjectResult>(result.Result);
         var item = Assert.Single(Assert.IsAssignableFrom<IEnumerable<ScholarAttendance>>(ok.Value));

@@ -1,5 +1,8 @@
 using System.ComponentModel.DataAnnotations;
-using ImaloEducation.BusinessLogic.Services;
+using ImaloEducation.BusinessLogic.Contracts;
+using ImaloEducation.BusinessLogic.Features.Attendance;
+using ImaloEducation.BusinessLogic.Features.AuditLog;
+using ImaloEducation.BusinessLogic.Features.Scholars;
 using ImaloEducation.BusinessLogic.Validations;
 using ImaloEducation.Domain.Models;
 using Microsoft.AspNetCore.Mvc;
@@ -8,83 +11,89 @@ namespace ImaloEducation.WebAPI.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class ScholarsController(IScholarService scholarService) : ControllerBase
+public class ScholarsController : ControllerBase
 {
     [HttpPost]
-    public async Task<ActionResult<Scholar>> CreateScholar([FromBody] Scholar scholar,
-        CancellationToken cancellationToken)
+    public async Task<ActionResult<Scholar>> CreateScholar([FromBody] ScholarRequest scholar,
+        [FromServices] CreateScholarHandler handler, CancellationToken cancellationToken)
     {
-        var createdScholar = await scholarService.CreateScholarAsync(scholar, cancellationToken);
+        var createdScholar = await handler.HandleAsync(scholar, cancellationToken);
         return CreatedAtAction(nameof(GetScholar), new { scholarId = createdScholar.ScholarId }, createdScholar);
     }
 
     [HttpGet]
-    public async Task<ActionResult<IReadOnlyList<Scholar>>> GetScholars(CancellationToken cancellationToken) =>
-        Ok(await scholarService.GetScholarsAsync(cancellationToken));
+    public async Task<ActionResult<IReadOnlyList<Scholar>>> GetScholars([FromServices] GetScholarsHandler handler,
+        CancellationToken cancellationToken) =>
+        Ok(await handler.HandleAsync(cancellationToken));
 
     [HttpGet("{scholarId:guid}")]
-    public async Task<ActionResult<Scholar>> GetScholar(Guid scholarId, CancellationToken cancellationToken)
+    public async Task<ActionResult<Scholar>> GetScholar(Guid scholarId, [FromServices] GetScholarHandler handler,
+        CancellationToken cancellationToken)
     {
         if (scholarId == Guid.Empty) return EmptyScholarId();
 
-        var scholar = await scholarService.GetScholarAsync(scholarId, cancellationToken);
+        var scholar = await handler.HandleAsync(scholarId, cancellationToken);
         return scholar is null ? ScholarNotFound(scholarId) : Ok(scholar);
     }
 
     [HttpPut("{scholarId:guid}")]
-    public async Task<ActionResult<Scholar>> UpdateScholar(Guid scholarId, [FromBody] Scholar scholar,
-        CancellationToken cancellationToken)
+    public async Task<ActionResult<Scholar>> UpdateScholar(Guid scholarId, [FromBody] ScholarRequest scholar,
+        [FromServices] UpdateScholarHandler handler, CancellationToken cancellationToken)
     {
         if (scholarId == Guid.Empty) return EmptyScholarId();
 
         if (scholarId != scholar.ScholarId)
         {
-            ModelState.AddModelError(nameof(Scholar.ScholarId),
+            ModelState.AddModelError(nameof(ScholarRequest.ScholarId),
                 "The scholar ID in the URL does not match the one in the request body.");
             return ValidationProblem();
         }
 
-        var updatedScholar = await scholarService.UpdateScholarAsync(scholar, cancellationToken);
+        var updatedScholar = await handler.HandleAsync(scholar, cancellationToken);
         return updatedScholar is null ? ScholarNotFound(scholarId) : Ok(updatedScholar);
     }
 
     [HttpDelete("{scholarId:guid}")]
-    public async Task<IActionResult> DeleteScholar(Guid scholarId, CancellationToken cancellationToken)
+    public async Task<IActionResult> DeleteScholar(Guid scholarId, [FromServices] DeleteScholarHandler handler,
+        CancellationToken cancellationToken)
     {
         if (scholarId == Guid.Empty) return EmptyScholarId();
 
-        var deleted = await scholarService.DeleteScholarAsync(scholarId, cancellationToken);
+        var deleted = await handler.HandleAsync(scholarId, cancellationToken);
         return deleted ? NoContent() : ScholarNotFound(scholarId);
     }
 
     [HttpGet("{scholarId:guid}/audit-log")]
     public async Task<ActionResult<IReadOnlyList<AuditLogEntry>>> GetScholarAuditLog(Guid scholarId,
-        CancellationToken cancellationToken)
+        [FromServices] GetScholarAuditLogHandler handler, CancellationToken cancellationToken)
     {
         if (scholarId == Guid.Empty) return EmptyScholarId();
 
-        return Ok(await scholarService.GetScholarAuditLogAsync(scholarId, cancellationToken));
+        return Ok(await handler.HandleAsync(scholarId, cancellationToken));
     }
 
     [HttpGet("audit-log/all")]
     public async Task<ActionResult<PagedResponse<GlobalAuditLogEntry>>> GetAllScholarAuditLog(
+        [FromServices] GetAllScholarAuditLogHandler handler,
         [FromQuery, Range(1, int.MaxValue, ErrorMessage = "Page number must be 1 or greater.")]
         int pageNumber = 1,
         [FromQuery, Range(1, 100, ErrorMessage = "Page size must be between 1 and 100.")]
         int pageSize = 20,
         CancellationToken cancellationToken = default) =>
-        Ok(await scholarService.GetAllScholarAuditLogAsync(pageNumber, pageSize, cancellationToken));
+        Ok(await handler.HandleAsync(pageNumber, pageSize, cancellationToken));
 
     [HttpDelete("audit-log/all")]
-    public async Task<IActionResult> DeleteAllScholarAuditLog(CancellationToken cancellationToken)
+    public async Task<IActionResult> DeleteAllScholarAuditLog([FromServices] DeleteAllScholarAuditLogHandler handler,
+        CancellationToken cancellationToken)
     {
-        await scholarService.DeleteAllScholarAuditLogAsync(cancellationToken);
+        await handler.HandleAsync(cancellationToken);
         return NoContent();
     }
 
     [HttpPost("{scholarId:guid}/attendance")]
     public async Task<IActionResult> SaveAttendance(Guid scholarId,
-        [FromBody] List<AttendanceRecord> attendance, CancellationToken cancellationToken)
+        [FromBody] List<AttendanceRecordRequest> attendance, [FromServices] SaveAttendanceHandler handler,
+        CancellationToken cancellationToken)
     {
         if (scholarId == Guid.Empty) return EmptyScholarId();
 
@@ -93,25 +102,26 @@ public class ScholarsController(IScholarService scholarService) : ControllerBase
 
         if (!ModelState.IsValid) return ValidationProblem();
 
-        var saved = await scholarService.SaveAttendanceAsync(scholarId, attendance, cancellationToken);
+        var saved = await handler.HandleAsync(scholarId, attendance, cancellationToken);
         return saved ? NoContent() : ScholarNotFound(scholarId);
     }
 
     [HttpGet("{scholarId:guid}/attendance")]
     public async Task<ActionResult<IReadOnlyList<AttendanceRecord>>> GetAttendance(Guid scholarId,
+        [FromServices] GetAttendanceHandler handler, CancellationToken cancellationToken)
+    {
+        if (scholarId == Guid.Empty) return EmptyScholarId();
+
+        return Ok(await handler.HandleAsync(scholarId, cancellationToken));
+    }
+
+    [HttpDelete("{scholarId:guid}/attendance")]
+    public async Task<IActionResult> DeleteAttendance(Guid scholarId, [FromServices] DeleteAttendanceHandler handler,
         CancellationToken cancellationToken)
     {
         if (scholarId == Guid.Empty) return EmptyScholarId();
 
-        return Ok(await scholarService.GetAttendanceAsync(scholarId, cancellationToken));
-    }
-
-    [HttpDelete("{scholarId:guid}/attendance")]
-    public async Task<IActionResult> DeleteAttendance(Guid scholarId, CancellationToken cancellationToken)
-    {
-        if (scholarId == Guid.Empty) return EmptyScholarId();
-
-        var deleted = await scholarService.DeleteAttendanceAsync(scholarId, cancellationToken);
+        var deleted = await handler.HandleAsync(scholarId, cancellationToken);
         return deleted
             ? NoContent()
             : Problem(statusCode: StatusCodes.Status404NotFound,
@@ -119,8 +129,9 @@ public class ScholarsController(IScholarService scholarService) : ControllerBase
     }
 
     [HttpGet("attendance")]
-    public async Task<ActionResult<IReadOnlyList<ScholarAttendance>>> GetAllAttendance(CancellationToken cancellationToken) =>
-        Ok(await scholarService.GetAllAttendanceAsync(cancellationToken));
+    public async Task<ActionResult<IReadOnlyList<ScholarAttendance>>> GetAllAttendance(
+        [FromServices] GetAllAttendanceHandler handler, CancellationToken cancellationToken) =>
+        Ok(await handler.HandleAsync(cancellationToken));
 
     private ActionResult EmptyScholarId()
     {

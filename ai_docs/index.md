@@ -26,8 +26,8 @@ Browser ──► Angular dev server :4203 (SSR via Express in Node)
               │  JSON over HTTPS, no auth
               ▼
            ASP.NET Core API :7244 (WebAPI → BusinessLogic ← DataAccess; Domain models)
-             ScholarsController (DataAnnotations + ModelState for validation)
-               → ScholarService (guards, audit trail; BusinessLogic)
+             ScholarsController (ModelState; DataAnnotations live on the BusinessLogic request contracts)
+               → [FromServices] <Action>Handler (BusinessLogic/Features: guards, mapping, audit trail)
                  → IScholarRepository ⇐ ScholarRepository (DataAccess: parameterized inline SQL,
                    ADO.NET, typed SqlParameters)
               │  no stored procedures, no ORM
@@ -44,7 +44,7 @@ Browser ──► Angular dev server :4203 (SSR via Express in Node)
 
 1. `attendance-per-scholar` saves the month edited in its Signal Form → `AttendanceService.saveAttendance()` → `POST api/scholars/{scholarId}/attendance` with the scholar's whole attendance list.
 2. `[ApiController]` validation runs, then the controller adds the cross-field rules from `AttendanceValidation` (no duplicate dates; lunch/transport only on a present day) → `400` on failure.
-3. `ScholarService.SaveAttendanceAsync` → `ScholarRepository.SaveAttendanceAsync` updates or inserts the row in one `UPDLOCK, SERIALIZABLE` batch; an unknown scholar returns `404`.
+3. `SaveAttendanceHandler` → `ScholarRepository.SaveAttendanceAsync` updates or inserts the row in one `UPDLOCK, SERIALIZABLE` batch; an unknown scholar returns `404`.
 4. The API answers `204 No Content` and the UI toasts. Attendance saves are not audit-logged; only scholar create, edit and delete are.
 
 ### Features

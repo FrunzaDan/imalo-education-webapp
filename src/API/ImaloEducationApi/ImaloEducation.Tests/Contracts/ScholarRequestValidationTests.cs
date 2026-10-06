@@ -1,11 +1,12 @@
 using System.ComponentModel.DataAnnotations;
+using ImaloEducation.BusinessLogic.Contracts;
 using ImaloEducation.Domain.Models;
 
-namespace ImaloEducation.Tests.Models;
+namespace ImaloEducation.Tests.Contracts;
 
-public class ScholarModelValidationTests
+public class ScholarRequestValidationTests
 {
-    private static Scholar ValidScholar() => new()
+    private static ScholarRequest ValidScholar() => new()
     {
         FirstName = "Ana",
         LastName = "Popescu",
@@ -16,7 +17,7 @@ public class ScholarModelValidationTests
         PickupSchedule = new PickupSchedule { Monday = new TimeOnly(13, 0) },
     };
 
-    private static bool TryValidate(Scholar scholar, out List<ValidationResult> results)
+    private static bool TryValidate(ScholarRequest scholar, out List<ValidationResult> results)
     {
         results = [];
         var context = new ValidationContext(scholar);
@@ -33,7 +34,7 @@ public class ScholarModelValidationTests
     [Fact]
     public void MinimalScholar_WithOnlyRequiredFields_PassesValidation()
     {
-        var scholar = new Scholar
+        var scholar = new ScholarRequest
         {
             FirstName = "Ana",
             LastName = "Popescu",
@@ -51,7 +52,7 @@ public class ScholarModelValidationTests
         scholar.FirstName = string.Empty;
 
         Assert.False(TryValidate(scholar, out var results));
-        Assert.Contains(results, r => r.MemberNames.Contains(nameof(Scholar.FirstName)));
+        Assert.Contains(results, r => r.MemberNames.Contains(nameof(ScholarRequest.FirstName)));
     }
 
     [Fact]
@@ -61,7 +62,7 @@ public class ScholarModelValidationTests
         scholar.Grade = 13;
 
         Assert.False(TryValidate(scholar, out var results));
-        Assert.Contains(results, r => r.MemberNames.Contains(nameof(Scholar.Grade)));
+        Assert.Contains(results, r => r.MemberNames.Contains(nameof(ScholarRequest.Grade)));
     }
 
     [Fact]
@@ -71,7 +72,7 @@ public class ScholarModelValidationTests
         scholar.Gender = (Gender)7;
 
         Assert.False(TryValidate(scholar, out var results));
-        Assert.Contains(results, r => r.MemberNames.Contains(nameof(Scholar.Gender)));
+        Assert.Contains(results, r => r.MemberNames.Contains(nameof(ScholarRequest.Gender)));
     }
 
     [Fact]
@@ -81,7 +82,7 @@ public class ScholarModelValidationTests
         scholar.SchoolId = -1;
 
         Assert.False(TryValidate(scholar, out var results));
-        Assert.Contains(results, r => r.MemberNames.Contains(nameof(Scholar.SchoolId)));
+        Assert.Contains(results, r => r.MemberNames.Contains(nameof(ScholarRequest.SchoolId)));
     }
 
     [Fact]
@@ -101,7 +102,7 @@ public class ScholarModelValidationTests
         scholar.BirthDate = null;
 
         Assert.False(TryValidate(scholar, out var results));
-        Assert.Contains(results, r => r.MemberNames.Contains(nameof(Scholar.BirthDate)));
+        Assert.Contains(results, r => r.MemberNames.Contains(nameof(ScholarRequest.BirthDate)));
     }
 
     [Fact]

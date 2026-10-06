@@ -1,6 +1,7 @@
 using System.Data;
 using System.Text.Json;
 using ImaloEducation.BusinessLogic.Abstractions;
+using ImaloEducation.BusinessLogic.Contracts;
 using ImaloEducation.DataAccess.DBConnection;
 using ImaloEducation.Domain.Models;
 using Microsoft.Data.SqlClient;
